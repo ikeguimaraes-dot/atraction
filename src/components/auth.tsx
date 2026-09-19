@@ -1,0 +1,325 @@
+"use client";
+import { ui } from "@/lib/pt-ui";
+import { useEffect, useState, useRef } from "react";
+import { ShieldCheck, Mail, ArrowRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Modal } from "./ui";
+import { niches } from "@/data/niches";
+import type { Niche } from "@/lib/types";
+export function Auth({
+  onClose,
+  onReady,
+}: {
+  onClose: () => void;
+  onReady: (id: string) => Promise<boolean>;
+}) {
+  const [step, setStep] = useState("login");
+  const [signup, setSignup] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [qr, setQr] = useState("");
+  const [factor, setFactor] = useState("");
+  const [name, setName] = useState("");
+  const [niche, setNiche] = useState<Niche>("estetica");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [uid, setUid] = useState("");
+  const finish = async (id: string) => {
+    const token = new URLSearchParams(window.location.search).get("convite");
+    if (token) {
+      const { error } = await supabase().rpc("atraction_accept_invite", {
+        p_token: token,
+      });
+      if (error) {
+        setError(ui.este_convite_expirou_foi_usado_ou_pertence_a_outro_e_ma);
+        throw new Error("invalid invitation");
+      }
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    return onReady(id);
+  };
+  const enrolling = useRef(false);
+  const afterAuth = async () => {
+    const db = supabase();
+    const {
+      data: { user },
+    } = await db.auth.getUser();
+    if (!user) return;
+    setUid(user.id);
+    const { data: member } = await db
+      .from("atraction_members")
+      .select("role")
+      .eq("user_id", user.id)
+      .limit(1);
+    if (member?.length && ["agent", "viewer"].includes(member[0].role)) {
+      if (await finish(user.id)) onClose();
+      return;
+    }
+    const { data: aal } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.currentLevel === "aal2") {
+      if (await finish(user.id)) onClose();
+      else setStep("business");
+      return;
+    }
+    const { data: factors } = await db.auth.mfa.listFactors();
+    const verified = factors?.totp.find((f) => f.status === "verified");
+    if (verified) {
+      setFactor(verified.id);
+      setStep("mfa");
+      return;
+    }
+    if (enrolling.current) return;
+    enrolling.current = true;
+    // Reuse no unverified secret; remove only this application's stale enrollment.
+    for (const f of factors?.all || [])
+      if (f.status === "unverified" && f.friendly_name === ui.atraction)
+        await db.auth.mfa.unenroll({ factorId: f.id });
+    const { data, error } = await db.auth.mfa.enroll({
+      factorType: "totp",
+      friendlyName: ui.atraction,
+    });
+    if (error || !data) {
+      enrolling.current = false;
+      setError(ui.nao_conseguimos_preparar_a_protecao_da_conta_tente_entr);
+      return;
+    }
+    setFactor(data.id);
+    setQr(data.totp.qr_code);
+    setStep("mfa");
+  };
+  useEffect(() => {
+    afterAuth().catch(() => setError(ui.confira_sua_conexao_e_tente_novamente));
+  }, []); // eslint-disable-line
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    setBusy(true);
+    setError("");
+    try {
+      const db = supabase();
+      if (step === "login") {
+        const result = signup
+          ? await db.auth.signUp({
+              email,
+              password,
+              options: { emailRedirectTo: window.location.origin },
+            })
+          : await db.auth.signInWithPassword({ email, password });
+        if (result.error) {
+          setError(
+            signup
+              ? ui.nao_foi_possivel_criar_a_conta_use_uma_senha_com_pelo_m
+              : ui.e_mail_ou_senha_nao_conferem_revise_e_tente_novamente,
+          );
+          return;
+        }
+        if (signup && !result.data.session) {
+          setStep("confirm");
+          return;
+        }
+        await afterAuth();
+      } else if (step === "mfa") {
+        const { error } = await db.auth.mfa.challengeAndVerify({
+          factorId: factor,
+          code,
+        });
+        if (error) {
+          setError(ui.esse_codigo_nao_conferiu_digite_o_codigo_atual_do_seu_a);
+          return;
+        }
+        if (await finish(uid)) onClose();
+        else setStep("business");
+      } else if (step === "business") {
+        const { error } = await db.from("atraction_tenants").insert({
+          name,
+          niche,
+          owner_id: uid,
+          niche_pack: niches[niche],
+          pack_version: 1,
+          onboarding: {
+            team_size: String(form.get("team_size")),
+            source: String(form.get("source")),
+            goal: String(form.get("goal")),
+          },
+        });
+        if (error) {
+          setError(ui.nao_foi_possivel_criar_seu_espaco_tente_novamente);
+          return;
+        }
+        await finish(uid);
+        onClose();
+      }
+    } catch {
+      setError(ui.nao_conseguimos_conectar_confira_sua_internet_e_tente_n);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal
+      title={
+        step === "mfa"
+          ? ui.sua_conta_protegida
+          : step === "business"
+            ? ui.seu_negocio_comeca_aqui
+            : signup
+              ? ui.crie_seu_espaco
+              : ui.que_bom_ter_voce_por_aqui
+      }
+      onClose={onClose}
+    >
+      <form onSubmit={submit} className="form">
+        {step === "login" && (
+          <>
+            <p>{ui.seus_clientes_e_sua_equipe_no_mesmo_lugar}</p>
+            <label>
+              {ui.e_mail}
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </label>
+            <label>
+              {ui.senha}
+              <input
+                type="password"
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete={signup ? "new-password" : "current-password"}
+              />
+            </label>
+            <button className="primary" disabled={busy}>
+              {busy ? "Conectando…" : signup ? ui.criar_minha_conta : ui.entrar}
+              <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              className="text-button center"
+              onClick={() => setSignup(!signup)}
+            >
+              {signup
+                ? ui.ja_tenho_uma_conta
+                : ui.primeira_vez_criar_conta_gratuita}
+            </button>
+          </>
+        )}
+        {step === "confirm" && (
+          <div className="empty">
+            <Mail />
+            <h3>{ui.confira_seu_e_mail}</h3>
+            <p>{ui.abra_o_link_de_confirmacao_e_volte_para_entrar_na_sua_c}</p>
+            <button
+              type="button"
+              className="primary"
+              onClick={() => {
+                setSignup(false);
+                setStep("login");
+              }}
+            >
+              {ui.voltar_para_entrar}
+            </button>
+          </div>
+        )}
+        {step === "mfa" && (
+          <>
+            <ShieldCheck className="purple" size={32} />
+            <p>{ui.use_um_aplicativo_autenticador_para_proteger_os_dados_d}</p>
+            {qr && (
+              <>
+                <img
+                  className="qr"
+                  src={qr}
+                  alt={ui.codigo_qr_para_configurar_seu_autenticador}
+                />
+                <p className="muted">
+                  {ui.leia_o_qr_no_seu_autenticador_e_digite_os_seis_numeros_}
+                </p>
+              </>
+            )}
+            <label>
+              {ui.codigo_de_verificacao}
+              <input
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                required
+              />
+            </label>
+            <button className="primary" disabled={busy}>
+              {ui.verificar_e_continuar}
+            </button>
+          </>
+        )}
+        {step === "business" && (
+          <>
+            <label>
+              {ui.nome_do_seu_negocio}
+              <input
+                required
+                maxLength={160}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <label>
+              {ui.qual_e_o_seu_negocio}
+              <select
+                value={niche}
+                onChange={(e) => setNiche(e.target.value as Niche)}
+              >
+                {Object.entries(niches).map(([k, n]) => (
+                  <option key={k} value={k}>
+                    {n.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {ui.quantas_pessoas_atendem}
+              <select name="team_size">
+                <option>{ui.so_eu}</option>
+                <option>{ui["2_a_5_pessoas"]}</option>
+                <option>{ui["6_a_20_pessoas"]}</option>
+              </select>
+            </label>
+            <label>
+              {ui.de_onde_vem_os_clientes}
+              <select name="source">
+                <option>{ui.instagram}</option>
+                <option>{ui.indicacao}</option>
+                <option>{ui.whatsapp}</option>
+                <option>{ui.passagem_na_rua}</option>
+              </select>
+            </label>
+            <label>
+              {ui.seu_principal_objetivo}
+              <select name="goal">
+                <option>{ui.nao_esquecer_de_ninguem}</option>
+                <option>{ui.fechar_mais_negocios}</option>
+                <option>{ui.fazer_clientes_voltarem}</option>
+              </select>
+            </label>
+            <button className="primary" disabled={busy}>
+              {ui.abrir_meu_espaco}
+              <ArrowRight size={17} />
+            </button>
+          </>
+        )}
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+      </form>
+    </Modal>
+  );
+}
