@@ -35,9 +35,7 @@ export function schedule(c: Contract): FinanceEntry[] {
 }
 export function lastContact(s: State, c: Contact) {
   return [
-    c.last_contact_at,
-    c.customer_since,
-    c.created_at,
+    c.last_contact_at || c.customer_since || c.created_at,
     ...s.activities
       .filter((a) => !a.deleted_at && a.done && a.contact_id === c.id)
       .map((a) => a.updated_at),

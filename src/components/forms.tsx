@@ -225,6 +225,26 @@ export function ContactForm({
           </label>
         </div>
         <label>
+          Último atendimento conhecido
+          <input
+            type="date"
+            max={today()}
+            value={data.last_contact_at?.slice(0, 10) || ""}
+            onChange={(e) =>
+              setData({
+                ...data,
+                last_contact_at: e.target.value
+                  ? e.target.value + "T12:00:00Z"
+                  : null,
+              })
+            }
+          />
+          <span>
+            Opcional, para trazer o histórico de clientes que já eram atendidos
+            antes do Atraction.
+          </span>
+        </label>
+        <label>
           {ui.etiquetas}
           <span>{ui.separe_por_virgula}</span>
           <input

@@ -95,6 +95,9 @@ describe("connected customer journey", () => {
       },
     ];
     expect(pendingRetention(s)).toHaveLength(1);
+    s.contacts[0].created_at = new Date().toISOString();
+    s.contacts[0].last_contact_at = "2020-01-01T12:00:00Z";
+    expect(pendingRetention(s)).toHaveLength(1);
     s.activities[0].done = true;
     expect(pendingRetention(s)).toHaveLength(0);
   });
