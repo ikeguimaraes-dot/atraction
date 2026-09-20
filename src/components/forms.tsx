@@ -109,6 +109,18 @@ export function ContactForm({
               value={data.source}
               onChange={(e) => setData({ ...data, source: e.target.value })}
             >
+              {data.source &&
+                ![
+                  ui.cadastro,
+                  ui.instagram,
+                  ui.whatsapp,
+                  ui.indicacao,
+                  ui.site,
+                  ui.planilha,
+                  ui.pagina,
+                ].some((source) => source === data.source) && (
+                  <option>{data.source}</option>
+                )}
               {[
                 ui.cadastro,
                 ui.instagram,
@@ -168,6 +180,47 @@ export function ContactForm({
               maxLength={500}
               value={data.address || ""}
               onChange={(e) => setData({ ...data, address: e.target.value })}
+            />
+          </label>
+        </div>
+        <div className="form-grid">
+          <label>
+            Campanha
+            <input
+              maxLength={160}
+              value={data.campaign || ""}
+              onChange={(e) => setData({ ...data, campaign: e.target.value })}
+            />
+          </label>
+          <label>
+            Meio de captação
+            <input
+              maxLength={100}
+              value={data.medium || ""}
+              onChange={(e) => setData({ ...data, medium: e.target.value })}
+            />
+          </label>
+          <label>
+            Indicado por
+            <input
+              maxLength={160}
+              value={data.referred_by || ""}
+              onChange={(e) =>
+                setData({ ...data, referred_by: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Acompanhar a cada (dias)
+            <input
+              type="number"
+              required
+              min={1}
+              max={365}
+              value={data.retention_days || 30}
+              onChange={(e) =>
+                setData({ ...data, retention_days: Number(e.target.value) })
+              }
             />
           </label>
         </div>

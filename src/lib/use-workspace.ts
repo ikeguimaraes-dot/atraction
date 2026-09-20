@@ -9,6 +9,7 @@ import type {
   Tenant,
   Role,
   Contact,
+  CustomerDocument,
   Supplier,
   FinanceEntry,
   Deal,
@@ -25,6 +26,8 @@ const collections: Collection[] = [
   "automations",
   "suppliers",
   "finance",
+  "contracts",
+  "documents",
 ];
 const storageKey = "atraction-demo-v1";
 export function useWorkspace() {
@@ -97,7 +100,15 @@ export function useWorkspace() {
     try {
       const saved = localStorage.getItem(storageKey);
       setState(
-        saved ? { suppliers: [], finance: [], ...JSON.parse(saved) } : demo(),
+        saved
+          ? {
+              contracts: [],
+              documents: [],
+              suppliers: [],
+              finance: [],
+              ...JSON.parse(saved),
+            }
+          : demo(),
       );
     } catch {
       setState(demo());
@@ -167,6 +178,21 @@ export function useWorkspace() {
       const exists = (state[c] as Row[]).some((r) => r.id === row.id);
       let result;
       switch (c) {
+        case "contracts":
+          throw new Error("Use a jornada para alterar contratos.");
+        case "documents":
+          result = exists
+            ? await db
+                .from("atraction_documents")
+                .update(row as CustomerDocument)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_documents")
+                .insert(row as CustomerDocument)
+                .select("id");
+          break;
         case "finance":
           result = exists
             ? await db
@@ -266,7 +292,7 @@ export function useWorkspace() {
   const write = async (c: Collection, row: Row) => {
     if (!state || busy || state.role === "viewer") return false;
     if (
-      ["finance", "suppliers"].includes(c) &&
+      ["finance", "suppliers", "contracts", "documents"].includes(c) &&
       !["owner", "manager"].includes(state.role)
     )
       return false;
@@ -377,7 +403,13 @@ export function useWorkspace() {
       return true;
     } catch (e) {
       notify(
-        (e as { code?: string }).code === "23505" ? pt.duplicate : pt.error,
+        (e as { code?: string }).code === "23505"
+          ? c === "contacts"
+            ? pt.duplicate
+            : c === "activities"
+              ? "Esse acompanhamento já tem uma tarefa pendente."
+              : "Esse registro já existe."
+          : pt.error,
       );
       return false;
     } finally {
@@ -387,7 +419,7 @@ export function useWorkspace() {
   const bulk = async (c: Collection, rows: Row[]) => {
     if (!state || busy || state.role === "viewer") return false;
     if (
-      ["finance", "suppliers"].includes(c) &&
+      ["finance", "suppliers", "contracts", "documents"].includes(c) &&
       !["owner", "manager"].includes(state.role)
     )
       return false;

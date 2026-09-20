@@ -3,6 +3,7 @@ import { ui } from "@/lib/pt-ui";
 import { useEffect, useMemo, useState } from "react";
 import {
   Home,
+  FileText,
   Wallet,
   Truck,
   Users,
@@ -65,6 +66,9 @@ import { supabase } from "@/lib/supabase";
 import { Avatar, Mascot, Empty, Modal, SectionTitle, CardLink } from "./ui";
 import { Auth } from "./auth";
 import { Clients, Finance, Suppliers, FinancialSummary } from "./management";
+import { Contracts } from "./contracts";
+import { CustomerHub } from "./customer-hub";
+import { Priorities, Retention, Attribution, CampaignLink } from "./growth";
 import { Team } from "./team";
 import { Assignment } from "./assignment";
 import {
@@ -77,15 +81,17 @@ import {
 const navigation = [
   { id: "today", label: pt.today, icon: Home },
   { id: "contacts", label: pt.contacts, icon: Users },
-  { id: "clients", label: "Clientes", icon: Heart },
-  { id: "finance", label: "Financeiro", icon: Wallet },
-  { id: "suppliers", label: "Fornecedores", icon: Truck },
   { id: "deals", label: pt.deals, icon: GitBranch },
   { id: "messages", label: pt.messages, icon: MessageCircle },
   { id: "calendar", label: pt.calendar, icon: CalendarDays },
   { id: "automations", label: pt.automations, icon: Bot },
   { id: "capture", label: pt.capture, icon: Magnet },
   { id: "results", label: pt.results, icon: BarChart3 },
+  { id: "clients", label: "Clientes", icon: Heart },
+  { id: "contracts", label: "Contratos", icon: FileText },
+  { id: "retention", label: "Pós-venda", icon: Heart },
+  { id: "finance", label: "Financeiro", icon: Wallet },
+  { id: "suppliers", label: "Fornecedores", icon: Truck },
 ];
 type View = (typeof navigation)[number]["id"] | "settings" | "trash";
 export function Workspace() {
@@ -98,6 +104,8 @@ export function Workspace() {
   const [filter, setFilter] = useState<string>(ui.todas);
   const [modal, setModal] = useState<string | null>(null);
   const [selected, setSelected] = useState<Contact | undefined>();
+  const [journeyDeal, setJourneyDeal] = useState<Deal>();
+  const [wonOffer, setWonOffer] = useState<Deal>();
   const [deal, setDeal] = useState<Deal | undefined>();
   const [robot, setRobot] = useState<Automation | undefined>();
   const [conversation, setConversation] = useState("");
@@ -148,6 +156,27 @@ export function Workspace() {
   const isDemo = s.tenant.id === "demo";
   const canWrite = s.role !== "viewer";
   const canManage = ["owner", "manager"].includes(s.role);
+  const openCustomer = (id: string) => {
+    const c = s.contacts.find((c) => c.id === id);
+    if (c) {
+      setSelected(c);
+      setModal("detail");
+    }
+  };
+  const writeDeal = async (d: Deal) => {
+    const was = s.deals.find((x) => x.id === d.id);
+    const ok = await w.write("deals", d);
+    if (
+      ok &&
+      d.stage === 4 &&
+      was?.stage !== 4 &&
+      canManage &&
+      !s.contracts.some((c) => c.deal_id === d.id)
+    )
+      setWonOffer(d);
+    return ok;
+  };
+
   const stats = metrics(s, period);
   const pending = activities
     .filter((a) => !a.done)
@@ -246,7 +275,8 @@ export function Workspace() {
           {navigation
             .filter(
               (item) =>
-                !["finance", "suppliers"].includes(item.id) || canManage,
+                !["finance", "suppliers", "contracts"].includes(item.id) ||
+                canManage,
             )
             .map((item) => (
               <button
@@ -358,6 +388,53 @@ export function Workspace() {
               </button>
             </div>
           )}
+          {wonOffer && canManage && (
+            <section className="card journey-offer">
+              <div>
+                <strong>Venda ganha. Vamos cuidar do próximo passo?</strong>
+                <p>
+                  Transforme {wonOffer.title} em contrato, contas a receber e
+                  pós-venda.
+                </p>
+              </div>
+              <button
+                className="primary"
+                onClick={() => {
+                  setJourneyDeal(wonOffer);
+                  setWonOffer(undefined);
+                  go("contracts");
+                }}
+              >
+                Continuar jornada
+              </button>
+              <button
+                className="text-button"
+                onClick={() => setWonOffer(undefined)}
+              >
+                Depois
+              </button>
+            </section>
+          )}
+          {view === "contracts" && canManage && (
+            <Contracts
+              key={journeyDeal?.id || "contracts"}
+              w={w}
+              initialDeal={journeyDeal}
+              onStarted={() => setJourneyDeal(undefined)}
+              onCustomer={openCustomer}
+              onFinance={(id) => {
+                setFinanceContact(id);
+                go("finance");
+              }}
+            />
+          )}
+          {view === "retention" && (
+            <Retention
+              w={w}
+              onCustomer={openCustomer}
+              onContracts={() => go("contracts")}
+            />
+          )}
           {view === "clients" && (
             <Clients
               w={w}
@@ -399,6 +476,14 @@ export function Workspace() {
                   })}
                 </div>
               </div>
+              <Priorities
+                w={w}
+                onCustomer={openCustomer}
+                onFinance={() => go("finance")}
+                onContracts={() => go("contracts")}
+                onDeals={() => go("deals")}
+                onAgenda={() => go("calendar")}
+              />
               <section className="welcome-card">
                 <div className="welcome-copy">
                   <span className="pill light">
@@ -836,7 +921,7 @@ export function Workspace() {
                         const d = deals.find(
                           (d) => d.id === e.dataTransfer.getData("text/plain"),
                         );
-                        if (d && canWrite) w.write("deals", { ...d, stage: i });
+                        if (d && canWrite) writeDeal({ ...d, stage: i });
                       }}
                     >
                       <header>
@@ -891,6 +976,19 @@ export function Workspace() {
                           <strong className="deal-value">
                             {money(d.value)}
                           </strong>
+                          {d.stage === 4 &&
+                            canManage &&
+                            !s.contracts.some((c) => c.deal_id === d.id) && (
+                              <button
+                                className="secondary"
+                                onClick={() => {
+                                  setJourneyDeal(d);
+                                  go("contracts");
+                                }}
+                              >
+                                Criar contrato e cobranças
+                              </button>
+                            )}
                           <div className="deal-footer">
                             <span>
                               <Clock size={12} />
@@ -914,7 +1012,7 @@ export function Workspace() {
                             value={d.stage}
                             disabled={!canWrite || w.busy}
                             onChange={(e) =>
-                              w.write("deals", {
+                              writeDeal({
                                 ...d,
                                 stage: Number(e.target.value),
                               })
@@ -1585,6 +1683,8 @@ export function Workspace() {
               </div>
             </>
           )}
+          {view === "capture" && <CampaignLink url={captureUrl} w={w} />}
+          {view === "results" && <Attribution w={w} />}
           {view === "results" && (
             <>
               <SectionTitle
@@ -1910,6 +2010,7 @@ export function Workspace() {
                     "automations",
                     "finance",
                     "suppliers",
+                    "documents",
                   ] as Collection[]
                 ).flatMap((c) =>
                   (s[c] as Row[])
@@ -1958,6 +2059,7 @@ export function Workspace() {
                     "automations",
                     "finance",
                     "suppliers",
+                    "documents",
                   ] as Collection[]
                 ).some((c) => s[c].some((r) => r.deleted_at)) && (
                   <Empty
@@ -2017,7 +2119,7 @@ export function Workspace() {
           deal={deal}
           state={s}
           base={w.base}
-          onSave={(r) => w.write("deals", r)}
+          onSave={writeDeal}
           onClose={() => setModal(null)}
         />
       )}
@@ -2181,59 +2283,7 @@ export function Workspace() {
                   : ui.sem_autorizacao_para_disparos}
               </span>
             </div>
-            <h3>{ui.a_historia_ate_aqui}</h3>
-            <div className="timeline">
-              {messages
-                .filter((m) => m.contact_id === selected.id)
-                .map((m) => (
-                  <div key={m.id}>
-                    <span className="timeline-dot" />
-                    <div>
-                      <strong>
-                        {m.direction === "note"
-                          ? ui.nota_da_equipe
-                          : m.direction === "in"
-                            ? ui.mensagem_recebida
-                            : ui.rascunho_preparado}
-                      </strong>
-                      <p>{m.body}</p>
-                      <small>
-                        {new Date(m.created_at).toLocaleString("pt-BR")}
-                      </small>
-                    </div>
-                  </div>
-                ))}
-              {deals
-                .filter((d) => d.contact_id === selected.id)
-                .map((d) => (
-                  <div key={d.id}>
-                    <span className="timeline-dot" />
-                    <div>
-                      <strong>{d.title}</strong>
-                      <p>
-                        {money(d.value)} {ui.text_7}
-                        {d.stage === -1
-                          ? ui.nao_foi_desta_vez
-                          : pack.stages[d.stage]}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              {activities
-                .filter((a) => a.contact_id === selected.id)
-                .map((a) => (
-                  <div key={a.id}>
-                    <span className="timeline-dot" />
-                    <div>
-                      <strong>{a.title}</strong>
-                      <p>
-                        {a.done ? ui.concluida : ui.planejada} {ui.text_7}
-                        {new Date(a.due_at).toLocaleString("pt-BR")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-            </div>
+            <CustomerHub w={w} id={selected.id} />
             <footer>
               <button
                 className="text-button danger"

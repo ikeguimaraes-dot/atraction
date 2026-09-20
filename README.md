@@ -23,10 +23,14 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 
 ## O que está implementado
 
-- Hoje com conversas esperando, tarefas e ganhos da semana.
+- Hoje com prioridades de retornos, contas, renovações e propostas paradas, além de conversas, tarefas e ganhos da semana.
 - Pessoas: cadastro, busca, etiquetas, anotações, telefone normalizado e deduplicação por conta.
 - Clientes: cadastro manual, ativos/inativos, documento, endereço e data de início, mantendo origem e histórico do contato.
 - Financeiro: receitas, custos/despesas, contas a pagar/receber, vencimentos, baixas manuais, reabertura e filtros por cliente/fornecedor/período. Valores em centavos; venda ganha não é recebimento de caixa.
+- Contratos e planos: venda vinculada, cobrança única/parcelada/mensal, prévia, geração atômica, reajuste, cancelamento e renovação.
+- Pós-venda: intervalos de relacionamento, satisfação, agendamento de retornos e pedidos de indicação.
+- Ficha completa: linha do tempo e documentos privados (PDF/PNG/JPEG, 5 MB, 20 arquivos/espaço).
+- Campanhas: links UTM, atribuição na captação e relatório de contatos, conversão e recebimentos por origem/campanha.
 - Fornecedores: cadastro, edição, arquivo e totais vinculados. Financeiro e fornecedores exclusivos de dono/gestor, incluindo auditoria.
 - Importação CSV com prévia e erros por linha. Escrita atômica e reversão da importação.
 - Negócios em quadro arrastável, com alternativa por seletor no celular, valores e motivo de perda.
@@ -45,7 +49,7 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 
 As migrações estão em `supabase/migrations`. O projeto informado já hospedava outros sistemas; por isso o Atraction usa tabelas com prefixo `atraction_` e funções internas no schema `atraction_private`. Não substitui tabelas, políticas ou funções dos demais produtos.
 
-As seis migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
+As sete migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
 
 Antes de testar confirmação de e-mail em uma nova origem, adicione a origem aos Redirect URLs do Supabase Auth, preservando os endereços dos outros sistemas. Não alteramos a configuração global de e-mail/Auth do projeto compartilhado.
 
@@ -58,6 +62,8 @@ npm run build
 # Com o servidor rodando na porta 3001:
 npm run test:e2e
 ```
+
+`tests/journey-security.sql` valida contratos, idempotência, calendários, reajuste, renovação, cancelamento, arquivos privados e atribuição, com rollback.
 
 `tests/finance-security.sql` valida isolamento financeiro, papéis, MFA, integridade de vínculos, baixas e auditoria; também termina com rollback.
 

@@ -1,5 +1,7 @@
 import type {
   Contact,
+  Contract,
+  CustomerDocument,
   Supplier,
   FinanceEntry,
   Deal,
@@ -26,6 +28,8 @@ export type Database = {
       }>;
       atraction_suppliers: Table<Supplier>;
       atraction_finance: Table<FinanceEntry>;
+      atraction_contracts: Table<Contract>;
+      atraction_documents: Table<CustomerDocument>;
       atraction_contacts: Table<Contact>;
       atraction_deals: Table<Deal>;
       atraction_activities: Table<Activity>;
@@ -45,6 +49,29 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      atraction_create_contract: {
+        Args: { p: Record<string, unknown> };
+        Returns: string;
+      };
+      atraction_contract_action: {
+        Args: {
+          contract: string;
+          action: string;
+          amount: number;
+          effective: string;
+        };
+        Returns: undefined;
+      };
+      atraction_capture_attributed: {
+        Args: {
+          slug: string;
+          person_name: string;
+          person_phone: string;
+          accepted: boolean;
+          attribution: Record<string, string>;
+        };
+        Returns: boolean;
+      };
       atraction_undo_import: {
         Args: { p_tenant: string; ids: string[] };
         Returns: number;

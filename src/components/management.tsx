@@ -770,6 +770,7 @@ function EntryForm({
               Cliente ou pessoa
               <select
                 value={data.contact_id || ""}
+                disabled={!!data.contract_id}
                 onChange={(e) =>
                   setData({ ...data, contact_id: e.target.value || null })
                 }

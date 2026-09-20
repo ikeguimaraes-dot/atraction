@@ -10,6 +10,12 @@ export type Base = {
   is_example: boolean;
 };
 export type Contact = Base & {
+  campaign?: string;
+  medium?: string;
+  referred_by?: string;
+  last_contact_at?: string | null;
+  retention_days?: number;
+  satisfaction?: number | null;
   lifecycle?: "prospect" | "customer" | "inactive";
   customer_since?: string | null;
   document?: string;
@@ -31,6 +37,7 @@ export type Deal = Base & {
   loss_reason: string;
 };
 export type Activity = Base & {
+  purpose?: "onboarding" | "followup" | "renewal" | "referral" | null;
   contact_id: string | null;
   title: string;
   due_at: string;
@@ -91,6 +98,8 @@ export type Supplier = Base & {
   notes: string;
 };
 export type FinanceEntry = Base & {
+  contract_id?: string | null;
+  installment?: number | null;
   title: string;
   direction: "income" | "expense";
   amount_cents: number;
@@ -101,9 +110,34 @@ export type FinanceEntry = Base & {
   supplier_id: string | null;
   notes: string;
 };
+export type Contract = Base & {
+  contact_id: string;
+  deal_id: string | null;
+  renews_id: string | null;
+  title: string;
+  plan: string;
+  mode: "once" | "installments" | "monthly";
+  amount_cents: number;
+  periods: number;
+  start_date: string;
+  first_due_date: string;
+  end_date: string;
+  status: "active" | "cancelled";
+  notes: string;
+};
+export type CustomerDocument = Base & {
+  contact_id: string;
+  name: string;
+  path: string;
+  mime_type: string;
+  size: number;
+  demo_data?: string;
+};
 export type State = {
   tenant: Tenant;
   role: Role;
+  contracts: Contract[];
+  documents: CustomerDocument[];
   contacts: Contact[];
   suppliers: Supplier[];
   finance: FinanceEntry[];
@@ -120,7 +154,9 @@ export type Collection =
   | "messages"
   | "automations"
   | "suppliers"
-  | "finance";
+  | "finance"
+  | "contracts"
+  | "documents";
 export type Row =
   | Contact
   | Deal
@@ -128,4 +164,6 @@ export type Row =
   | Message
   | Automation
   | Supplier
-  | FinanceEntry;
+  | FinanceEntry
+  | Contract
+  | CustomerDocument;

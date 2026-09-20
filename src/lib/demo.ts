@@ -138,6 +138,8 @@ export function demo(niche: Niche = "estetica"): State {
       animations: true,
     },
     role: "owner",
+    contracts: [],
+    documents: [],
     suppliers: [],
     finance: [],
     contacts,

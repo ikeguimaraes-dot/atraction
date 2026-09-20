@@ -12,3 +12,12 @@
 - Sessões e usuários do Supabase são compartilhados com aplicativos preexistentes no mesmo projeto. O Atraction não modificou suas políticas, tabelas ou configuração global de Auth.
 
 Os testes SQL fazem ROLLBACK. Não executar rotinas de reset/migração geral do Supabase em um projeto compartilhado. Para manutenção futura, escopar nomes `atraction_*` e revisar as migrações antes de aplicar.
+
+
+## Contratos e documentos
+
+Contratos só podem ser criados/alterados pelas RPCs transacionais da jornada. Funções privilegiadas ficam em `atraction_private`, verificam `auth.uid()` e papel com MFA, usam `search_path` vazio e concessões explícitas. Chaves únicas impedem cobranças repetidas e contratos duplicados por venda/renovação. Contas de contrato não podem ser reassociadas a outro cliente.
+
+Bucket `atraction-documents` privado: políticas exigem metadados visíveis pela RLS, uploads do proprietário do registro, sem upsert ou acesso público. Limites de 5 MB/arquivo e 20 arquivos/espaço protegem o consumo máximo de armazenamento do módulo. Metadados, quotas e auditoria incluem arquivos arquivados. Não alterar políticas/buckets dos outros aplicativos do projeto compartilhado.
+
+Atendentes e leitores não leem contratos, documentos, financeiro ou seus eventos. Metadados UTM públicos são limitados em tamanho e nunca tratados como instruções ou HTML; repetições preservam a atribuição e o consentimento existentes.

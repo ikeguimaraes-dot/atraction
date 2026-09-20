@@ -61,12 +61,25 @@ export function CapturePage({ slug }: { slug: string }) {
                 setBusy(true);
                 try {
                   const normalized = phone(String(f.get("phone")));
-                  const { error } = await supabase().rpc("atraction_capture", {
-                    slug,
-                    person_name: String(f.get("name")),
-                    person_phone: normalized,
-                    accepted: true,
-                  });
+                  const { error } = await supabase().rpc(
+                    "atraction_capture_attributed",
+                    {
+                      slug,
+                      person_name: String(f.get("name")),
+                      person_phone: normalized,
+                      accepted: true,
+                      attribution: Object.fromEntries(
+                        ["utm_source", "utm_campaign", "utm_medium", "ref"].map(
+                          (key) => [
+                            key,
+                            new URLSearchParams(window.location.search).get(
+                              key,
+                            ) || "",
+                          ],
+                        ),
+                      ),
+                    },
+                  );
                   if (error) throw error;
                   setDone(true);
                 } catch {
