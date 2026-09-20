@@ -1,4 +1,5 @@
 "use client";
+import { remaining } from "@/lib/payments";
 import { upcomingBirthdays } from "@/lib/segments";
 import { useState } from "react";
 import { ArrowRight, Heart, Copy } from "lucide-react";
@@ -62,7 +63,7 @@ export function Priorities({
       ? overdue.slice(0, 3).map((f) => ({
           id: f.id,
           title: `${f.direction === "income" ? "Recebimento" : "Pagamento"} atrasado: ${f.title}`,
-          detail: money(f.amount_cents / 100),
+          detail: money(remaining(f) / 100),
           action: f.contact_id ? () => onCustomer(f.contact_id!) : onFinance,
         }))
       : []),
@@ -96,7 +97,7 @@ export function Priorities({
       ? dueSoon.slice(0, 2).map((f) => ({
           id: f.id,
           title: `Vence nesta semana: ${f.title}`,
-          detail: money(f.amount_cents / 100),
+          detail: money(remaining(f) / 100),
           action: onFinance,
         }))
       : []),

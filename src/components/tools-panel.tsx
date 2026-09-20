@@ -34,6 +34,7 @@ export function ToolsPanel({
   const manage = ["owner", "manager"].includes(s.role);
   const owner = s.role === "owner";
   const [tab, setTab] = useState("segments");
+  const [segmentRule, setSegmentRule] = useState("all");
   const [modal, setModal] = useState<string | null>(null);
   const [selected, setSelected] = useState("");
   const [source, setSource] = useState("");
@@ -538,7 +539,7 @@ export function ToolsPanel({
                     ...w.base(),
                     name,
                     rule: String(f.get("rule")),
-                    value: String(f.get("value")),
+                    value: String(f.get("value") || ""),
                   };
                   if (await w.write("segments", row)) {
                     setSelected(row.id);
@@ -600,13 +601,15 @@ export function ToolsPanel({
               <>
                 <label>
                   Filtro
-                  <select name="rule">
+                  <select
+                    name="rule"
+                    value={segmentRule}
+                    onChange={(e) => setSegmentRule(e.target.value)}
+                  >
                     <option value="all">Todas as pessoas</option>
                     <option value="source">Origem contém</option>
                     <option value="tag">Possui etiqueta</option>
-                    <option value="lifecycle">
-                      Relacionamento (prospect, customer ou inactive)
-                    </option>
+                    <option value="lifecycle">Relacionamento</option>
                     {manage && (
                       <>
                         <option value="overdue">Clientes inadimplentes</option>
@@ -617,14 +620,30 @@ export function ToolsPanel({
                     )}
                   </select>
                 </label>
-                <label>
-                  Valor do filtro
-                  <input
-                    name="value"
-                    maxLength={200}
-                    placeholder="Ex.: Instagram, VIP ou customer"
-                  />
-                </label>
+                {segmentRule === "lifecycle" ? (
+                  <label>
+                    Relacionamento
+                    <select name="value">
+                      <option value="prospect">Interessado</option>
+                      <option value="customer">Cliente ativo</option>
+                      <option value="inactive">Cliente inativo</option>
+                    </select>
+                  </label>
+                ) : ["source", "tag"].includes(segmentRule) ? (
+                  <label>
+                    {segmentRule === "source"
+                      ? "Nome da origem"
+                      : "Nome da etiqueta"}
+                    <input
+                      name="value"
+                      required
+                      maxLength={200}
+                      placeholder={
+                        segmentRule === "source" ? "Ex.: Instagram" : "Ex.: VIP"
+                      }
+                    />
+                  </label>
+                ) : null}
               </>
             )}
             {modal === "pipeline" &&

@@ -245,7 +245,7 @@ export function Contracts({
               </>
             ) : (
               <p>
-                O contrato será cancelado agora. Cobranças ainda não pagas com
+                O contrato será cancelado agora. Cobranças sem nenhuma baixa com
                 vencimento de hoje em diante irão para a lixeira. Dívidas
                 anteriores e pagamentos realizados permanecem no histórico.
               </p>
