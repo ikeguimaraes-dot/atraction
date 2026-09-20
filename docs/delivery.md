@@ -36,13 +36,13 @@ Validação desta expansão: testes unitários de centavos, calendários, atribu
 | Disparos | Não implementados. Não existe caminho de envio em massa ou envio cobrado. |
 | Aquisição/prospecção | Página de captação e QR implementados. Não há raspagem, compra de listas, Places/Ads nem rede de indicação. |
 | Robôs | Criam tarefas, com fila a cada minuto e até 100 execuções por ciclo. Uma execução por pessoa/robô; reativação não repete trabalhos já concluídos. Não enviam mensagens. Demonstração mostra configuração; execução real ocorre no banco. |
-| Arquivos | Importação CSV de até 10.000 linhas/5 MB. Documentos privados PDF/PNG/JPEG na ficha. Importação direta de agenda, XLSX e áudio ainda não implementada. |
-| Equipe | Até 10 membros, convite por link entregue manualmente. Cada usuário opera um espaço. Sem painel de troca de papel/remoção de membro nesta interface inicial. |
-| Atualização entre atendentes | Consulta a cada 30 s e ao voltar à janela. Não é entrega Realtime em 5 s. |
+| Arquivos | Importação CSV/XLSX de até 10.000 linhas/5 MB, primeira aba, prévia e validação. PDF a partir de modelos editáveis. Documentos privados PDF/PNG/JPEG na ficha. Agenda externa e áudio não integrados. |
+| Equipe | Até 10 membros, convite por link entregue manualmente. Cada usuário opera um espaço. Dono altera papéis e remove acessos, com reatribuição ao dono para remoção ou leitura. |
+| Atualização entre atendentes | Consulta a cada 30 s e ao voltar à janela. O chat usa consulta a cada 5 s enquanto a caixa/página está visível. |
 | Escala | Leitura paginada até 50.000 itens por coleção no cliente. Ainda precisa de consultas/indicadores agregados no servidor e testes de carga antes de operar nesse volume. |
 | Celular | Web responsiva com manifesto instalável. Não há aplicativo nativo nem operação offline de dados reais. |
 | Lixeira | Restauração bloqueada após 30 dias. A remoção física e retenção legal não são automatizadas nesta versão. |
-| Empresas, grupos e campos extras | Fora do núcleo implementado nesta entrega. |
+| Personalização | Campos texto/número/data, segmentos dinâmicos e múltiplos funis de cinco etapas (última ganha). Cadastro separado de empresas e grupos hierárquicos não implementados. |
 | Cobrança da assinatura Atraction | Não implementada. O financeiro operacional é do negócio do cliente; não processa cobrança da assinatura SaaS. |
 
 ## Antes de uma operação comercial
@@ -61,3 +61,18 @@ Validação desta expansão: testes unitários de centavos, calendários, atribu
 - [Supabase Cron](https://supabase.com/docs/guides/cron/quickstart)
 - [Supabase changelog](https://supabase.com/changelog)
 - [Next.js: Server e Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components)
+
+
+## Expansão operacional de 20/09/2026
+
+Todas as etapas autorizadas foram implementadas: segmentos por origem/etiqueta/relacionamento/inadimplência/renovação, Excel, exportação financeira, baixas parciais e estornos, gestão de equipe, aniversários, modelos PDF, caixa/bancos/transferências, funis/campos, mesclagem, chat nativo e DRE de caixa.
+
+- **Financeiro:** cada baixa tem data, valor, conta opcional e identificador idempotente. Reajuste/cancelamento preservam parcelas com qualquer baixa. Saldos consideram a data inicial; transferências não são receita nem despesa. Não executa movimentações bancárias. A DRE é gerencial pelo regime de caixa, sem contabilidade fiscal ou emissão de nota.
+- **Chat:** visitante inicia na página de captação ativa; equipe responde em Conversas. A sessão usa token aleatório com hash privado e validade de sete dias. Um novo visitante com o mesmo telefone nunca obtém conversas anteriores. Nome/telefone não são verificados. Limites: 30 sessões/hora/conta, 5 mensagens recebidas/minuto/sessão, 200 mensagens por sessão para novos envios do visitante e 500 mensagens/hora/conta. A caixa lista as 100 sessões mais recentes. Histórico anterior continua na ficha. Não há WhatsApp, e-mail, push ou atendimento automático.
+- **Documentos:** modelos editáveis de proposta e registro contratual, geração local de PDF com dados escolhidos. Não inclui assinatura eletrônica nem envio ao cliente. Caracteres sem suporte na fonte são substituídos por `?`; português e acentos usuais são suportados.
+- **Mesclagem:** somente dono/gestor, mesma conta, prévia e confirmação. Move vínculos e reúne notas/etiquetas/campos. Dados principais do destino prevalecem; origem arquivada preserva o registro anterior e não pode ser restaurada isoladamente. Sem desfazer automático.
+- **Lembretes:** aniversários são sugestões internas nos próximos sete dias; não há disparo externo.
+
+Validação: testes de navegador desktop/360 px incluindo Excel real, PDF, segmentos, campos, funil, transferências, mesclagem e chat; testes unitários de valores/DRE/datas/PDF; quatro suítes SQL transacionais com rollback. A interface de atendimento foi exercitada com fixtures de demonstração e o transporte público do chat com respostas simuladas no navegador; permissões e RPCs reais foram verificadas no Supabase. Login humano, e-mail de confirmação e entrega simultânea entre dois usuários reais não foram exercitados nesta rodada.
+
+Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua sujeito aos planos existentes.

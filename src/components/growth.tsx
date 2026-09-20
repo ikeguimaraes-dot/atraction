@@ -1,4 +1,5 @@
 "use client";
+import { upcomingBirthdays } from "@/lib/segments";
 import { useState } from "react";
 import { ArrowRight, Heart, Copy } from "lucide-react";
 import type { useWorkspace } from "@/lib/use-workspace";
@@ -51,6 +52,12 @@ export function Priorities({
     (a) => !a.done && a.due_at < new Date().toISOString(),
   );
   const items = [
+    ...upcomingBirthdays(s).map((x) => ({
+      id: "birthday-" + x.contact.id,
+      title: "Aniversário: " + x.contact.name,
+      detail: x.date.split("-").reverse().join("/"),
+      action: () => onCustomer(x.contact.id),
+    })),
     ...(manage
       ? overdue.slice(0, 3).map((f) => ({
           id: f.id,

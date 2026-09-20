@@ -1,5 +1,10 @@
 import type {
   Contact,
+  Account,
+  Transfer,
+  Segment,
+  ChatSession,
+  ChatMessage,
   Contract,
   CustomerDocument,
   Supplier,
@@ -20,6 +25,11 @@ type Table<T> = {
 export type Database = {
   public: {
     Tables: {
+      atraction_accounts: Table<Account>;
+      atraction_transfers: Table<Transfer>;
+      atraction_segments: Table<Segment>;
+      atraction_chat_sessions: Table<ChatSession>;
+      atraction_chat_messages: Table<ChatMessage>;
       atraction_tenants: Table<Tenant>;
       atraction_members: Table<{
         tenant_id: string;
@@ -49,6 +59,55 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      atraction_record_payment: {
+        Args: {
+          entry: string;
+          amount: number;
+          paid_on: string;
+          account: string | null;
+          request_id: string;
+          reverse_id?: string | null;
+        };
+        Returns: undefined;
+      };
+      atraction_member_role: {
+        Args: { tenant: string; member: string; new_role: string };
+        Returns: undefined;
+      };
+      atraction_merge_contacts: {
+        Args: { source_id: string; target_id: string };
+        Returns: undefined;
+      };
+      atraction_chat_start: {
+        Args: {
+          slug: string;
+          person_name: string;
+          person_phone: string;
+          accepted: boolean;
+        };
+        Returns: { id: string; token: string };
+      };
+      atraction_chat_poll: {
+        Args: { session: string; token: string };
+        Returns: {
+          closed: boolean;
+          messages: {
+            id: string;
+            body: string;
+            direction: string;
+            created_at: string;
+          }[];
+        };
+      };
+      atraction_chat_send: {
+        Args: {
+          session: string;
+          token: string;
+          body: string;
+          request_id: string;
+        };
+        Returns: undefined;
+      };
       atraction_create_contract: {
         Args: { p: Record<string, unknown> };
         Returns: string;

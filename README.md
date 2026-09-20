@@ -32,24 +32,29 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 - Ficha completa: linha do tempo e documentos privados (PDF/PNG/JPEG, 5 MB, 20 arquivos/espaço).
 - Campanhas: links UTM, atribuição na captação e relatório de contatos, conversão e recebimentos por origem/campanha.
 - Fornecedores: cadastro, edição, arquivo e totais vinculados. Financeiro e fornecedores exclusivos de dono/gestor, incluindo auditoria.
-- Importação CSV com prévia e erros por linha. Escrita atômica e reversão da importação.
+- Importação CSV e Excel XLSX com prévia e erros por linha. Escrita atômica e reversão da importação.
 - Negócios em quadro arrastável, com alternativa por seletor no celular, valores e motivo de perda.
-- Caixa de conversas para exemplos, rascunhos e notas internas. **Sem envio ou recebimento real de WhatsApp.**
+- Chat próprio na página pública, com mensagens reais em Conversas; rascunhos e notas internas em área separada. **Sem integração com WhatsApp.**
 - Agenda, tarefas, conclusão e reabertura.
 - Robôs de três blocos que criam tarefas; execução no Postgres a cada minuto com idempotência.
 - Página de captação, link e QR; consentimento expresso e limite de 30 cadastros por hora por conta.
 - Indicadores por eventos, com correção ao desfazer conquista ou alterar o valor.
 - Conta com autenticação Supabase e TOTP obrigatório para dono e gerente.
-- Convite de equipe por link, limitado ao e-mail convidado; quatro papéis e atribuição de pessoas.
+- Convite de equipe por link, limitado ao e-mail convidado; quatro papéis, alteração/remoção de acesso e reatribuição automática ao dono.
 - Lixeira com restauração por 30 dias e desfazer por 10 segundos nas alterações operacionais.
 - Pacotes de estética, academia e pet shop, copiados para a conta na criação.
 - Registro imutável de alterações e de consentimentos, auditoria de exportações.
+
+- Ferramentas: segmentos dinâmicos, funis personalizados, campos extras e mesclagem de pessoas com prévia.
+- Propostas e contratos em PDF, com modelos editáveis e preenchimento pelos cadastros.
+- Baixas parciais/estornos, contas de caixa/banco, saldos iniciais, transferências internas registradas, exportação CSV e DRE de caixa.
+- Aniversários nos próximos sete dias aparecem nas prioridades internas.
 
 ## Banco
 
 As migrações estão em `supabase/migrations`. O projeto informado já hospedava outros sistemas; por isso o Atraction usa tabelas com prefixo `atraction_` e funções internas no schema `atraction_private`. Não substitui tabelas, políticas ou funções dos demais produtos.
 
-As sete migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
+As nove migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
 
 Antes de testar confirmação de e-mail em uma nova origem, adicione a origem aos Redirect URLs do Supabase Auth, preservando os endereços dos outros sistemas. Não alteramos a configuração global de e-mail/Auth do projeto compartilhado.
 
@@ -62,6 +67,8 @@ npm run build
 # Com o servidor rodando na porta 3001:
 npm run test:e2e
 ```
+
+`tests/operations-security.sql` valida pagamentos parciais, estornos, idempotência, mesclagem, gestão de membros e chat público com isolamento por token, sempre com rollback.
 
 `tests/journey-security.sql` valida contratos, idempotência, calendários, reajuste, renovação, cancelamento, arquivos privados e atribuição, com rollback.
 

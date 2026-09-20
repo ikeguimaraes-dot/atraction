@@ -4,6 +4,7 @@ import type { Contact, CustomerDocument, Activity } from "@/lib/types";
 import type { useWorkspace } from "@/lib/use-workspace";
 import { supabase } from "@/lib/supabase";
 import { alive, money } from "@/lib/domain";
+import { payments, remaining } from "@/lib/payments";
 import { today } from "@/lib/finance";
 import { lastContact, addDays } from "@/lib/journey";
 import { accountPack } from "@/data/niches";
@@ -66,6 +67,21 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
       title: "Primeiro cadastro",
       body: `${c.source}${c.campaign ? ` · Campanha: ${c.campaign}` : ""}${c.referred_by ? ` · Indicação: ${c.referred_by}` : ""}`,
     },
+    ...s.chat_messages
+      .filter((m) =>
+        s.chat_sessions.some(
+          (x) => x.id === m.session_id && x.contact_id === id,
+        ),
+      )
+      .map((m) => ({
+        id: m.id,
+        date: m.created_at,
+        title:
+          m.direction === "in"
+            ? "Chat do site: recebida"
+            : "Chat do site: enviada",
+        body: m.body,
+      })),
     ...alive(s.messages)
       .filter((m) => m.contact_id === id)
       .map((m) => ({
@@ -87,7 +103,7 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
         id: d.id,
         date: d.updated_at,
         title: `Negócio: ${d.title}`,
-        body: `${money(d.value)} · ${d.stage === -1 ? "Perdido" : accountPack(s.tenant).stages[d.stage]}`,
+        body: `${money(d.value)} · ${d.stage === -1 ? "Perdido" : (s.tenant.settings?.pipelines?.find((p) => p.id === d.pipeline_id)?.stages || accountPack(s.tenant).stages)[d.stage]}`,
       })),
     ...alive(s.activities)
       .filter((a) => a.contact_id === id)
@@ -116,12 +132,20 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
     ...(manage
       ? alive(s.finance)
           .filter((x) => x.contact_id === id)
-          .map((x) => ({
-            id: x.id,
-            date: x.settled_date ? x.settled_date + "T12:00:00Z" : x.created_at,
-            title: `${x.settled_date ? "Recebimento" : "Conta a receber"}: ${x.title}`,
-            body: `${money(x.amount_cents / 100)} · ${x.settled_date ? "Recebido" : "Vence " + x.due_date.split("-").reverse().join("/")}`,
-          }))
+          .flatMap((x) => [
+            {
+              id: x.id,
+              date: x.created_at,
+              title: `${x.direction === "income" ? "Conta a receber" : "Conta a pagar"}: ${x.title}`,
+              body: `${money(x.amount_cents / 100)} · Restante: ${money(remaining(x) / 100)}`,
+            },
+            ...payments(x).map((p) => ({
+              id: p.id,
+              date: p.date + "T12:00:00Z",
+              title: `${x.direction === "income" ? "Recebimento" : "Pagamento"}: ${x.title}`,
+              body: money(p.amount_cents / 100),
+            })),
+          ])
       : []),
     ...(manage
       ? alive(s.documents)
@@ -244,6 +268,21 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
   }
   return (
     <section className="customer-hub">
+      {(c.birthday || s.tenant.settings?.fields?.length) && (
+        <div className="management-hint">
+          {c.birthday && (
+            <p>Aniversário: {c.birthday.split("-").reverse().join("/")}</p>
+          )}
+          {(s.tenant.settings?.fields || []).map((f) =>
+            c.custom_data?.[f.id] ? (
+              <p key={f.id}>
+                {f.label}: {c.custom_data[f.id]}
+              </p>
+            ) : null,
+          )}
+        </div>
+      )}
+
       <div className="management-actions hub-tabs">
         <button
           className={tab === "history" ? "primary" : "secondary"}

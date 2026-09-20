@@ -1,4 +1,5 @@
 "use client";
+import { PublicChat } from "./site-chat";
 import { ui } from "@/lib/pt-ui";
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
@@ -140,6 +141,7 @@ export function CapturePage({ slug }: { slug: string }) {
         )}
         <div className="public-brand">{ui.feito_com_no_atraction}</div>
       </section>
+      {info && <PublicChat slug={slug} />}
     </main>
   );
 }

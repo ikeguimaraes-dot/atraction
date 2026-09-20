@@ -1,5 +1,6 @@
 import type { State, Contract, FinanceEntry, Contact } from "./types";
 import { base } from "./demo";
+import { payments, inPeriod } from "./payments";
 import { today } from "./finance";
 export function addMonths(date: string, months: number) {
   const [y, m, d] = date.split("-").map(Number);
@@ -39,6 +40,13 @@ export function lastContact(s: State, c: Contact) {
     ...s.activities
       .filter((a) => !a.deleted_at && a.done && a.contact_id === c.id)
       .map((a) => a.updated_at),
+    ...s.chat_messages
+      .filter((m) =>
+        s.chat_sessions.some(
+          (x) => x.id === m.session_id && x.contact_id === c.id,
+        ),
+      )
+      .map((m) => m.created_at),
     ...s.messages
       .filter(
         (m) =>
@@ -93,14 +101,11 @@ export function sourceResults(s: State, from: string, to: string) {
     g.received += s.finance
       .filter(
         (f) =>
-          !f.deleted_at &&
-          f.contact_id === c.id &&
-          f.direction === "income" &&
-          f.settled_date &&
-          f.settled_date >= from &&
-          f.settled_date <= to,
+          !f.deleted_at && f.contact_id === c.id && f.direction === "income",
       )
-      .reduce((n, f) => n + f.amount_cents, 0);
+      .flatMap(payments)
+      .filter((p) => inPeriod(p.date, from, to))
+      .reduce((n, p) => n + p.amount_cents, 0);
     if (g.leads || g.received) groups.set(key, g);
   }
   return [...groups.values()].sort(

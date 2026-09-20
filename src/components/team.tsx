@@ -19,6 +19,10 @@ export function Team({
   state: State;
   notify: (s: string) => void;
 }) {
+  const [change, setChange] = useState<{
+    member: TeamMember;
+    role: string;
+  } | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [open, setOpen] = useState(false);
   const [link, setLink] = useState("");
@@ -49,7 +53,22 @@ export function Team({
                 <strong>{m.email}</strong>
                 <small>{labels[m.role]}</small>
               </span>
-              <ShieldCheck size={16} />
+              {state.role === "owner" && m.role !== "owner" ? (
+                <select
+                  aria-label={"Permissão de " + m.email}
+                  value={m.role}
+                  onChange={(e) =>
+                    setChange({ member: m, role: e.target.value })
+                  }
+                >
+                  <option value="manager">Gerente</option>
+                  <option value="agent">Atendente</option>
+                  <option value="viewer">Somente leitura</option>
+                  <option value="remove">Remover acesso</option>
+                </select>
+              ) : (
+                <ShieldCheck size={16} />
+              )}
             </div>
           ))}
           {state.role === "owner" && (
@@ -65,6 +84,55 @@ export function Team({
             </button>
           )}
         </>
+      )}
+      {change && (
+        <Modal title="Alterar acesso da equipe" onClose={() => setChange(null)}>
+          <div className="form">
+            <p>
+              {change.member.email}:{" "}
+              {change.role === "remove"
+                ? "remover acesso"
+                : labels[change.role]}
+              .
+            </p>
+            <p>
+              Ao remover ou limitar à leitura, os contatos e tarefas atribuídos
+              passam ao dono da conta.
+            </p>
+            <button
+              className="primary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const { error } = await supabase().rpc(
+                  "atraction_member_role",
+                  {
+                    tenant: state.tenant.id,
+                    member: change.member.user_id,
+                    new_role: change.role,
+                  },
+                );
+                if (error) notify("Não foi possível alterar o acesso.");
+                else {
+                  setMembers((ms) =>
+                    change.role === "remove"
+                      ? ms.filter((m) => m.user_id !== change.member.user_id)
+                      : ms.map((m) =>
+                          m.user_id === change.member.user_id
+                            ? { ...m, role: change.role }
+                            : m,
+                        ),
+                  );
+                  setChange(null);
+                  notify("Acesso atualizado.");
+                }
+                setBusy(false);
+              }}
+            >
+              Confirmar alteração
+            </button>
+          </div>
+        </Modal>
       )}
       {open && (
         <Modal

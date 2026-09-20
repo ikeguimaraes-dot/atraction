@@ -1,4 +1,5 @@
 "use client";
+import { spreadsheetText } from "@/lib/files";
 import { ui } from "@/lib/pt-ui";
 import { useState } from "react";
 import { Upload, Check, FileSpreadsheet } from "lucide-react";
@@ -10,17 +11,20 @@ import type {
   Activity,
   State,
   Base,
+  Tenant,
   Automation,
 } from "@/lib/types";
 import { today } from "@/lib/finance";
 import { niches, accountPack } from "@/data/niches";
 export function ContactForm({
+  tenant,
   customer = false,
   contact,
   base,
   onSave,
   onClose,
 }: {
+  tenant?: Tenant;
   contact?: Contact;
   customer?: boolean;
   base: () => Base;
@@ -72,6 +76,36 @@ export function ContactForm({
           }
         }}
       >
+        <label>
+          Aniversário
+          <input
+            type="date"
+            max={today()}
+            value={data.birthday || ""}
+            onChange={(e) =>
+              setData({ ...data, birthday: e.target.value || null })
+            }
+          />
+        </label>
+        {(tenant?.settings?.fields || []).map((field) => (
+          <label key={field.id}>
+            {field.label}
+            <input
+              type={field.type}
+              value={data.custom_data?.[field.id] || ""}
+              maxLength={1000}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  custom_data: {
+                    ...data.custom_data,
+                    [field.id]: e.target.value,
+                  },
+                })
+              }
+            />
+          </label>
+        ))}
         <p>{ui.so_precisamos_de_nome_e_telefone_o_resto_pode_ficar_par}</p>
         <div className="form-grid">
           <label>
@@ -305,12 +339,14 @@ export function ContactForm({
   );
 }
 export function DealForm({
+  pipelineId = "main",
   deal,
   state,
   base,
   onSave,
   onClose,
 }: {
+  pipelineId?: string;
   deal?: Deal;
   state: State;
   base: () => Base;
@@ -320,6 +356,7 @@ export function DealForm({
   const [data, setData] = useState(
     deal || {
       ...base(),
+      pipeline_id: pipelineId,
       contact_id: alive(state.contacts)[0]?.id || "",
       title: accountPack(state.tenant).service,
       value: 0,
@@ -342,6 +379,20 @@ export function DealForm({
           setBusy(false);
         }}
       >
+        <label>
+          Funil
+          <select
+            value={data.pipeline_id || "main"}
+            onChange={(e) => setData({ ...data, pipeline_id: e.target.value })}
+          >
+            <option value="main">Principal</option>
+            {(state.tenant.settings?.pipelines || []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label>
           {ui.pessoa}
           <select
@@ -387,7 +438,11 @@ export function DealForm({
                 setData({ ...data, stage: Number(e.target.value) })
               }
             >
-              {accountPack(state.tenant).stages.map((s, i) => (
+              {(
+                state.tenant.settings?.pipelines?.find(
+                  (p) => p.id === data.pipeline_id,
+                )?.stages || accountPack(state.tenant).stages
+              ).map((s, i) => (
                 <option value={i} key={s}>
                   {s}
                 </option>
@@ -527,18 +582,18 @@ export function ImportForm({
     <Modal title={ui.suas_pessoas_todas_aqui} onClose={onClose} wide>
       <div className="form">
         <p>
-          {ui.importe_um_arquivo_csv_da_sua_planilha_com_as_colunas}
+          Importe CSV ou a primeira aba de um Excel (.xlsx), com as colunas
           <strong>{ui.nome_2}</strong> {ui.e}
           <strong>{ui.telefone}</strong>
           {ui.e_mail_e_origem_sao_opcionais}
         </p>
         <label className="upload-zone">
           <Upload />
-          <strong>{ui.escolher_planilha_csv}</strong>
+          <strong>Escolher CSV ou Excel (.xlsx)</strong>
           <span>{ui.ate_10_000_pessoas_maximo_de_5_mb}</span>
           <input
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (f) {
@@ -549,7 +604,16 @@ export function ImportForm({
                   });
                   return;
                 }
-                setPreview(parseContacts(await f.text(), state.contacts));
+                setBusy(true);
+                try {
+                  setPreview(
+                    parseContacts(await spreadsheetText(f), state.contacts),
+                  );
+                } catch (err) {
+                  setPreview({ rows: [], errors: [(err as Error).message] });
+                } finally {
+                  setBusy(false);
+                }
               }
             }}
           />

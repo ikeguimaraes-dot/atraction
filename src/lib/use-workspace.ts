@@ -1,4 +1,5 @@
 "use client";
+import { paid, payments } from "./payments";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import { demo, base, uuid } from "./demo";
@@ -9,6 +10,11 @@ import type {
   Tenant,
   Role,
   Contact,
+  Account,
+  Transfer,
+  Segment,
+  ChatSession,
+  ChatMessage,
   CustomerDocument,
   Supplier,
   FinanceEntry,
@@ -28,6 +34,11 @@ const collections: Collection[] = [
   "finance",
   "contracts",
   "documents",
+  "accounts",
+  "transfers",
+  "segments",
+  "chat_sessions",
+  "chat_messages",
 ];
 const storageKey = "atraction-demo-v1";
 export function useWorkspace() {
@@ -102,6 +113,11 @@ export function useWorkspace() {
       setState(
         saved
           ? {
+              accounts: [],
+              transfers: [],
+              segments: [],
+              chat_sessions: [],
+              chat_messages: [],
               contracts: [],
               documents: [],
               suppliers: [],
@@ -178,6 +194,71 @@ export function useWorkspace() {
       const exists = (state[c] as Row[]).some((r) => r.id === row.id);
       let result;
       switch (c) {
+        case "chat_messages":
+          result = exists
+            ? await db
+                .from("atraction_chat_messages")
+                .update(row as ChatMessage)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_chat_messages")
+                .insert(row as ChatMessage)
+                .select("id");
+          break;
+        case "chat_sessions":
+          result = exists
+            ? await db
+                .from("atraction_chat_sessions")
+                .update(row as ChatSession)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_chat_sessions")
+                .insert(row as ChatSession)
+                .select("id");
+          break;
+        case "segments":
+          result = exists
+            ? await db
+                .from("atraction_segments")
+                .update(row as Segment)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_segments")
+                .insert(row as Segment)
+                .select("id");
+          break;
+        case "transfers":
+          result = exists
+            ? await db
+                .from("atraction_transfers")
+                .update(row as Transfer)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_transfers")
+                .insert(row as Transfer)
+                .select("id");
+          break;
+        case "accounts":
+          result = exists
+            ? await db
+                .from("atraction_accounts")
+                .update(row as Account)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_accounts")
+                .insert(row as Account)
+                .select("id");
+          break;
         case "contracts":
           throw new Error("Use a jornada para alterar contratos.");
         case "documents":
@@ -290,18 +371,71 @@ export function useWorkspace() {
     }
   };
   const write = async (c: Collection, row: Row) => {
+    if (c === "finance" && "amount_cents" in row && "settled_date" in row) {
+      const f = row as import("./types").FinanceEntry;
+      if (!state?.finance.some((x) => x.id === f.id))
+        row = {
+          ...f,
+          payments: f.settled_date
+            ? [
+                {
+                  id: uuid(),
+                  date: f.settled_date,
+                  amount_cents: f.amount_cents,
+                  account_id: null,
+                },
+              ]
+            : [],
+        };
+    }
     if (!state || busy || state.role === "viewer") return false;
     if (
-      ["finance", "suppliers", "contracts", "documents"].includes(c) &&
+      [
+        "finance",
+        "suppliers",
+        "contracts",
+        "documents",
+        "accounts",
+        "transfers",
+      ].includes(c) &&
       !["owner", "manager"].includes(state.role)
     )
       return false;
     if (
       c === "contacts" &&
       "phone" in row &&
-      state.contacts.some((r) => r.phone === row.phone && r.id !== row.id)
+      state.contacts.some(
+        (r) => r.phone === (row as Contact).phone && r.id !== row.id,
+      )
     ) {
       notify(pt.duplicate);
+      return false;
+    }
+    if (c === "finance") {
+      const f = row as FinanceEntry;
+      if (paid(f) > f.amount_cents) {
+        notify(
+          "O valor não pode ser menor que as baixas. Estorne a baixa primeiro.",
+        );
+        return false;
+      }
+      row = {
+        ...f,
+        settled_date:
+          paid(f) === f.amount_cents
+            ? payments(f)
+                .map((p) => p.date)
+                .sort()
+                .at(-1) || null
+            : null,
+      };
+    }
+    if (
+      c === "contacts" &&
+      (row as Contact).merged_into &&
+      !(row as Contact).deleted_at
+    ) {
+      notify("Um cadastro mesclado não pode ser restaurado.");
       return false;
     }
     setBusy(true);
@@ -362,6 +496,10 @@ export function useWorkspace() {
             ],
           };
         });
+      if (c === "chat_messages") {
+        notify("Resposta enviada pelo chat.");
+        return true;
+      }
       notify(next.deleted_at ? pt.deleted : pt.saved, async () => {
         const restored = previous || {
           ...next,
@@ -419,7 +557,14 @@ export function useWorkspace() {
   const bulk = async (c: Collection, rows: Row[]) => {
     if (!state || busy || state.role === "viewer") return false;
     if (
-      ["finance", "suppliers", "contracts", "documents"].includes(c) &&
+      [
+        "finance",
+        "suppliers",
+        "contracts",
+        "documents",
+        "accounts",
+        "transfers",
+      ].includes(c) &&
       !["owner", "manager"].includes(state.role)
     )
       return false;
@@ -493,7 +638,7 @@ export function useWorkspace() {
     }
   };
   const updateTenant = async (patch: Partial<Tenant>) => {
-    if (!state) return;
+    if (!state) return false;
     const before = state.tenant;
     try {
       if (userId) {
@@ -520,8 +665,10 @@ export function useWorkspace() {
         setState((s) => (s ? { ...s, tenant: before } : s));
         notify("Alteração desfeita.");
       });
+      return true;
     } catch {
       notify(pt.error);
+      return false;
     }
   };
   const logout = async () => {

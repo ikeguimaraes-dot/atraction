@@ -5,6 +5,7 @@ import type { Contract } from "./types";
 import { supabase } from "./supabase";
 import { base, uuid } from "./demo";
 import { schedule } from "./journey";
+import { paid } from "./payments";
 import { today } from "./finance";
 export function useJourney(w: ReturnType<typeof useWorkspace>) {
   const [busy, setBusy] = useState(false);
@@ -153,6 +154,7 @@ export function useJourney(w: ReturnType<typeof useWorkspace>) {
                   f.contract_id === c.id &&
                   !f.deleted_at &&
                   !f.settled_date &&
+                  paid(f) === 0 &&
                   f.due_date >= effective
                     ? {
                         ...f,

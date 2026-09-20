@@ -10,6 +10,9 @@ export type Base = {
   is_example: boolean;
 };
 export type Contact = Base & {
+  birthday?: string | null;
+  custom_data?: Record<string, string>;
+  merged_into?: string | null;
   campaign?: string;
   medium?: string;
   referred_by?: string;
@@ -30,6 +33,7 @@ export type Contact = Base & {
   consent_proof: string;
 };
 export type Deal = Base & {
+  pipeline_id?: string;
   contact_id: string;
   title: string;
   value: number;
@@ -74,7 +78,19 @@ export type NichePack = {
   message: string;
   robots: string[];
 };
+export type Pipeline = { id: string; name: string; stages: string[] };
+export type FieldDefinition = {
+  id: string;
+  label: string;
+  type: "text" | "number" | "date";
+};
+export type DocumentTemplate = { id: string; name: string; body: string };
 export type Tenant = {
+  settings?: {
+    pipelines?: Pipeline[];
+    fields?: FieldDefinition[];
+    templates?: DocumentTemplate[];
+  };
   onboarding?: Record<string, string>;
   pack_version?: number;
   niche_pack?: NichePack;
@@ -97,7 +113,15 @@ export type Supplier = Base & {
   address: string;
   notes: string;
 };
+export type Payment = {
+  id: string;
+  date: string;
+  amount_cents: number;
+  account_id: string | null;
+};
 export type FinanceEntry = Base & {
+  payments?: Payment[];
+  dre_group?: "revenue" | "cost" | "expense" | "tax";
   contract_id?: string | null;
   installment?: number | null;
   title: string;
@@ -133,7 +157,37 @@ export type CustomerDocument = Base & {
   size: number;
   demo_data?: string;
 };
+export type Account = Base & {
+  name: string;
+  kind: "cash" | "bank";
+  initial_cents: number;
+  initial_date: string;
+};
+export type Transfer = Base & {
+  from_account: string;
+  to_account: string;
+  amount_cents: number;
+  date: string;
+  notes: string;
+};
+export type Segment = Base & { name: string; rule: string; value: string };
+export type ChatSession = Base & {
+  contact_id: string;
+  visitor_name: string;
+  closed: boolean;
+};
+export type ChatMessage = Base & {
+  session_id: string;
+  body: string;
+  direction: "in" | "out";
+  client_id: string;
+};
 export type State = {
+  accounts: Account[];
+  transfers: Transfer[];
+  segments: Segment[];
+  chat_sessions: ChatSession[];
+  chat_messages: ChatMessage[];
   tenant: Tenant;
   role: Role;
   contracts: Contract[];
@@ -156,7 +210,12 @@ export type Collection =
   | "suppliers"
   | "finance"
   | "contracts"
-  | "documents";
+  | "documents"
+  | "accounts"
+  | "transfers"
+  | "segments"
+  | "chat_sessions"
+  | "chat_messages";
 export type Row =
   | Contact
   | Deal
@@ -166,4 +225,9 @@ export type Row =
   | Supplier
   | FinanceEntry
   | Contract
-  | CustomerDocument;
+  | CustomerDocument
+  | Account
+  | Transfer
+  | Segment
+  | ChatSession
+  | ChatMessage;

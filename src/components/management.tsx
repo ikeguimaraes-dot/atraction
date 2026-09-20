@@ -1,4 +1,9 @@
 "use client";
+import { PaymentModal } from "./payment-modal";
+import { payments, paid, remaining, financeInPeriod } from "@/lib/payments";
+import { recordPayment } from "@/lib/operations";
+import { exportCsv } from "@/lib/files";
+import { uuid } from "@/lib/demo";
 import { useState } from "react";
 import {
   Plus,
@@ -18,8 +23,16 @@ import { SectionTitle, Empty, Modal, Avatar } from "./ui";
 import { ContactForm } from "./forms";
 type Work = ReturnType<typeof useWorkspace>;
 const dateLabel = (date: string) => date.split("-").reverse().join("/");
-export function FinancialSummary({ rows }: { rows: FinanceEntry[] }) {
-  const b = balance(rows);
+export function FinancialSummary({
+  rows,
+  from = "",
+  to = "",
+}: {
+  rows: FinanceEntry[];
+  from?: string;
+  to?: string;
+}) {
+  const b = balance(rows, from, to);
   return (
     <div className="finance-summary">
       {[
@@ -146,6 +159,7 @@ export function Clients({
       )}
       {creating && (
         <ContactForm
+          tenant={s.tenant}
           customer
           base={w.base}
           onSave={(r) => w.write("contacts", r)}
@@ -358,8 +372,7 @@ export function Finance({
         (!direction || r.direction === direction) &&
         (!contact || r.contact_id === contact) &&
         (!supplier || r.supplier_id === supplier) &&
-        (!from || (r.settled_date || r.due_date) >= from) &&
-        (!to || (r.settled_date || r.due_date) <= to) &&
+        financeInPeriod(r, from, to) &&
         (!status ||
           (status === "open"
             ? !r.settled_date
@@ -393,7 +406,7 @@ export function Finance({
           </div>
         }
       />
-      <FinancialSummary rows={rows} />
+      <FinancialSummary rows={rows} from={from} to={to} />
       <div className="management-toolbar finance-filters">
         <label>
           Buscar lançamento
@@ -483,6 +496,27 @@ export function Finance({
           Limpar filtros
         </button>
       </div>
+      <button
+        className="secondary"
+        onClick={() =>
+          exportCsv(
+            "financeiro.csv",
+            rows.map((r) => ({
+              descricao: r.title,
+              tipo: r.direction === "income" ? "Receita" : "Despesa",
+              categoria: r.category,
+              vencimento: r.due_date,
+              valor: (r.amount_cents / 100).toFixed(2),
+              baixado: (paid(r) / 100).toFixed(2),
+              restante: (remaining(r) / 100).toFixed(2),
+              pessoa: party(r),
+              status: entryStatus(r),
+            })),
+          )
+        }
+      >
+        Exportar financeiro (CSV)
+      </button>
       <p className="management-hint">
         Totais seguem os filtros. O período usa a data da baixa para valores
         recebidos/pagos e o vencimento para contas em aberto. Vendas ganhas no
@@ -504,6 +538,10 @@ export function Finance({
                 {r.category} · {party(r)}
               </small>
               <small>
+                Baixado: {money(paid(r) / 100)} · Restante:{" "}
+                {money(remaining(r) / 100)}
+              </small>
+              <small>
                 Vence {dateLabel(r.due_date)}
                 {r.settled_date ? ` · Baixa ${dateLabel(r.settled_date)}` : ""}
               </small>
@@ -522,12 +560,27 @@ export function Finance({
               </span>
             </div>
             <div className="ledger-actions">
+              {payments(r).length > 0 && (
+                <button className="text-button" onClick={() => setSettling(r)}>
+                  Ver baixas
+                </button>
+              )}
               <button
                 className="secondary"
                 disabled={w.busy}
                 onClick={() => {
                   if (r.settled_date)
-                    void w.write("finance", { ...r, settled_date: null });
+                    void recordPayment(
+                      w,
+                      r,
+                      {
+                        id: uuid(),
+                        date: today(),
+                        amount_cents: 0,
+                        account_id: null,
+                      },
+                      "00000000-0000-0000-0000-000000000000",
+                    );
                   else {
                     setSettleDate(today());
                     setSettling(r);
@@ -581,58 +634,11 @@ export function Finance({
         />
       )}
       {settling && (
-        <Modal
-          title={
-            settling.direction === "income"
-              ? "Registrar recebimento"
-              : "Registrar pagamento"
-          }
+        <PaymentModal
+          w={w}
+          entry={settling}
           onClose={() => setSettling(null)}
-        >
-          <form
-            className="form"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (
-                await w.write("finance", {
-                  ...settling,
-                  settled_date: settleDate,
-                })
-              )
-                setSettling(null);
-            }}
-          >
-            <p>
-              {settling.title} · {money(settling.amount_cents / 100)}
-            </p>
-            <p>
-              Esta baixa registra um movimento já realizado. Ela não transfere
-              dinheiro.
-            </p>
-            <label>
-              Data da baixa
-              <input
-                type="date"
-                required
-                max={today()}
-                value={settleDate}
-                onChange={(e) => setSettleDate(e.target.value)}
-              />
-            </label>
-            <footer>
-              <button
-                className="secondary"
-                type="button"
-                onClick={() => setSettling(null)}
-              >
-                Cancelar
-              </button>
-              <button className="primary" disabled={w.busy}>
-                Confirmar baixa
-              </button>
-            </footer>
-          </form>
-        </Modal>
+        />
       )}
     </>
   );
@@ -806,10 +812,29 @@ function EntryForm({
             </label>
           )}
         </div>
+        {direction === "expense" && (
+          <label>
+            Grupo na DRE
+            <select
+              value={data.dre_group || "expense"}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  dre_group: e.target.value as FinanceEntry["dre_group"],
+                })
+              }
+            >
+              <option value="cost">Custo direto</option>
+              <option value="expense">Despesa operacional</option>
+              <option value="tax">Impostos</option>
+            </select>
+          </label>
+        )}
         <label className="checkbox">
           <input
             type="checkbox"
             checked={!!data.settled_date}
+            disabled={!!value}
             onChange={(e) =>
               setData({
                 ...data,
@@ -829,6 +854,7 @@ function EntryForm({
               required
               max={today()}
               value={data.settled_date}
+              disabled={!!value}
               onChange={(e) =>
                 setData({ ...data, settled_date: e.target.value || null })
               }

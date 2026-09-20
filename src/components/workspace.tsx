@@ -69,6 +69,9 @@ import { Clients, Finance, Suppliers, FinancialSummary } from "./management";
 import { Contracts } from "./contracts";
 import { CustomerHub } from "./customer-hub";
 import { Priorities, Retention, Attribution, CampaignLink } from "./growth";
+import { Cash } from "./cash";
+import { ToolsPanel } from "./tools-panel";
+import { SiteInbox } from "./site-chat";
 import { Team } from "./team";
 import { Assignment } from "./assignment";
 import {
@@ -79,6 +82,8 @@ import {
   RobotForm,
 } from "./forms";
 const navigation = [
+  { id: "tools", label: "Ferramentas", icon: SlidersHorizontal },
+  { id: "cash", label: "Contas e DRE", icon: Wallet },
   { id: "today", label: pt.today, icon: Home },
   { id: "contacts", label: pt.contacts, icon: Users },
   { id: "deals", label: pt.deals, icon: GitBranch },
@@ -97,6 +102,7 @@ type View = (typeof navigation)[number]["id"] | "settings" | "trash";
 export function Workspace() {
   const w = useWorkspace();
   const s = w.state;
+  const [pipelineId, setPipelineId] = useState("main");
   const [view, setView] = useState<View>("today");
   const [navOpen, setNavOpen] = useState(false);
   const [financeContact, setFinanceContact] = useState("");
@@ -153,6 +159,15 @@ export function Workspace() {
       </div>
     );
   const pack = accountPack(s.tenant);
+  const pipeline = s.tenant.settings?.pipelines?.find(
+    (p) => p.id === pipelineId,
+  );
+  const boardPack = pipeline
+    ? { ...pack, name: pipeline.name, stages: pipeline.stages }
+    : pack;
+  const boardDeals = deals.filter(
+    (d) => (d.pipeline_id || "main") === pipelineId,
+  );
   const isDemo = s.tenant.id === "demo";
   const canWrite = s.role !== "viewer";
   const canManage = ["owner", "manager"].includes(s.role);
@@ -275,8 +290,9 @@ export function Workspace() {
           {navigation
             .filter(
               (item) =>
-                !["finance", "suppliers", "contracts"].includes(item.id) ||
-                canManage,
+                !["finance", "suppliers", "contracts", "cash"].includes(
+                  item.id,
+                ) || canManage,
             )
             .map((item) => (
               <button
@@ -451,6 +467,11 @@ export function Workspace() {
               initialContact={financeContact}
             />
           )}
+          {view === "cash" && canManage && <Cash w={w} />}
+          {view === "tools" && (
+            <ToolsPanel w={w} onCustomer={(c) => openCustomer(c.id)} />
+          )}
+          {view === "messages" && <SiteInbox w={w} />}
           {view === "suppliers" && canManage && <Suppliers w={w} />}
           {view === "today" && (
             <>
@@ -885,19 +906,35 @@ export function Workspace() {
                   </button>
                 }
               />
+              <label className="pipeline-picker">
+                Funil
+                <select
+                  value={pipelineId}
+                  onChange={(e) => setPipelineId(e.target.value)}
+                >
+                  <option value="main">Principal · {pack.name}</option>
+                  {(s.tenant.settings?.pipelines || []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="path-summary">
                 <span className="pill">
                   <span className="green-dot" />
-                  {pack.name}
+                  {boardPack.name}
                 </span>
                 <span>
-                  <strong>{deals.filter((d) => d.stage !== -1).length}</strong>{" "}
+                  <strong>
+                    {boardDeals.filter((d) => d.stage !== -1).length}
+                  </strong>{" "}
                   {ui.negocios_no_caminho}
                 </span>
                 <span>
                   <strong>
                     {money(
-                      deals
+                      boardDeals
                         .filter((d) => d.stage >= 0 && d.stage < 4)
                         .reduce((n, d) => n + Number(d.value), 0),
                     )}
@@ -907,8 +944,8 @@ export function Workspace() {
                 <small>{ui.arraste_um_cartao_ou_escolha_a_etapa}</small>
               </div>
               <div className="kanban">
-                {pack.stages.map((stage, i) => {
-                  const rows = deals.filter((d) => d.stage === i);
+                {boardPack.stages.map((stage, i) => {
+                  const rows = boardDeals.filter((d) => d.stage === i);
                   return (
                     <section
                       className={"kanban-column stage-" + i}
@@ -935,7 +972,7 @@ export function Workspace() {
                             setDeal({
                               ...w.base(),
                               contact_id: contacts[0]?.id || "",
-                              title: pack.service,
+                              title: boardPack.service,
                               value: 0,
                               stage: i,
                               loss_reason: "",
@@ -1018,7 +1055,7 @@ export function Workspace() {
                               })
                             }
                           >
-                            {pack.stages.map((s, i) => (
+                            {boardPack.stages.map((s, i) => (
                               <option key={s} value={i}>
                                 {s}
                               </option>
@@ -1039,10 +1076,10 @@ export function Workspace() {
                 <details className="lost-deals">
                   <summary>
                     {ui.nao_foi_desta_vez_2}
-                    {deals.filter((d) => d.stage === -1).length}
+                    {boardDeals.filter((d) => d.stage === -1).length}
                     {ui.text_6}
                   </summary>
-                  {deals
+                  {boardDeals
                     .filter((d) => d.stage === -1)
                     .map((d) => (
                       <button
@@ -1063,7 +1100,7 @@ export function Workspace() {
           {view === "messages" && (
             <>
               <SectionTitle
-                title={ui.boas_conversas_comecam_aqui}
+                title="Rascunhos e notas internas"
                 subtitle="Todo o contexto, bem perto. Nenhum cliente esquecido."
               />
               <div className="integration-notice">
@@ -1980,6 +2017,15 @@ export function Workspace() {
                             messages: [],
                             events: [],
                             automations: [],
+                            finance: [],
+                            suppliers: [],
+                            contracts: [],
+                            documents: [],
+                            accounts: [],
+                            transfers: [],
+                            segments: [],
+                            chat_sessions: [],
+                            chat_messages: [],
                           });
                           w.notify(
                             ui.exemplos_removidos_voce_pode_recomecar_a_demonstracao_n,
@@ -2108,6 +2154,7 @@ export function Workspace() {
       )}
       {modal === "contact" && (
         <ContactForm
+          tenant={s.tenant}
           contact={selected}
           base={w.base}
           onSave={(r) => w.write("contacts", r)}
@@ -2116,6 +2163,7 @@ export function Workspace() {
       )}
       {modal === "deal" && (
         <DealForm
+          pipelineId={pipelineId}
           deal={deal}
           state={s}
           base={w.base}
