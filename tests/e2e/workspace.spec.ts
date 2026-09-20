@@ -98,6 +98,9 @@ test("robô exige prévia antes de ativar", async ({ page }) => {
 test("telas não transbordam a largura", async ({ page }) => {
   for (const label of [
     "Pessoas",
+    "Clientes",
+    "Financeiro",
+    "Fornecedores",
     "Caminho do cliente",
     "Conversas 3",
     "Agenda",
@@ -174,4 +177,71 @@ test("cadastro recusa telefone duplicado sem criar outra pessoa", async ({
     "Esse telefone já está cadastrado",
   );
   await expect(page.getByRole("dialog")).toBeVisible();
+});
+
+test("cliente manual, fornecedor e financeiro com baixa e persistência", async ({
+  page,
+}) => {
+  await go(page, "Clientes");
+  await page.getByRole("button", { name: "Novo cliente", exact: true }).click();
+  await page.getByLabel("Nome", { exact: true }).fill("Cliente da casa");
+  await page.getByLabel("Telefone com DDD").fill("21988887777");
+  await page.getByRole("button", { name: "Salvar pessoa" }).click();
+  await page
+    .getByRole("button", { name: /Cliente da casa Cliente ativo/ })
+    .click();
+  await expect(page.getByLabel("Financeiro do cliente")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Ver lançamentos deste cliente" })
+    .click();
+  await page.getByRole("button", { name: "Nova receita", exact: true }).click();
+  await page.getByLabel("Descrição", { exact: true }).fill("Mensalidade teste");
+  await page.getByLabel("Valor (R$)", { exact: true }).fill("123,45");
+  await expect(page.getByLabel("Cliente ou pessoa")).not.toHaveValue("");
+  await page.getByRole("button", { name: "Salvar lançamento" }).click();
+  const income = page
+    .locator(".ledger-row")
+    .filter({ hasText: "Mensalidade teste" });
+  await expect(income).toContainText("Em aberto");
+  await income.getByRole("button", { name: "Receber", exact: true }).click();
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(income).toContainText("Recebido");
+  await go(page, "Fornecedores");
+  await page.getByRole("button", { name: "Novo fornecedor" }).click();
+  await page.getByLabel("Nome do fornecedor").fill("Fornecedor teste");
+  await page.getByRole("button", { name: "Salvar fornecedor" }).click();
+  await go(page, "Financeiro");
+  await page.getByRole("button", { name: "Nova despesa", exact: true }).click();
+  await page.getByLabel("Descrição", { exact: true }).fill("Materiais teste");
+  await page.getByLabel("Valor (R$)", { exact: true }).fill("23,45");
+  await page
+    .getByRole("dialog")
+    .getByRole("combobox", { name: "Fornecedor", exact: true })
+    .selectOption({ label: "Fornecedor teste" });
+  await page.getByLabel("Já paguei esse valor").check();
+  await page.getByRole("button", { name: "Salvar lançamento" }).click();
+  await expect(page.locator(".finance-summary")).toContainText("R$ 100");
+  await page.reload();
+  await go(page, "Financeiro");
+  const expense = page
+    .locator(".ledger-row")
+    .filter({ hasText: "Materiais teste" });
+  await expect(expense).toContainText("Pago");
+  await expense.getByRole("button", { name: "Reabrir" }).click();
+  await expect(expense).toContainText("Em aberto");
+  await expense
+    .getByRole("button", { name: "Excluir Materiais teste" })
+    .click();
+  await expect(expense).toHaveCount(0);
+  await page.getByRole("button", { name: "Desfazer", exact: true }).click();
+  await expect(expense).toHaveCount(1);
+  await page
+    .getByRole("combobox", { name: "Status", exact: true })
+    .selectOption("settled");
+  await expect(expense).toHaveCount(0);
+  await expect(page.locator(".ledger-row")).toHaveCount(1);
+  await page.screenshot({
+    path: `test-results/finance-${test.info().project.name}.png`,
+    fullPage: true,
+  });
 });

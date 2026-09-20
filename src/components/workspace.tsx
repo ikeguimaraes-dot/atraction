@@ -3,6 +3,8 @@ import { ui } from "@/lib/pt-ui";
 import { useEffect, useMemo, useState } from "react";
 import {
   Home,
+  Wallet,
+  Truck,
   Users,
   GitBranch,
   MessageCircle,
@@ -62,6 +64,7 @@ import type {
 import { supabase } from "@/lib/supabase";
 import { Avatar, Mascot, Empty, Modal, SectionTitle, CardLink } from "./ui";
 import { Auth } from "./auth";
+import { Clients, Finance, Suppliers, FinancialSummary } from "./management";
 import { Team } from "./team";
 import { Assignment } from "./assignment";
 import {
@@ -74,6 +77,9 @@ import {
 const navigation = [
   { id: "today", label: pt.today, icon: Home },
   { id: "contacts", label: pt.contacts, icon: Users },
+  { id: "clients", label: "Clientes", icon: Heart },
+  { id: "finance", label: "Financeiro", icon: Wallet },
+  { id: "suppliers", label: "Fornecedores", icon: Truck },
   { id: "deals", label: pt.deals, icon: GitBranch },
   { id: "messages", label: pt.messages, icon: MessageCircle },
   { id: "calendar", label: pt.calendar, icon: CalendarDays },
@@ -87,6 +93,7 @@ export function Workspace() {
   const s = w.state;
   const [view, setView] = useState<View>("today");
   const [navOpen, setNavOpen] = useState(false);
+  const [financeContact, setFinanceContact] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<string>(ui.todas);
   const [modal, setModal] = useState<string | null>(null);
@@ -236,21 +243,29 @@ export function Workspace() {
         </button>
         <span className="nav-label">{ui.seu_espaco}</span>
         <nav>
-          {navigation.map((item) => (
-            <button
-              key={item.id}
-              aria-current={view === item.id ? "page" : undefined}
-              className={view === item.id ? "active" : ""}
-              onClick={() => go(item.id)}
-            >
-              <item.icon size={19} />
-              <span>{item.label}</span>
-              {item.id === "messages" && unread.length > 0 && (
-                <b>{unread.length}</b>
-              )}
-              {item.id === "automations" && <i>{ui.novo}</i>}
-            </button>
-          ))}
+          {navigation
+            .filter(
+              (item) =>
+                !["finance", "suppliers"].includes(item.id) || canManage,
+            )
+            .map((item) => (
+              <button
+                key={item.id}
+                aria-current={view === item.id ? "page" : undefined}
+                className={view === item.id ? "active" : ""}
+                onClick={() => {
+                  setFinanceContact("");
+                  go(item.id);
+                }}
+              >
+                <item.icon size={19} />
+                <span>{item.label}</span>
+                {item.id === "messages" && unread.length > 0 && (
+                  <b>{unread.length}</b>
+                )}
+                {item.id === "automations" && <i>{ui.novo}</i>}
+              </button>
+            ))}
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-help">
@@ -343,6 +358,23 @@ export function Workspace() {
               </button>
             </div>
           )}
+          {view === "clients" && (
+            <Clients
+              w={w}
+              onDetail={(c) => {
+                setSelected(c);
+                setModal("detail");
+              }}
+            />
+          )}
+          {view === "finance" && canManage && (
+            <Finance
+              key={financeContact}
+              w={w}
+              initialContact={financeContact}
+            />
+          )}
+          {view === "suppliers" && canManage && <Suppliers w={w} />}
           {view === "today" && (
             <>
               <div className="greeting">
@@ -1876,6 +1908,8 @@ export function Workspace() {
                     "activities",
                     "messages",
                     "automations",
+                    "finance",
+                    "suppliers",
                   ] as Collection[]
                 ).flatMap((c) =>
                   (s[c] as Row[])
@@ -1922,6 +1956,8 @@ export function Workspace() {
                     "activities",
                     "messages",
                     "automations",
+                    "finance",
+                    "suppliers",
                   ] as Collection[]
                 ).some((c) => s[c].some((r) => r.deleted_at)) && (
                   <Empty
@@ -2081,6 +2117,32 @@ export function Workspace() {
                 <span key={t}>{t}</span>
               ))}
             </div>
+            <p className="management-hint">
+              {selected.lifecycle === "customer"
+                ? "Cliente ativo"
+                : selected.lifecycle === "inactive"
+                  ? "Cliente inativo"
+                  : "Interessado"}
+              {selected.document ? ` · ${selected.document}` : ""}
+              {selected.address ? ` · ${selected.address}` : ""}
+            </p>
+            {canManage && (
+              <section aria-label="Financeiro do cliente">
+                <FinancialSummary
+                  rows={s.finance.filter((f) => f.contact_id === selected.id)}
+                />
+                <button
+                  className="secondary"
+                  onClick={() => {
+                    setFinanceContact(selected.id);
+                    setModal(null);
+                    go("finance");
+                  }}
+                >
+                  Ver lançamentos deste cliente
+                </button>
+              </section>
+            )}
             <Assignment
               contact={selected}
               state={s}

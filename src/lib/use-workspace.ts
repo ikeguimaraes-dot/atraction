@@ -9,6 +9,8 @@ import type {
   Tenant,
   Role,
   Contact,
+  Supplier,
+  FinanceEntry,
   Deal,
   Activity,
   Message,
@@ -21,6 +23,8 @@ const collections: Collection[] = [
   "activities",
   "messages",
   "automations",
+  "suppliers",
+  "finance",
 ];
 const storageKey = "atraction-demo-v1";
 export function useWorkspace() {
@@ -80,7 +84,7 @@ export function useWorkspace() {
     const next = {
       tenant: results[0].data,
       role: members[0].role as Role,
-      events: results[6].data,
+      events: results[collections.length + 1].data,
     } as unknown as State;
     collections.forEach((c, i) =>
       Object.assign(next, { [c]: results[i + 1].data }),
@@ -92,7 +96,9 @@ export function useWorkspace() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
-      setState(saved ? JSON.parse(saved) : demo());
+      setState(
+        saved ? { suppliers: [], finance: [], ...JSON.parse(saved) } : demo(),
+      );
     } catch {
       setState(demo());
     }
@@ -161,6 +167,32 @@ export function useWorkspace() {
       const exists = (state[c] as Row[]).some((r) => r.id === row.id);
       let result;
       switch (c) {
+        case "finance":
+          result = exists
+            ? await db
+                .from("atraction_finance")
+                .update(row as FinanceEntry)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_finance")
+                .insert(row as FinanceEntry)
+                .select("id");
+          break;
+        case "suppliers":
+          result = exists
+            ? await db
+                .from("atraction_suppliers")
+                .update(row as Supplier)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_suppliers")
+                .insert(row as Supplier)
+                .select("id");
+          break;
         case "contacts":
           result = exists
             ? await db
@@ -233,6 +265,11 @@ export function useWorkspace() {
   };
   const write = async (c: Collection, row: Row) => {
     if (!state || busy || state.role === "viewer") return false;
+    if (
+      ["finance", "suppliers"].includes(c) &&
+      !["owner", "manager"].includes(state.role)
+    )
+      return false;
     if (
       c === "contacts" &&
       "phone" in row &&
@@ -349,6 +386,11 @@ export function useWorkspace() {
   };
   const bulk = async (c: Collection, rows: Row[]) => {
     if (!state || busy || state.role === "viewer") return false;
+    if (
+      ["finance", "suppliers"].includes(c) &&
+      !["owner", "manager"].includes(state.role)
+    )
+      return false;
     setBusy(true);
     try {
       if (userId && c === "contacts") {

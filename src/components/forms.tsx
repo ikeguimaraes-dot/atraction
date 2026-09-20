@@ -12,21 +12,28 @@ import type {
   Base,
   Automation,
 } from "@/lib/types";
+import { today } from "@/lib/finance";
 import { niches, accountPack } from "@/data/niches";
 export function ContactForm({
+  customer = false,
   contact,
   base,
   onSave,
   onClose,
 }: {
   contact?: Contact;
+  customer?: boolean;
   base: () => Base;
   onSave: (r: Contact) => Promise<boolean>;
   onClose: () => void;
 }) {
-  const [data, setData] = useState(
+  const [data, setData] = useState<Contact>(
     contact || {
       ...base(),
+      lifecycle: customer ? "customer" : "prospect",
+      customer_since: customer ? today() : null,
+      document: "",
+      address: "",
       name: "",
       phone: "",
       email: "",
@@ -41,7 +48,13 @@ export function ContactForm({
   const [busy, setBusy] = useState(false);
   return (
     <Modal
-      title={contact ? ui.editar_pessoa : ui.vamos_conhecer_alguem}
+      title={
+        contact
+          ? ui.editar_pessoa
+          : customer
+            ? "Cadastrar cliente"
+            : ui.vamos_conhecer_alguem
+      }
       onClose={onClose}
     >
       <form
@@ -108,6 +121,54 @@ export function ContactForm({
                 <option key={s}>{s}</option>
               ))}
             </select>
+          </label>
+        </div>
+        <div className="form-grid">
+          <label>
+            Relacionamento
+            <select
+              value={data.lifecycle || "prospect"}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  lifecycle: e.target.value as Contact["lifecycle"],
+                  customer_since:
+                    e.target.value === "customer"
+                      ? data.customer_since || today()
+                      : data.customer_since,
+                })
+              }
+            >
+              <option value="prospect">Interessado</option>
+              <option value="customer">Cliente ativo</option>
+              <option value="inactive">Cliente inativo</option>
+            </select>
+          </label>
+          <label>
+            Cliente desde
+            <input
+              type="date"
+              value={data.customer_since || ""}
+              onChange={(e) =>
+                setData({ ...data, customer_since: e.target.value || null })
+              }
+            />
+          </label>
+          <label>
+            CPF / CNPJ
+            <input
+              maxLength={30}
+              value={data.document || ""}
+              onChange={(e) => setData({ ...data, document: e.target.value })}
+            />
+          </label>
+          <label>
+            Endereço
+            <input
+              maxLength={500}
+              value={data.address || ""}
+              onChange={(e) => setData({ ...data, address: e.target.value })}
+            />
           </label>
         </div>
         <label>

@@ -10,6 +10,10 @@ export type Base = {
   is_example: boolean;
 };
 export type Contact = Base & {
+  lifecycle?: "prospect" | "customer" | "inactive";
+  customer_since?: string | null;
+  document?: string;
+  address?: string;
   name: string;
   phone: string;
   email: string;
@@ -77,10 +81,32 @@ export type Tenant = {
   capture_slug: string;
   animations: boolean;
 };
+export type Supplier = Base & {
+  name: string;
+  document: string;
+  email: string;
+  phone: string;
+  category: string;
+  address: string;
+  notes: string;
+};
+export type FinanceEntry = Base & {
+  title: string;
+  direction: "income" | "expense";
+  amount_cents: number;
+  category: string;
+  due_date: string;
+  settled_date: string | null;
+  contact_id: string | null;
+  supplier_id: string | null;
+  notes: string;
+};
 export type State = {
   tenant: Tenant;
   role: Role;
   contacts: Contact[];
+  suppliers: Supplier[];
+  finance: FinanceEntry[];
   deals: Deal[];
   activities: Activity[];
   messages: Message[];
@@ -92,5 +118,14 @@ export type Collection =
   | "deals"
   | "activities"
   | "messages"
-  | "automations";
-export type Row = Contact | Deal | Activity | Message | Automation;
+  | "automations"
+  | "suppliers"
+  | "finance";
+export type Row =
+  | Contact
+  | Deal
+  | Activity
+  | Message
+  | Automation
+  | Supplier
+  | FinanceEntry;

@@ -1,5 +1,7 @@
 import type {
   Contact,
+  Supplier,
+  FinanceEntry,
   Deal,
   Activity,
   Message,
@@ -22,6 +24,8 @@ export type Database = {
         user_id: string;
         role: "owner" | "manager" | "agent" | "viewer";
       }>;
+      atraction_suppliers: Table<Supplier>;
+      atraction_finance: Table<FinanceEntry>;
       atraction_contacts: Table<Contact>;
       atraction_deals: Table<Deal>;
       atraction_activities: Table<Activity>;

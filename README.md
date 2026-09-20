@@ -1,8 +1,10 @@
 # Atraction
 
-CRM em português para pequenos negócios. Pessoas, negócios, conversas, agenda e lembretes em uma interface que começa pela pergunta: **o que eu preciso fazer hoje?**
+CRM com gestão operacional e financeira em português para pequenos negócios. Pessoas, negócios, conversas, agenda e lembretes em uma interface que começa pela pergunta: **o que eu preciso fazer hoje?**
 
 Esta é a versão inicial operacional do núcleo do produto. Não é a conclusão das fases de WhatsApp, IA e aquisição descritas na visão de longo prazo. Veja o [estado de entrega](docs/delivery.md).
+
+Publicado em **https://atraction.vercel.app/**.
 
 ## Rodar
 
@@ -23,6 +25,9 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 
 - Hoje com conversas esperando, tarefas e ganhos da semana.
 - Pessoas: cadastro, busca, etiquetas, anotações, telefone normalizado e deduplicação por conta.
+- Clientes: cadastro manual, ativos/inativos, documento, endereço e data de início, mantendo origem e histórico do contato.
+- Financeiro: receitas, custos/despesas, contas a pagar/receber, vencimentos, baixas manuais, reabertura e filtros por cliente/fornecedor/período. Valores em centavos; venda ganha não é recebimento de caixa.
+- Fornecedores: cadastro, edição, arquivo e totais vinculados. Financeiro e fornecedores exclusivos de dono/gestor, incluindo auditoria.
 - Importação CSV com prévia e erros por linha. Escrita atômica e reversão da importação.
 - Negócios em quadro arrastável, com alternativa por seletor no celular, valores e motivo de perda.
 - Caixa de conversas para exemplos, rascunhos e notas internas. **Sem envio ou recebimento real de WhatsApp.**
@@ -40,7 +45,7 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 
 As migrações estão em `supabase/migrations`. O projeto informado já hospedava outros sistemas; por isso o Atraction usa tabelas com prefixo `atraction_` e funções internas no schema `atraction_private`. Não substitui tabelas, políticas ou funções dos demais produtos.
 
-As cinco migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
+As seis migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
 
 Antes de testar confirmação de e-mail em uma nova origem, adicione a origem aos Redirect URLs do Supabase Auth, preservando os endereços dos outros sistemas. Não alteramos a configuração global de e-mail/Auth do projeto compartilhado.
 
@@ -54,10 +59,12 @@ npm run build
 npm run test:e2e
 ```
 
+`tests/finance-security.sql` valida isolamento financeiro, papéis, MFA, integridade de vínculos, baixas e auditoria; também termina com rollback.
+
 `tests/security.sql` verifica RLS, MFA, bloqueio entre contas, importação atômica, auditoria, exportação, captação e fila. Usa usuários temporários em transação e termina com `ROLLBACK`. Rode em ambiente de teste; exige privilégio administrativo. O CI executa testes de unidade, build e navegador em desktop e 360 px, usando dados de demonstração e sem credenciais de produção.
 
 ## Custos e operação
 
-Nenhuma API paga de IA/WhatsApp, assinatura, domínio, instância ou branch pago foi contratado. Os robôs usam o banco já fornecido. Hospedagem pública não foi ativada porque a conta disponível cobra por consumo; o uso local não contrata hospedagem. O consumo futuro do Supabase continua sujeito ao plano existente.
+Nenhuma API paga de IA/WhatsApp, assinatura, domínio, instância ou branch pago foi contratado. Os robôs usam o banco já fornecido. Publicado no projeto Vercel já existente, com build local e sem contratação de plano ou serviço adicional. O consumo futuro da hospedagem e do Supabase continua sujeito ao plano existente.
 
 A operação comercial ainda precisa das integrações, validações e processos listados em [docs/delivery.md](docs/delivery.md). Backup com PITR, SLA, termos legais e atendimento a titulares não devem ser presumidos pela existência do código.

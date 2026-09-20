@@ -1,12 +1,20 @@
-# Estado de entrega — 19/09/2026
+# Estado de entrega — 20/09/2026
 
 ## Entregue e verificado
 
-O núcleo funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, três pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação/MFA, equipe, atribuição e lixeira.
+Publicado em https://atraction.vercel.app/. O núcleo também funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, três pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação/MFA, equipe, atribuição e lixeira.
 
 Foram executados testes unitários de normalização, CSV, deduplicação, exportação e indicadores; testes Playwright de uso em computador/celular; e testes transacionais de segurança no Supabase, sem deixar usuários ou dados de teste persistidos. O agendador `atraction-task-worker` registrou execução bem-sucedida. Verificações específicas de MFA usam claims de teste no banco; entrega de e-mail e inscrição TOTP ponta a ponta com uma conta humana não foram exercitadas.
 
 O banco existente não foi reestruturado. Foram adicionados objetos exclusivos do Atraction e dois agendamentos próprios. O segundo remove apenas o histórico de cron desses agendamentos após 30 dias.
+
+## Clientes e financeiro operacional
+
+O escopo foi ampliado para CRM + gestão operacional, preservando inbound. Clientes existentes podem ser cadastrados manualmente sem criar uma venda fictícia. Pessoas existentes podem ser classificadas como cliente ativo/inativo sem duplicação. O cadastro mantém origem, anotações, negócios e tarefas, com documento, endereço e início do relacionamento.
+
+Receitas e despesas têm categoria, vencimento, vínculo opcional com cliente/fornecedor e baixa manual com data. A visão mostra recebido, pago, saldo dos lançamentos, a receber e a pagar. Filtros seguem data da baixa para realizados e vencimento para abertos. Não inclui saldo inicial bancário; valores ganhos no funil não entram automaticamente no caixa. Valores armazenados em centavos, exclusão reversível e auditoria antes/depois. Donos e gestores com MFA acessam o financeiro; atendentes e leitores não recebem esses dados nem os respectivos eventos.
+
+É controle financeiro operacional manual. Não inclui contabilidade fiscal, nota fiscal, conciliação bancária, transferências, baixa parcial, parcelamento automático, recorrência automática, estoque ou folha. Uma mensalidade pode ser lançada manualmente. Essas integrações não foram contratadas.
 
 ## Limites deliberados desta versão
 
@@ -24,11 +32,11 @@ O banco existente não foi reestruturado. Foram adicionados objetos exclusivos d
 | Celular | Web responsiva com manifesto instalável. Não há aplicativo nativo nem operação offline de dados reais. |
 | Lixeira | Restauração bloqueada após 30 dias. A remoção física e retenção legal não são automatizadas nesta versão. |
 | Empresas, grupos e campos extras | Fora do núcleo implementado nesta entrega. |
-| Faturamento | Não implementado. Não foram cadastrados preços ou meios de cobrança. |
+| Cobrança da assinatura Atraction | Não implementada. O financeiro operacional é do negócio do cliente; não processa cobrança da assinatura SaaS. |
 
 ## Antes de uma operação comercial
 
-1. Definir hospedagem com limite de gastos e domínio/origem. A origem local já permite experimentar; não existe site público publicado por esta entrega.
+1. Acompanhar consumo do projeto Vercel existente. O build é local, sem contratação adicional; a publicação usa a origem atraction.vercel.app.
 2. Configurar redirect URLs e remetente/transporte de e-mail no Supabase sem substituir as configurações dos outros sistemas. Validar cadastro, confirmação e TOTP com conta real. O projeto compartilha o serviço Auth com outros aplicativos; novos usuários podem acionar triggers já existentes de perfil desses aplicativos.
 3. Se autorizar custos no futuro, integrar a WhatsApp Business Platform com credenciais próprias, janela de atendimento, modelos aprovados, opt-in, opt-out, verificação de assinatura e idempotência de webhooks.
 4. Só ativar modelos externos após implementar orçamento por conta, registro de execuções e limites de uso. Nenhuma chave de IA foi pedida ou usada.

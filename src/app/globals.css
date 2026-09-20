@@ -100,6 +100,7 @@ small {
   min-height: 100vh;
 }
 .sidebar {
+  overflow-y: auto;
   width: 242px;
   background: #fff;
   position: fixed;
@@ -3830,5 +3831,236 @@ tbody tr:hover {
   .assignment select {
     width: 100%;
     max-width: none;
+  }
+}
+
+/* Customer and operational finance workspace */
+.management-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: end;
+  margin: 24px 0 16px;
+}
+.management-toolbar label {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #726b80);
+  flex: 1;
+  min-width: 160px;
+}
+.management-toolbar input,
+.management-toolbar select {
+  width: 100%;
+  border: 1px solid #e5dfed;
+  border-radius: 10px;
+  background: #fff;
+  padding: 11px 12px;
+  color: #332a44;
+  min-height: 43px;
+}
+.management-hint {
+  color: #776e84;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 16px 0 22px;
+}
+.management-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.customer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 18px;
+}
+.customer-card,
+.supplier-card {
+  padding: 24px;
+  text-align: left;
+  width: 100%;
+}
+.customer-card {
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
+}
+.customer-card:hover {
+  border-color: #b7a2df;
+  box-shadow: 0 8px 22px #6545960d;
+}
+.customer-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.customer-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.customer-heading h3 {
+  margin: 0 0 5px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.customer-heading small,
+.customer-card p,
+.supplier-card p {
+  color: #80768d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.customer-amounts {
+  display: flex;
+  gap: 30px;
+  border-top: 1px solid #eee9f3;
+  padding-top: 16px;
+  margin-top: 18px;
+}
+.customer-amounts span {
+  display: grid;
+  gap: 6px;
+  color: #80768d;
+  font-size: 12px;
+}
+.customer-amounts strong {
+  color: #40354f;
+  font-size: 17px;
+}
+.finance-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.finance-summary .card {
+  padding: 21px 16px;
+  display: grid;
+  gap: 10px;
+}
+.finance-summary small {
+  color: #80768d;
+  font-size: 11px;
+}
+.finance-summary strong {
+  font-size: 21px;
+  letter-spacing: -0.6px;
+  overflow-wrap: anywhere;
+}
+.income {
+  color: #278565;
+}
+.expense {
+  color: #b16652;
+}
+.finance-filters label {
+  min-width: 120px;
+}
+.finance-filters label:first-child {
+  min-width: 180px;
+}
+.ledger {
+  padding: 0 22px;
+}
+.ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 22px 0;
+  border-bottom: 1px solid #eee9f3;
+}
+.ledger-row:last-child {
+  border-bottom: 0;
+}
+.ledger-icon {
+  background: #f3f8f5;
+  padding: 10px;
+  border-radius: 12px;
+}
+.ledger-icon.expense {
+  background: #fcf2ee;
+}
+.ledger-description {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ledger-description strong {
+  font-size: 14px;
+}
+.ledger-description small {
+  color: #80768d;
+  font-size: 11px;
+}
+.ledger-value {
+  display: grid;
+  gap: 7px;
+  text-align: right;
+  min-width: 105px;
+}
+.ledger-value strong {
+  font-size: 16px;
+}
+.ledger-value span {
+  font-size: 11px;
+  color: #80768d;
+}
+.ledger-value .overdue {
+  color: #b44b49;
+}
+.ledger-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ledger-actions .secondary {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+@media (max-width: 1100px) {
+  .finance-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ledger-row {
+    flex-wrap: wrap;
+  }
+  .ledger-actions {
+    margin-left: auto;
+  }
+}
+@media (max-width: 600px) {
+  .finance-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .finance-summary strong {
+    font-size: 19px;
+  }
+  .finance-summary .card {
+    padding: 17px 12px;
+  }
+  .customer-grid {
+    grid-template-columns: 1fr;
+  }
+  .ledger {
+    padding: 0 14px;
+  }
+  .ledger-icon {
+    display: none;
+  }
+  .ledger-description {
+    flex-basis: 55%;
+  }
+  .ledger-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .management-actions button {
+    font-size: 12px;
   }
 }
