@@ -101,11 +101,14 @@ export function Auth({
       if (step === "login") {
         const result = signup
           ? await db.auth.signUp({
-              email,
+              email: email.trim().toLowerCase(),
               password,
               options: { emailRedirectTo: window.location.origin },
             })
-          : await db.auth.signInWithPassword({ email, password });
+          : await db.auth.signInWithPassword({
+              email: email.trim().toLowerCase(),
+              password,
+            });
         if (result.error) {
           setError(
             signup
@@ -172,7 +175,11 @@ export function Auth({
       <form onSubmit={submit} className="form">
         {step === "login" && (
           <>
-            <p>{ui.seus_clientes_e_sua_equipe_no_mesmo_lugar}</p>
+            <p>
+              {signup
+                ? "Crie um usuário somente se ainda não tiver cadastro."
+                : "Já tem cadastro? Entre com o mesmo e-mail e senha. No primeiro acesso, você configura seu negócio ou entra pelo convite da sua equipe."}
+            </p>
             <label>
               {ui.e_mail}
               <input
@@ -187,7 +194,7 @@ export function Auth({
               {ui.senha}
               <input
                 type="password"
-                minLength={8}
+                minLength={signup ? 8 : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -261,6 +268,11 @@ export function Auth({
         )}
         {step === "business" && (
           <>
+            <p>
+              Seu usuário já está conectado. Agora crie o espaço do seu negócio.
+              Para participar de uma equipe existente, abra o link de convite
+              enviado pelo dono.
+            </p>
             <label>
               {ui.nome_do_seu_negocio}
               <input
