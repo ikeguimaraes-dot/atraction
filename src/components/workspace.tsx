@@ -69,6 +69,7 @@ import { Clients, Finance, Suppliers, FinancialSummary } from "./management";
 import { Contracts } from "./contracts";
 import { CustomerHub } from "./customer-hub";
 import { Priorities, Retention, Attribution, CampaignLink } from "./growth";
+import { BusinessSettings } from "./business-settings";
 import { CompanySelector, AllCompanies } from "./companies";
 import { Cash } from "./cash";
 import { ToolsPanel } from "./tools-panel";
@@ -1958,47 +1959,7 @@ export function Workspace() {
                     <Team state={s} notify={w.notify} />
                     <section className="card settings-card">
                       <h2>{ui.seu_negocio}</h2>
-                      <form
-                        className="form"
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const f = new FormData(e.currentTarget);
-                          w.updateTenant({ name: String(f.get("name")) });
-                        }}
-                      >
-                        <label>
-                          {ui.nome_do_negocio}
-                          <input
-                            name="name"
-                            defaultValue={s.tenant.name}
-                            maxLength={160}
-                            required
-                          />
-                        </label>
-                        <label>
-                          {ui.seu_nicho}
-                          <select
-                            value={s.tenant.niche}
-                            disabled={!isDemo}
-                            onChange={(e) => {
-                              w.setState(demo(e.target.value as Niche));
-                              w.notify(ui.novo_exemplo_preparado_para_voce);
-                            }}
-                          >
-                            {Object.entries(niches).map(([k, n]) => (
-                              <option key={k} value={k}>
-                                {n.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <button
-                          className="primary"
-                          disabled={s.role !== "owner"}
-                        >
-                          {ui.salvar_alteracoes}
-                        </button>
-                      </form>
+                      <BusinessSettings w={w} />
                       <div className="setting-line">
                         <span>
                           <strong>{ui.animacoes_e_pequenos_momentos}</strong>

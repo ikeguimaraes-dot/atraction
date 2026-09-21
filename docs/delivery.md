@@ -2,7 +2,7 @@
 
 ## Entregue e verificado
 
-Publicado em https://atraction.vercel.app/. O núcleo também funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, três pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação/MFA, equipe, atribuição e lixeira.
+Publicado em https://atraction.vercel.app/. O núcleo também funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, 14 pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação/MFA, equipe, atribuição e lixeira.
 
 Foram executados testes unitários de normalização, CSV, deduplicação, exportação e indicadores; testes Playwright de uso em computador/celular; e testes transacionais de segurança no Supabase, sem deixar usuários ou dados de teste persistidos. O agendador `atraction-task-worker` registrou execução bem-sucedida. Verificações específicas de MFA usam claims de teste no banco; entrega de e-mail e inscrição TOTP ponta a ponta com uma conta humana não foram exercitadas.
 
@@ -87,3 +87,7 @@ Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua 
 - A lista consolidada exibe até 200 registros por vez; a busca filtra a coleção carregada. Continua valendo o limite de leitura do cliente de 50.000 itens por coleção. Configurações, equipe e captação são abertas por empresa.
 - Seleção persistida por usuário, formulários reiniciados na troca, bloqueio de gravações na visão consolidada e proteção contra gravação de um registro na empresa errada. Nenhuma empresa existente foi migrada para outro proprietário.
 - Testes SQL transacionais verificam dois cadastros para o mesmo dono, convites múltiplos, papéis distintos, MFA e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.
+
+### Segmentos de empresa — 21/09/2026
+
+O cadastro oferece estética, academia, pet, fintech, software/SaaS, restaurante/bar/cafeteria, IA/automação, loja/e-commerce, consultoria, agência, educação, saúde, imobiliária e Outro/Geral com nome personalizado. O dono pode alterar o segmento em Configurações → Seu negócio. A mudança atualiza sugestões e mantém cadastros e funis personalizados; com negócios existentes, preserva as etapas do funil principal. Novas empresas começam na opção geral, sem presumir um setor.

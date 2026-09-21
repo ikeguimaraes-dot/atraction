@@ -1,4 +1,18 @@
-export type Niche = "estetica" | "academia" | "pet";
+export type Niche =
+  | "estetica"
+  | "academia"
+  | "pet"
+  | "fintech"
+  | "software"
+  | "restaurante"
+  | "ia"
+  | "ecommerce"
+  | "consultoria"
+  | "agencia"
+  | "educacao"
+  | "saude"
+  | "imobiliaria"
+  | "outro";
 export type Role = "owner" | "manager" | "agent" | "viewer";
 export type Base = {
   id: string;

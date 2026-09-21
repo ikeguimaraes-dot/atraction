@@ -25,7 +25,8 @@ export function Auth({
   const [qr, setQr] = useState("");
   const [factor, setFactor] = useState("");
   const [name, setName] = useState("");
-  const [niche, setNiche] = useState<Niche>("estetica");
+  const [niche, setNiche] = useState<Niche>("outro");
+  const [segmentLabel, setSegmentLabel] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [uid, setUid] = useState("");
@@ -158,7 +159,13 @@ export function Auth({
           name,
           niche,
           owner_id: uid,
-          niche_pack: niches[niche],
+          niche_pack: {
+            ...niches[niche],
+            name:
+              niche === "outro" && segmentLabel.trim()
+                ? segmentLabel.trim()
+                : niches[niche].name,
+          },
           pack_version: 1,
           onboarding: {
             team_size: String(form.get("team_size")),
@@ -326,6 +333,17 @@ export function Auth({
                 ))}
               </select>
             </label>
+            {niche === "outro" && (
+              <label>
+                Nome do segmento (opcional)
+                <input
+                  maxLength={120}
+                  value={segmentLabel}
+                  onChange={(e) => setSegmentLabel(e.target.value)}
+                  placeholder="Ex.: Logística, turismo, indústria"
+                />
+              </label>
+            )}
             <label>
               {ui.quantas_pessoas_atendem}
               <select name="team_size">

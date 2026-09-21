@@ -146,6 +146,14 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
   await page.route("**/rest/v1/atraction_*", (r) => {
     const url = new URL(r.request().url());
     const table = url.pathname.split("/").at(-1);
+    if (r.request().method() === "PATCH" && table === "atraction_tenants") {
+      const body = r.request().postDataJSON();
+      const id = url.searchParams.get("id")?.replace("eq.", "");
+      const company = companies.find((c) => c.id === id)!;
+      Object.assign(company, body);
+      writes.push({ ...body, table });
+      return r.fulfill({ json: [{ id: company.id }] });
+    }
     if (r.request().method() === "POST") {
       const body = r.request().postDataJSON();
       writes.push({ ...body, table });
@@ -259,6 +267,11 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
     .click();
   await page.getByLabel("Nome do seu negócio").fill("Empresa Gama");
   await page
+    .getByRole("dialog")
+    .getByRole("combobox")
+    .first()
+    .selectOption("software");
+  await page
     .getByRole("button", { name: "Abrir meu espaço", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -270,5 +283,16 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
   expect(writes.find((w) => w.table === "atraction_tenants")).toMatchObject({
     name: "Empresa Gama",
     owner_id: uid,
+    niche: "software",
   });
+  await page
+    .getByRole("button", { name: "Configurações", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Seu nicho", exact: true })
+    .selectOption("fintech");
+  await page
+    .getByRole("button", { name: "Salvar alterações", exact: true })
+    .click();
+  await expect.poll(() => companies[2].niche).toBe("fintech");
 });
