@@ -38,6 +38,9 @@ test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova",
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await go(page, "Financeiro");
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
   await expect(page.locator(".ledger-row")).toHaveCount(3);
   await page
     .locator(".ledger-row")
@@ -50,6 +53,9 @@ test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova",
   await page.getByLabel("Nova mensalidade (R$)").fill("120,01");
   await page.getByRole("button", { name: "Confirmar reajuste" }).click();
   await go(page, "Financeiro");
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
   await expect(
     page.locator(".ledger-row").filter({ hasText: "Recebido" }),
   ).toContainText("100,01");
@@ -81,6 +87,9 @@ test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova",
   await expect(page.locator(".supplier-card")).toHaveCount(2);
   await page.reload();
   await go(page, "Financeiro");
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
   await expect(page.locator(".ledger-row")).toHaveCount(6);
   await page.screenshot({
     path: `test-results/journey-${test.info().project.name}.png`,
@@ -101,6 +110,9 @@ test("venda ganha oferece jornada sem duplicar contrato", async ({ page }) => {
     page.locator(".stage-4").getByLabel("Etapa de Mariana Costa"),
   ).toBeVisible();
   await go(page, "Financeiro");
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
   await expect(page.locator(".ledger-row")).toHaveCount(1);
 });
 test("ficha registra atendimento, indicação e documento privado na demonstração", async ({
