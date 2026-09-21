@@ -156,6 +156,11 @@ test("rascunho não marca uma conversa como respondida", async ({ page }) => {
   await page
     .getByRole("button", { name: "Salvar rascunho", exact: true })
     .click();
+  const menu = page.getByRole("button", {
+    name: "Abrir navegação",
+    exact: true,
+  });
+  if (await menu.isVisible()) await menu.click();
   await expect(
     page
       .locator("nav")

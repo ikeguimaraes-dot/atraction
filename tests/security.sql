@@ -53,10 +53,11 @@ update public.atraction_deals set value=150 where tenant_id='00000000-0000-4000-
 select pg_temp.assert_true((select sum((payload->>'revenue_delta')::numeric)=150 from public.atraction_events where entity='deals'),'won value adjustment');
 update public.atraction_deals set stage=2 where tenant_id='00000000-0000-4000-8000-000000000a02';
 select pg_temp.assert_true((select sum((payload->>'revenue_delta')::numeric)=0 from public.atraction_events where entity='deals'),'won reversal');
--- Invite the other account's user: existing memberships prevent accidental account reassignment.
+-- Invite an existing user to another company without replacing the original membership.
 insert into public.atraction_invites(tenant_id,email,role,token) values('00000000-0000-4000-8000-000000000a02','atraction-b@example.invalid','agent','00000000-0000-4000-8000-000000000a20');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000b01","role":"authenticated","aal":"aal2"}',true);
-do $$begin begin perform public.atraction_accept_invite('00000000-0000-4000-8000-000000000a20');raise exception 'FAIL: already-member invitation';exception when raise_exception then if sqlerrm='FAIL: already-member invitation' then raise;end if;end;end $$;
+select public.atraction_accept_invite('00000000-0000-4000-8000-000000000a20');
+select pg_temp.assert_true((select count(*)=2 from public.atraction_members),'invitation preserves previous membership');
 -- Viewers cannot call private export through the public wrapper.
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000c01","role":"authenticated","aal":"aal1"}',true);
 do $$begin begin perform public.atraction_export_contacts('00000000-0000-4000-8000-000000000a02');raise exception 'FAIL: viewer export';exception when raise_exception then if sqlerrm='FAIL: viewer export' then raise;end if;end;end $$;

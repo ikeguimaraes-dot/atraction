@@ -1,4 +1,5 @@
 "use client";
+import { uuid } from "@/lib/demo";
 import { ui } from "@/lib/pt-ui";
 import { useEffect, useState, useRef } from "react";
 import { ShieldCheck, Mail, ArrowRight } from "lucide-react";
@@ -9,10 +10,13 @@ import type { Niche } from "@/lib/types";
 export function Auth({
   onClose,
   onReady,
+  createCompany = false,
 }: {
   onClose: () => void;
-  onReady: (id: string) => Promise<boolean>;
+  createCompany?: boolean;
+  onReady: (id: string, companyId?: string) => Promise<boolean>;
 }) {
+  const [companyId] = useState(uuid);
   const [step, setStep] = useState("login");
   const [signup, setSignup] = useState(false);
   const [email, setEmail] = useState("");
@@ -28,14 +32,18 @@ export function Auth({
   const finish = async (id: string) => {
     const token = new URLSearchParams(window.location.search).get("convite");
     if (token) {
-      const { error } = await supabase().rpc("atraction_accept_invite", {
-        p_token: token,
-      });
+      const { data: companyId, error } = await supabase().rpc(
+        "atraction_accept_invite",
+        {
+          p_token: token,
+        },
+      );
       if (error) {
         setError(ui.este_convite_expirou_foi_usado_ou_pertence_a_outro_e_ma);
         throw new Error("invalid invitation");
       }
       window.history.replaceState({}, "", window.location.pathname);
+      return onReady(id, companyId || undefined);
     }
     return onReady(id);
   };
@@ -50,14 +58,21 @@ export function Auth({
     const { data: member } = await db
       .from("atraction_members")
       .select("role")
-      .eq("user_id", user.id)
-      .limit(1);
-    if (member?.length && ["agent", "viewer"].includes(member[0].role)) {
+      .eq("user_id", user.id);
+    if (
+      !createCompany &&
+      member?.length &&
+      member.every((m) => ["agent", "viewer"].includes(m.role))
+    ) {
       if (await finish(user.id)) onClose();
       return;
     }
     const { data: aal } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
     if (aal?.currentLevel === "aal2") {
+      if (createCompany) {
+        setStep("business");
+        return;
+      }
       if (await finish(user.id)) onClose();
       else setStep("business");
       return;
@@ -131,10 +146,15 @@ export function Auth({
           setError(ui.esse_codigo_nao_conferiu_digite_o_codigo_atual_do_seu_a);
           return;
         }
+        if (createCompany) {
+          setStep("business");
+          return;
+        }
         if (await finish(uid)) onClose();
         else setStep("business");
       } else if (step === "business") {
         const { error } = await db.from("atraction_tenants").insert({
+          id: companyId,
           name,
           niche,
           owner_id: uid,
@@ -147,11 +167,22 @@ export function Auth({
           },
         });
         if (error) {
+          if (error.code === "23505") {
+            const { data: existing } = await db
+              .from("atraction_tenants")
+              .select("id")
+              .eq("id", companyId)
+              .eq("owner_id", uid)
+              .maybeSingle();
+            if (existing) {
+              if (await onReady(uid, companyId)) onClose();
+              return;
+            }
+          }
           setError(ui.nao_foi_possivel_criar_seu_espaco_tente_novamente);
           return;
         }
-        await finish(uid);
-        onClose();
+        if (await onReady(uid, companyId)) onClose();
       }
     } catch {
       setError(ui.nao_conseguimos_conectar_confira_sua_internet_e_tente_n);
@@ -269,9 +300,9 @@ export function Auth({
         {step === "business" && (
           <>
             <p>
-              Seu usuário já está conectado. Agora crie o espaço do seu negócio.
-              Para participar de uma equipe existente, abra o link de convite
-              enviado pelo dono.
+              Seu usuário já está conectado. Cadastre sua empresa para começar.
+              Você poderá cadastrar outras empresas depois. Para participar de
+              uma equipe existente, abra o link de convite enviado pelo dono.
             </p>
             <label>
               {ui.nome_do_seu_negocio}

@@ -4382,3 +4382,105 @@ tbody tr:hover {
 .pipeline-picker select {
   min-width: 0;
 }
+.company-switch {
+  padding: 14px 16px;
+  border-bottom: 1px solid #ece7f1;
+}
+.company-switch label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #756d82;
+  font-size: 12px;
+}
+.company-switch select {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 10px;
+  background: white;
+  border: 1px solid #ded6e8;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 14px;
+  color: #332840;
+}
+.company-switch .text-button {
+  font-size: 12px;
+  margin-top: 10px;
+  text-align: left;
+}
+.company-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.company-metrics > section,
+.company-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+}
+.company-metrics strong {
+  font-size: 24px;
+}
+.company-metrics small {
+  color: #756d82;
+}
+.company-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.company-list > button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+  border: 1px solid #e8e1ef;
+  border-radius: 14px;
+  padding: 18px;
+}
+.company-list > button:hover {
+  background: #f7f3fc;
+}
+.consolidated-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #ece7f1;
+}
+.consolidated-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.consolidated-row small {
+  color: #756d82;
+}
+.consolidated-row button {
+  flex-shrink: 0;
+  max-width: 45%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .company-list {
+    grid-template-columns: 1fr;
+  }
+  .company-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .company-metrics > section,
+  .company-metrics > div {
+    padding: 12px;
+  }
+  .company-metrics strong {
+    font-size: 20px;
+  }
+}

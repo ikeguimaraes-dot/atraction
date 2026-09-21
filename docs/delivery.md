@@ -37,7 +37,7 @@ Validação desta expansão: testes unitários de centavos, calendários, atribu
 | Aquisição/prospecção | Página de captação e QR implementados. Não há raspagem, compra de listas, Places/Ads nem rede de indicação. |
 | Robôs | Criam tarefas, com fila a cada minuto e até 100 execuções por ciclo. Uma execução por pessoa/robô; reativação não repete trabalhos já concluídos. Não enviam mensagens. Demonstração mostra configuração; execução real ocorre no banco. |
 | Arquivos | Importação CSV/XLSX de até 10.000 linhas/5 MB, primeira aba, prévia e validação. PDF a partir de modelos editáveis. Documentos privados PDF/PNG/JPEG na ficha. Agenda externa e áudio não integrados. |
-| Equipe | Até 10 membros, convite por link entregue manualmente. Cada usuário opera um espaço. Dono altera papéis e remove acessos, com reatribuição ao dono para remoção ou leitura. |
+| Equipe | Até 10 membros, convite por link entregue manualmente. Cada usuário pode cadastrar e participar de várias empresas. Dono altera papéis e remove acessos, com reatribuição ao dono para remoção ou leitura. |
 | Atualização entre atendentes | Consulta a cada 30 s e ao voltar à janela. O chat usa consulta a cada 5 s enquanto a caixa/página está visível. |
 | Escala | Leitura paginada até 50.000 itens por coleção no cliente. Ainda precisa de consultas/indicadores agregados no servidor e testes de carga antes de operar nesse volume. |
 | Celular | Web responsiva com manifesto instalável. Não há aplicativo nativo nem operação offline de dados reais. |
@@ -76,3 +76,14 @@ Todas as etapas autorizadas foram implementadas: segmentos por origem/etiqueta/r
 Validação: testes de navegador desktop/360 px incluindo Excel real, PDF, segmentos, campos, funil, transferências, mesclagem e chat; testes unitários de valores/DRE/datas/PDF; quatro suítes SQL transacionais com rollback. A interface de atendimento foi exercitada com fixtures de demonstração e o transporte público do chat com respostas simuladas no navegador; permissões e RPCs reais foram verificadas no Supabase. Login humano, e-mail de confirmação e entrega simultânea entre dois usuários reais não foram exercitados nesta rodada.
 
 Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua sujeito aos planos existentes.
+
+
+## Empresas e consolidação — 21/09/2026
+
+- A barra lateral não mostra mais empresa/nicho fictícios como seletor na demonstração. Depois do login, lista as empresas acessíveis ao usuário, **Todas** e **Cadastrar empresa**.
+- Vários cadastros de empresa e convites para empresas diferentes usam o mesmo usuário Auth. Cada empresa mantém equipe, permissões, clientes, financeiro e configurações próprios.
+- **Todas** é uma visão consolidada de leitura com indicadores, comparativo por empresa, pessoas/clientes, negócios, agenda, lançamentos, fornecedores, contratos, contas, robôs, segmentos e sessões de chat. Cada registro identifica sua empresa e permite abri-la. Para cadastrar/editar, selecione a empresa.
+- Financeiro consolidado considera somente empresas em que o usuário possui acesso financeiro. Recebimentos/pagamentos seguem a data de cada baixa; contas abertas seguem o vencimento. Cadastros repetidos em empresas distintas continuam separados e são contados por empresa.
+- A lista consolidada exibe até 200 registros por vez; a busca filtra a coleção carregada. Continua valendo o limite de leitura do cliente de 50.000 itens por coleção. Configurações, equipe e captação são abertas por empresa.
+- Seleção persistida por usuário, formulários reiniciados na troca, bloqueio de gravações na visão consolidada e proteção contra gravação de um registro na empresa errada. Nenhuma empresa existente foi migrada para outro proprietário.
+- Testes SQL transacionais verificam dois cadastros para o mesmo dono, convites múltiplos, papéis distintos, MFA e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.

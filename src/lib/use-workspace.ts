@@ -42,6 +42,14 @@ const collections: Collection[] = [
 ];
 const storageKey = "atraction-demo-v1";
 export function useWorkspace() {
+  const [companies, setCompanies] = useState<(Tenant & { role: Role })[]>([]);
+  const [allState, setAllState] = useState<State | null>(null);
+  const [selection, setSelection] = useState("");
+  const [switching, setSwitching] = useState(false);
+  const switchingRef = useRef(false);
+  const selectionRef = useRef("");
+  const selectionUser = useRef("");
+  const readVersion = useRef(0);
   const [state, setState] = useState<State | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -61,52 +69,120 @@ export function useWorkspace() {
     },
     [],
   );
-  const read = useCallback(async (uid: string) => {
+  const read = useCallback(async (uid: string, requested?: string) => {
+    const version = ++readVersion.current;
     const db = supabase();
     const { data: members, error } = await db
       .from("atraction_members")
       .select("tenant_id,role")
-      .eq("user_id", uid)
-      .limit(1);
+      .eq("user_id", uid);
     if (error) throw error;
-    if (!members?.length) return false;
-    const tid = members[0].tenant_id;
+    if (!members?.length) {
+      if (version === readVersion.current) {
+        setCompanies([]);
+        setAllState(null);
+        setSelection("");
+        selectionRef.current = "";
+        setState(demo());
+        setUserId(null);
+      }
+      return false;
+    }
+    const { data: tenants, error: tenantError } = await db
+      .from("atraction_tenants")
+      .select("*")
+      .in(
+        "id",
+        members.map((m) => m.tenant_id),
+      )
+      .order("name");
+    if (tenantError) throw tenantError;
+    if (!tenants?.length)
+      throw new Error(
+        "Confirme sua proteção de acesso para abrir as empresas.",
+      );
+    const available = tenants.map((t) => ({
+      ...t,
+      role: members.find((m) => m.tenant_id === t.id)!.role as Role,
+    }));
+    let saved = "";
+    try {
+      saved = localStorage.getItem("atraction-company-" + uid) || "";
+    } catch {}
+    let chosen =
+      requested ||
+      (selectionUser.current === uid ? selectionRef.current : "") ||
+      saved ||
+      available[0].id;
+    if (chosen !== "all" && !available.some((t) => t.id === chosen))
+      chosen = available[0].id;
+    const ids = chosen === "all" ? available.map((t) => t.id) : [chosen];
     const fetchRows = async (
       table: `atraction_${Collection}` | "atraction_events",
     ) => {
-      const all: unknown[] = [];
+      const rows: unknown[] = [];
       for (let offset = 0; offset < 50000; offset += 1000) {
         const result = await db
           .from(table)
           .select("*")
-          .eq("tenant_id", tid)
+          .in("tenant_id", ids)
           .order("created_at", { ascending: false })
           .order("id")
           .range(offset, offset + 999);
-        if (result.error) return result;
-        all.push(...(result.data || []));
+        if (result.error) throw result.error;
+        rows.push(...(result.data || []));
         if ((result.data?.length || 0) < 1000) break;
       }
-      return { data: all, error: null };
+      return rows;
     };
     const results = await Promise.all([
-      db.from("atraction_tenants").select("*").eq("id", tid).single(),
       ...collections.map((c) => fetchRows(`atraction_${c}`)),
       fetchRows("atraction_events"),
     ]);
-    if (results.some((r) => r.error)) throw results.find((r) => r.error)!.error;
+    if (version !== readVersion.current) return true;
+    const tenant = available.find((t) => t.id === chosen) || available[0];
     const next = {
-      tenant: results[0].data,
-      role: members[0].role as Role,
-      events: results[collections.length + 1].data,
+      tenant,
+      role: chosen === "all" ? "viewer" : tenant.role,
+      events: results[collections.length],
     } as unknown as State;
-    collections.forEach((c, i) =>
-      Object.assign(next, { [c]: results[i + 1].data }),
-    );
-    setState(next);
+    collections.forEach((c, i) => Object.assign(next, { [c]: results[i] }));
+    setCompanies(available);
     setUserId(uid);
+    selectionRef.current = chosen;
+    selectionUser.current = uid;
+    setSelection(chosen);
+    if (chosen === "all") {
+      setAllState(next);
+      setState(next);
+    } else {
+      setState(next);
+      setAllState(null);
+    }
+    try {
+      localStorage.setItem("atraction-company-" + uid, chosen);
+    } catch {}
     return true;
   }, []);
+  const selectCompany = async (id: string) => {
+    if (!userId || busy || switching) return false;
+    const previous = selectionRef.current;
+    selectionRef.current = id;
+    switchingRef.current = true;
+    setSwitching(true);
+    setUndo(null);
+    setNotice("");
+    try {
+      return await read(userId, id);
+    } catch {
+      selectionRef.current = previous;
+      notify("Não foi possível abrir a empresa. Tente novamente.");
+      return false;
+    } finally {
+      switchingRef.current = false;
+      setSwitching(false);
+    }
+  };
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -140,11 +216,11 @@ export function useWorkspace() {
           const { data: member } = await supabase()
             .from("atraction_members")
             .select("role")
-            .eq("user_id", data.user.id)
-            .limit(1);
+            .eq("user_id", data.user.id);
           if (
             aal?.currentLevel === "aal2" ||
-            member?.some((m) => ["agent", "viewer"].includes(m.role))
+            (member?.length &&
+              member.every((m) => ["agent", "viewer"].includes(m.role)))
           ) {
             try {
               if (!(await read(data.user.id))) setAuthOpen(true);
@@ -175,7 +251,7 @@ export function useWorkspace() {
   useEffect(() => {
     if (!userId) return;
     const refresh = () => {
-      if (document.visibilityState === "visible")
+      if (!switchingRef.current && document.visibilityState === "visible")
         read(userId).catch(() =>
           notify("Não conseguimos atualizar seu espaço. Confira sua conexão."),
         );
@@ -371,6 +447,7 @@ export function useWorkspace() {
     }
   };
   const write = async (c: Collection, row: Row) => {
+    if (state && row.tenant_id !== state.tenant.id) return false;
     if (c === "finance" && "amount_cents" in row && "settled_date" in row) {
       const f = row as import("./types").FinanceEntry;
       if (!state?.finance.some((x) => x.id === f.id))
@@ -388,7 +465,14 @@ export function useWorkspace() {
             : [],
         };
     }
-    if (!state || busy || state.role === "viewer") return false;
+    if (
+      !state ||
+      busy ||
+      switching ||
+      selectionRef.current === "all" ||
+      state.role === "viewer"
+    )
+      return false;
     if (
       [
         "finance",
@@ -555,7 +639,16 @@ export function useWorkspace() {
     }
   };
   const bulk = async (c: Collection, rows: Row[]) => {
-    if (!state || busy || state.role === "viewer") return false;
+    if (state && rows.some((r) => r.tenant_id !== state.tenant.id))
+      return false;
+    if (
+      !state ||
+      busy ||
+      switching ||
+      selectionRef.current === "all" ||
+      state.role === "viewer"
+    )
+      return false;
     if (
       [
         "finance",
@@ -638,7 +731,7 @@ export function useWorkspace() {
     }
   };
   const updateTenant = async (patch: Partial<Tenant>) => {
-    if (!state) return false;
+    if (!state || switching || selectionRef.current === "all") return false;
     const before = state.tenant;
     try {
       if (userId) {
@@ -651,6 +744,9 @@ export function useWorkspace() {
         if (!data?.length) throw new Error("not updated");
       }
       setState((s) => (s ? { ...s, tenant: { ...s.tenant, ...patch } } : s));
+      setCompanies((cs) =>
+        cs.map((c) => (c.id === before.id ? { ...c, ...patch } : c)),
+      );
       notify(pt.saved, async () => {
         if (userId) {
           const { error } = await supabase()
@@ -663,6 +759,9 @@ export function useWorkspace() {
           }
         }
         setState((s) => (s ? { ...s, tenant: before } : s));
+        setCompanies((cs) =>
+          cs.map((c) => (c.id === before.id ? { ...c, ...before } : c)),
+        );
         notify("Alteração desfeita.");
       });
       return true;
@@ -677,11 +776,24 @@ export function useWorkspace() {
       notify("Não foi possível sair. Tente novamente.");
       return;
     }
+    ++readVersion.current;
+    selectionRef.current = "";
+    selectionUser.current = "";
+    setSelection("");
+    setCompanies([]);
+    setAllState(null);
+    setUndo(null);
     setUserId(null);
     setState(demo());
     notify("Você saiu da conta. Esta é a demonstração.");
   };
   return {
+    companies,
+    allState,
+    selection,
+    allSelected: selection === "all",
+    switching,
+    selectCompany,
     state,
     setState,
     userId,

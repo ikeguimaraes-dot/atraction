@@ -54,13 +54,13 @@ A demonstração aparece imediatamente, é identificada como exemplo e fica no n
 
 O login reutiliza os usuários de `auth.users` do projeto Supabase fornecido, com o mesmo e-mail e senha. Não copia senhas ou usuários e não importa permissões de outros aplicativos. A validação mínima de oito caracteres é para novos cadastros; no login, a senha existente é validada pelo Supabase.
 
-Após entrar, dono/gerente confirma ou configura TOTP. Sem vínculo no Atraction, cria seu espaço; para entrar em um espaço existente, usa o convite nominal do dono. `atraction_members` mantém as permissões próprias do produto. Usuários que só possuem autenticação por provedor externo, sem senha, não entram pelo formulário de senha até terem uma senha configurada no Auth. A demonstração local não é um espaço real.
+Após entrar, dono/gerente confirma ou configura TOTP. Sem vínculo no Atraction, cadastra sua primeira empresa; para entrar em uma empresa existente, usa o convite nominal do dono. Pode cadastrar ou participar de várias empresas. O seletor da barra lateral mostra apenas empresas reais e a opção **Todas**, com visão consolidada de leitura. Cadastros e alterações são feitos dentro da empresa selecionada. A seleção persiste por usuário no navegador. `atraction_members` mantém as permissões próprias do produto. Usuários que só possuem autenticação por provedor externo, sem senha, não entram pelo formulário de senha até terem uma senha configurada no Auth. A demonstração local não é um espaço real.
 
 ## Banco
 
 As migrações estão em `supabase/migrations`. O projeto informado já hospedava outros sistemas; por isso o Atraction usa tabelas com prefixo `atraction_` e funções internas no schema `atraction_private`. Não substitui tabelas, políticas ou funções dos demais produtos.
 
-As nove migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
+As dez migrações já foram aplicadas no projeto fornecido. **Não rode `db reset` ou `db push` indiscriminadamente nesse projeto compartilhado.** Para outro ambiente, revise e aplique apenas as migrações do Atraction. Os agendamentos exigem `pg_cron`, que já estava disponível no projeto original.
 
 Antes de testar confirmação de e-mail em uma nova origem, adicione a origem aos Redirect URLs do Supabase Auth, preservando os endereços dos outros sistemas. Não alteramos a configuração global de e-mail/Auth do projeto compartilhado.
 
@@ -73,6 +73,8 @@ npm run build
 # Com o servidor rodando na porta 3001:
 npm run test:e2e
 ```
+
+`tests/multi-company-security.sql` valida múltiplas empresas do mesmo dono, convites para diferentes empresas, consolidação com papéis distintos e isolamento dos vínculos.
 
 `tests/operations-security.sql` valida pagamentos parciais, estornos, idempotência, mesclagem, gestão de membros e chat público com isolamento por token, sempre com rollback.
 
