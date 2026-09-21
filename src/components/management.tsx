@@ -3,7 +3,7 @@ import { Recurrences } from "./recurrences";
 import { createRecurrence } from "@/lib/recurrences";
 import { installmentPlan } from "@/lib/installments";
 import { PaymentModal } from "./payment-modal";
-import { payments, paid, remaining, financeInPeriod } from "@/lib/payments";
+import { payments, paid, remaining, inPeriod } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
 import { exportCsv } from "@/lib/files";
 import { uuid } from "@/lib/demo";
@@ -362,8 +362,20 @@ export function Finance({
   const [status, setStatus] = useState("");
   const [contact, setContact] = useState(initialContact);
   const [supplier, setSupplier] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [month, setMonth] = useState(() => today().slice(0, 7));
+  const from = month ? `${month}-01` : "";
+  const to = month
+    ? `${month}-${new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0).getDate()}`
+    : "";
+  const monthlyRows = alive(s.finance).filter((r) =>
+    inPeriod(r.due_date, from, to),
+  );
+  const revenue = monthlyRows
+    .filter((r) => r.direction === "income")
+    .reduce((sum, r) => sum + r.amount_cents, 0);
+  const expense = monthlyRows
+    .filter((r) => r.direction === "expense")
+    .reduce((sum, r) => sum + r.amount_cents, 0);
   const [editing, setEditing] = useState<
     FinanceEntry | "income" | "expense" | null
   >(null);
@@ -375,7 +387,7 @@ export function Finance({
         r.direction === direction &&
         (direction !== "income" || !contact || r.contact_id === contact) &&
         (direction !== "expense" || !supplier || r.supplier_id === supplier) &&
-        financeInPeriod(r, from, to) &&
+        inPeriod(r.due_date, from, to) &&
         (!status ||
           (status === "open"
             ? !r.settled_date
@@ -421,6 +433,49 @@ export function Finance({
           </div>
         }
       />
+      <div className="management-toolbar">
+        <label>
+          Mês de referência
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+          />
+        </label>
+        <button
+          className="secondary"
+          onClick={() => setMonth(today().slice(0, 7))}
+        >
+          Mês atual
+        </button>
+        <button className="text-button" onClick={() => setMonth("")}>
+          Todos os meses
+        </button>
+        {!month && <span>Exibindo todos os meses</span>}
+      </div>
+      <div
+        className="finance-summary monthly-totals"
+        aria-label="Totais cadastrados por vencimento"
+      >
+        <div className="card income" aria-label="Receita cadastrada">
+          <small>Receita</small>
+          <strong>{money(revenue / 100)}</strong>
+          <small>
+            Total cadastrado {month ? "no mês" : "em todos os meses"}
+          </small>
+        </div>
+        <div className="card expense" aria-label="Despesa cadastrada">
+          <small>Despesa</small>
+          <strong>{money(expense / 100)}</strong>
+          <small>
+            Total cadastrado {month ? "no mês" : "em todos os meses"}
+          </small>
+        </div>
+      </div>
+      <p className="management-hint">
+        Receita e Despesa somam o valor integral dos lançamentos por vencimento,
+        incluindo os já baixados. Cada parcela ou recorrência entra no seu mês.
+      </p>
       <FinancialSummary rows={s.finance} from={from} to={to} />
       <p className="management-hint">
         Resumo geral da empresa no período selecionado, incluindo receitas e
@@ -521,24 +576,6 @@ export function Finance({
               </select>
             </label>
           )}
-          <label>
-            De
-            <input
-              type="date"
-              value={from}
-              max={to || undefined}
-              onChange={(e) => setFrom(e.target.value)}
-            />
-          </label>
-          <label>
-            Até
-            <input
-              type="date"
-              min={from || undefined}
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
-          </label>
           <button
             className="text-button"
             onClick={() => {
@@ -546,8 +583,6 @@ export function Finance({
               setStatus("");
               setContact("");
               setSupplier("");
-              setFrom("");
-              setTo("");
             }}
           >
             Limpar filtros
@@ -575,9 +610,9 @@ export function Finance({
           Exportar financeiro (CSV)
         </button>
         <p className="management-hint">
-          A lista e a exportação seguem a aba e os filtros. O resumo geral segue
-          somente o período, usando a data da baixa para valores recebidos/pagos
-          e o vencimento para contas em aberto.
+          A lista e a exportação seguem o mês de vencimento, a aba e os filtros.
+          Os cards independem da busca e da aba. Recebido e Pago usam a data da
+          baixa; A receber e A pagar usam o vencimento.
         </p>
         <section className="card ledger" aria-label="Lançamentos financeiros">
           {rows.map((r) => (

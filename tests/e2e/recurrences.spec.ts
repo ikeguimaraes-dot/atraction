@@ -12,6 +12,9 @@ test("assinaturas repetem o valor mensal e podem ser encerradas", async ({
     .locator("nav")
     .getByRole("button", { name: "Financeiro", exact: true })
     .click();
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
   for (const direction of ["receita", "despesa"]) {
     await page
       .getByRole("button", { name: `Nova ${direction}`, exact: true })

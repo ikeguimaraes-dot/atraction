@@ -225,7 +225,9 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
     .selectOption({ label: "Fornecedor teste" });
   await page.getByLabel("Já paguei esse valor").check();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
-  await expect(page.locator(".finance-summary")).toContainText("R$ 100");
+  await expect(
+    page.locator(".finance-summary:not(.monthly-totals)"),
+  ).toContainText("R$ 100");
   await page.reload();
   await go(page, "Financeiro");
   await page.getByRole("tab", { name: "Despesas", exact: true }).click();

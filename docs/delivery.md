@@ -109,3 +109,7 @@ Receitas e despesas oferecem Repetir mensalmente, valor mensal e data final opci
 Recorrências mensais, dentro de cada aba, permite encerrar com confirmação. O encerramento remove somente lançamentos futuros sem baixa; vencidos, vencimentos do dia e qualquer pagamento parcial/integral são preservados. Alterar um lançamento afeta só aquela ocorrência. Para mudar o valor permanente, encerre e cadastre uma nova recorrência. A rotina cria contas previstas; não cobra nem paga automaticamente. Na demonstração, a reposição ocorre ao abrir o sistema.
 
 Validação: 24 testes unitários; fluxos de navegador desktop/mobile para recorrências, encerramento, parcelas e empresas; SQL transacional com rollback validando datas, valor integral, idempotência, reposição, término, baixas parciais, isolamento e MFA. Cron confirmado ativo.
+
+### Visão mensal do Financeiro — 21/09/2026
+
+Mês de referência inicia no mês atual; é possível selecionar mês/ano, voltar ao mês atual ou ver todos os meses. Os novos cards Receita e Despesa somam o valor integral dos lançamentos não excluídos por vencimento, incluindo baixados e parciais. Parcelas e assinaturas entram no respectivo mês. Lista e CSV seguem vencimento, aba e filtros. Recebido/Pago continuam seguindo as datas das baixas; os cards não variam com busca, cliente, fornecedor ou aba. Limpar filtros mantém o mês selecionado.
