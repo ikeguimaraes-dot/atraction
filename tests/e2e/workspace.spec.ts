@@ -201,7 +201,7 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
     .click();
   await page.getByRole("button", { name: "Nova receita", exact: true }).click();
   await page.getByLabel("Descrição", { exact: true }).fill("Mensalidade teste");
-  await page.getByLabel("Valor (R$)", { exact: true }).fill("123,45");
+  await page.getByLabel("Valor total (R$)", { exact: true }).fill("123,45");
   await expect(page.getByLabel("Cliente ou pessoa")).not.toHaveValue("");
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   const income = page
@@ -218,7 +218,7 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
   await go(page, "Financeiro");
   await page.getByRole("button", { name: "Nova despesa", exact: true }).click();
   await page.getByLabel("Descrição", { exact: true }).fill("Materiais teste");
-  await page.getByLabel("Valor (R$)", { exact: true }).fill("23,45");
+  await page.getByLabel("Valor total (R$)", { exact: true }).fill("23,45");
   await page
     .getByRole("dialog")
     .getByRole("combobox", { name: "Fornecedor", exact: true })

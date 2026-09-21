@@ -638,6 +638,57 @@ export function useWorkspace() {
       setBusy(false);
     }
   };
+  const createFinanceInstallments = async (rows: FinanceEntry[]) => {
+    if (
+      !state ||
+      busy ||
+      switching ||
+      selectionRef.current === "all" ||
+      !["owner", "manager"].includes(state.role) ||
+      rows.length < 2 ||
+      rows.length > 60 ||
+      rows.some(
+        (r) =>
+          r.tenant_id !== state.tenant.id ||
+          r.contract_id ||
+          r.settled_date ||
+          r.payments?.length ||
+          !Number.isSafeInteger(r.amount_cents) ||
+          r.amount_cents < 1,
+      )
+    )
+      return false;
+    setBusy(true);
+    try {
+      if (userId) {
+        const { error } = await supabase()
+          .from("atraction_finance")
+          .insert(rows);
+        if (error) {
+          // Stable IDs make a retry after a lost response safe, without overwriting payments.
+          if (error.code !== "23505") throw error;
+          const saved = await supabase()
+            .from("atraction_finance")
+            .select("id")
+            .eq("tenant_id", state.tenant.id)
+            .in(
+              "id",
+              rows.map((r) => r.id),
+            );
+          if (saved.error || saved.data?.length !== rows.length) throw error;
+        }
+        await read(userId);
+      } else
+        setState((s) => (s ? { ...s, finance: [...rows, ...s.finance] } : s));
+      notify(`${rows.length} parcelas criadas.`);
+      return true;
+    } catch {
+      notify("Não foi possível salvar as parcelas. Tente novamente.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
   const bulk = async (c: Collection, rows: Row[]) => {
     if (state && rows.some((r) => r.tenant_id !== state.tenant.id))
       return false;
@@ -803,6 +854,7 @@ export function useWorkspace() {
     busy,
     write,
     bulk,
+    createFinanceInstallments,
     updateTenant,
     logout,
     read,

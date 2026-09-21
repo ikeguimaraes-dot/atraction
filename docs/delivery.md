@@ -91,3 +91,9 @@ Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua 
 ### Segmentos de empresa — 21/09/2026
 
 O cadastro oferece estética, academia, pet, fintech, software/SaaS, restaurante/bar/cafeteria, IA/automação, loja/e-commerce, consultoria, agência, educação, saúde, imobiliária e Outro/Geral com nome personalizado. O dono pode alterar o segmento em Configurações → Seu negócio. A mudança atualiza sugestões e mantém cadastros e funis personalizados; com negócios existentes, preserva as etapas do funil principal. Novas empresas começam na opção geral, sem presumir um setor.
+
+### Receitas e despesas parceladas — 21/09/2026
+
+No cadastro financeiro, informe valor total, quantidade de parcelas (1 a 60) e primeiro vencimento. A prévia mostra valores e vencimentos mensais. Centavos restantes são distribuídos nas primeiras parcelas; datas usam o dia original, limitado ao último dia de cada mês. Cada parcela vira um lançamento em aberto numerado no título, com cliente/fornecedor, categoria e grupo DRE preservados. Baixas e edições são individuais. O conjunto é inserido em uma única operação no banco; IDs estáveis evitam duplicação ao repetir uma tentativa sem resposta. Não há juros calculados automaticamente nem edição conjunta de séries.
+
+Validação: 22 testes unitários, 30 testes de navegador desktop/celular e suíte SQL transacional de soma, gravação atômica e MFA.

@@ -1,4 +1,5 @@
 "use client";
+import { installmentPlan } from "@/lib/installments";
 import { PaymentModal } from "./payment-modal";
 import { payments, paid, remaining, financeInPeriod } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
@@ -674,6 +675,14 @@ function EntryForm({
   const [amount, setAmount] = useState(
     value ? (value.amount_cents / 100).toFixed(2) : "",
   );
+  const [count, setCount] = useState("1");
+  const [ids] = useState(() => Array.from({ length: 60 }, () => uuid()));
+  let preview: ReturnType<typeof installmentPlan> = [];
+  try {
+    preview = installmentPlan(cents(amount), Number(count), data.due_date);
+  } catch {
+    /* incomplete form */
+  }
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   return (
@@ -694,6 +703,24 @@ function EntryForm({
           setError("");
           setSaving(true);
           try {
+            if (!value && Number(count) > 1) {
+              const rows = installmentPlan(
+                cents(amount),
+                Number(count),
+                data.due_date,
+              ).map((part, i) => ({
+                ...data,
+                ...part,
+                id: ids[i],
+                title: `${data.title.trim().slice(0, 190)} · ${i + 1}/${count}`,
+                settled_date: null,
+                payments: [],
+              }));
+              if (await w.createFinanceInstallments(rows)) onClose();
+              return;
+            }
+            if (!value)
+              installmentPlan(cents(amount), Number(count), data.due_date);
             if (
               await w.write("finance", {
                 ...data,
@@ -726,7 +753,7 @@ function EntryForm({
         </label>
         <div className="form-grid">
           <label>
-            Valor (R$)
+            {value ? "Valor (R$)" : "Valor total (R$)"}
             <input
               required
               inputMode="decimal"
@@ -736,7 +763,7 @@ function EntryForm({
             />
           </label>
           <label>
-            Vencimento
+            {!value && Number(count) > 1 ? "Primeiro vencimento" : "Vencimento"}
             <input
               type="date"
               required
@@ -744,6 +771,24 @@ function EntryForm({
               onChange={(e) => setData({ ...data, due_date: e.target.value })}
             />
           </label>
+          {!value && (
+            <label>
+              Quantidade de parcelas
+              <input
+                type="number"
+                min="1"
+                max="60"
+                step="1"
+                required
+                value={count}
+                onChange={(e) => {
+                  setCount(e.target.value);
+                  if (Number(e.target.value) > 1)
+                    setData({ ...data, settled_date: null });
+                }}
+              />
+            </label>
+          )}
           <label>
             Categoria
             <input
@@ -812,6 +857,34 @@ function EntryForm({
             </label>
           )}
         </div>
+        {!value && Number(count) > 1 && (
+          <section aria-label="Prévia das parcelas">
+            <p>
+              Parcelas mensais. Cada parcela fica em aberto e pode ser paga ou
+              recebida separadamente.
+            </p>
+            {preview.length > 0 && (
+              <details open>
+                <summary>
+                  {preview.length} parcelas · Total {money(cents(amount) / 100)}
+                </summary>
+                <div style={{ maxHeight: 200, overflowY: "auto" }}>
+                  {preview.map((part, i) => (
+                    <p key={i}>
+                      {i + 1}/{count} · {dateLabel(part.due_date)} ·{" "}
+                      {money(part.amount_cents / 100)}
+                    </p>
+                  ))}
+                </div>
+              </details>
+            )}
+          </section>
+        )}
+        {value && (
+          <p className="management-hint">
+            As alterações e baixas afetam somente este lançamento.
+          </p>
+        )}
         {direction === "expense" && (
           <label>
             Grupo na DRE
@@ -834,7 +907,7 @@ function EntryForm({
           <input
             type="checkbox"
             checked={!!data.settled_date}
-            disabled={!!value}
+            disabled={!!value || Number(count) > 1}
             onChange={(e) =>
               setData({
                 ...data,
