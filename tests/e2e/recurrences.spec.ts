@@ -26,6 +26,14 @@ test("assinaturas repetem o valor mensal e podem ser encerradas", async ({
     await expect(page.getByLabel("Quantidade de parcelas")).toHaveCount(0);
     await page.getByLabel("Valor mensal (R$)", { exact: true }).fill("99,90");
     await page.getByLabel("Primeiro vencimento").fill("2028-01-31");
+    await page
+      .getByRole("dialog")
+      .getByLabel("Categoria", { exact: true })
+      .selectOption(
+        direction === "receita"
+          ? "Assinaturas e mensalidades"
+          : "Software de uso administrativo",
+      );
     if (direction === "receita")
       await page.getByLabel("Repetir até (opcional)").fill("2028-03-31");
     await page

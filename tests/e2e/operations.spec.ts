@@ -21,6 +21,10 @@ test("contas, baixa parcial, transferência e DRE", async ({ page }) => {
   await page.getByRole("button", { name: "Nova receita", exact: true }).click();
   await page.getByLabel("Descrição", { exact: true }).fill("Receita parcial");
   await page.getByLabel("Valor total (R$)", { exact: true }).fill("100");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Categoria", { exact: true })
+    .selectOption("Prestação de serviços");
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   const row = page
     .locator(".ledger-row")

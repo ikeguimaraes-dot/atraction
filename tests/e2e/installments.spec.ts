@@ -22,6 +22,14 @@ test("receitas e despesas em 12 parcelas preservam total e vencimentos", async (
     await page.getByLabel("Valor total (R$)", { exact: true }).fill("100,00");
     await page.getByLabel("Quantidade de parcelas").fill("12");
     await page.getByLabel("Primeiro vencimento").fill("2028-01-31");
+    await page
+      .getByRole("dialog")
+      .getByLabel("Categoria", { exact: true })
+      .selectOption(
+        direction === "receita"
+          ? "Assinaturas e mensalidades"
+          : "Software de uso administrativo",
+      );
     await expect(
       page.getByRole("region", { name: "Prévia das parcelas" }),
     ).toContainText("29/02/2028");

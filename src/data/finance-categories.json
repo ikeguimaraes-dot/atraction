@@ -1,0 +1,182 @@
+[
+  {
+    "key": "revenue",
+    "label": "Receita operacional bruta",
+    "direction": "income",
+    "categories": [
+      "Prestação de serviços",
+      "Venda de produtos e mercadorias",
+      "Assinaturas e mensalidades",
+      "Licenças de software",
+      "Implantação e suporte",
+      "Consultoria e projetos",
+      "Vendas de alimentos e bebidas",
+      "Comissões por serviços prestados",
+      "Taxas de processamento cobradas",
+      "Juros de operações de crédito (atividade principal)"
+    ]
+  },
+  {
+    "key": "sales_deduction",
+    "label": "Deduções da receita",
+    "direction": "expense",
+    "categories": [
+      "ISS sobre faturamento",
+      "ICMS sobre vendas",
+      "PIS/COFINS sobre faturamento",
+      "Simples Nacional (DAS integral)",
+      "Devoluções e reembolsos de vendas",
+      "Descontos concedidos sobre vendas",
+      "Cancelamentos e chargebacks de vendas"
+    ]
+  },
+  {
+    "key": "cost",
+    "label": "Custos dos produtos e serviços",
+    "direction": "expense",
+    "categories": [
+      "Mercadorias vendidas (CMV)",
+      "Insumos e ingredientes consumidos",
+      "Materiais aplicados nos serviços",
+      "Mão de obra direta",
+      "Terceirização da entrega do serviço",
+      "Hospedagem e nuvem da operação",
+      "APIs e modelos de IA da operação",
+      "Licenças incorporadas ao serviço",
+      "Processamento de transações da operação",
+      "Frete de aquisição de mercadorias",
+      "Embalagens dos produtos",
+      "Outros custos diretos"
+    ]
+  },
+  {
+    "key": "personnel",
+    "label": "Despesas com pessoal administrativo",
+    "direction": "expense",
+    "categories": [
+      "Salários administrativos",
+      "Pró-labore",
+      "INSS patronal e encargos da folha",
+      "FGTS",
+      "Férias e adicional de férias",
+      "Décimo terceiro salário",
+      "Benefícios e vale-transporte",
+      "Recrutamento e treinamento",
+      "Rescisões trabalhistas"
+    ]
+  },
+  {
+    "key": "sales",
+    "label": "Despesas comerciais e marketing",
+    "direction": "expense",
+    "categories": [
+      "Publicidade e mídia paga",
+      "Agência de marketing e conteúdo",
+      "Comissões de vendas",
+      "Salários da equipe comercial",
+      "Eventos e ações comerciais",
+      "Frete de entrega ao cliente",
+      "Viagens comerciais",
+      "Ferramentas de vendas e marketing",
+      "Taxas de cartão e marketplace"
+    ]
+  },
+  {
+    "key": "expense",
+    "label": "Despesas administrativas",
+    "direction": "expense",
+    "categories": [
+      "Aluguel e condomínio administrativo",
+      "Energia elétrica administrativa",
+      "Água e saneamento",
+      "Internet e telefonia",
+      "Software de uso administrativo",
+      "Contabilidade e assessoria fiscal",
+      "Assessoria jurídica",
+      "Material de escritório",
+      "Limpeza e conservação",
+      "Manutenção administrativa",
+      "Seguros empresariais",
+      "Serviços administrativos terceirizados",
+      "IPTU e taxas de funcionamento",
+      "Despesas administrativas gerais"
+    ]
+  },
+  {
+    "key": "financial_revenue",
+    "label": "Receitas financeiras",
+    "direction": "income",
+    "categories": [
+      "Rendimentos de aplicações financeiras",
+      "Juros recebidos por atraso",
+      "Descontos financeiros obtidos",
+      "Variação cambial ativa realizada"
+    ]
+  },
+  {
+    "key": "financial_expense",
+    "label": "Despesas financeiras",
+    "direction": "expense",
+    "categories": [
+      "Juros de empréstimos e financiamentos",
+      "Juros e multas por atraso",
+      "Tarifas bancárias",
+      "IOF sobre operações financeiras",
+      "Despesas com antecipação de recebíveis",
+      "Variação cambial passiva realizada"
+    ]
+  },
+  {
+    "key": "other_revenue",
+    "label": "Outras receitas operacionais",
+    "direction": "income",
+    "categories": [
+      "Receitas de aluguel acessórias",
+      "Indenizações recebidas",
+      "Outras receitas operacionais acessórias"
+    ]
+  },
+  {
+    "key": "other_expense",
+    "label": "Outras despesas operacionais",
+    "direction": "expense",
+    "categories": [
+      "Indenizações pagas",
+      "Multas administrativas",
+      "Outras despesas operacionais diversas"
+    ]
+  },
+  {
+    "key": "income_tax",
+    "label": "Tributos sobre o lucro",
+    "direction": "expense",
+    "categories": ["IRPJ sobre o lucro", "CSLL sobre o lucro"]
+  },
+  {
+    "key": "non_dre",
+    "label": "Fora da DRE — entradas patrimoniais",
+    "direction": "income",
+    "categories": [
+      "Aporte de capital dos sócios",
+      "Empréstimo recebido (principal)",
+      "Resgate de aplicação (principal)",
+      "Recebimento de empréstimo concedido (principal)",
+      "Venda de ativo imobilizado (valor recebido)"
+    ]
+  },
+  {
+    "key": "non_dre",
+    "label": "Fora da DRE — saídas patrimoniais",
+    "direction": "expense",
+    "categories": [
+      "Distribuição de lucros aos sócios",
+      "Pagamento de empréstimo (principal)",
+      "Aplicação financeira (principal)",
+      "Empréstimo concedido (principal)",
+      "Aquisição de máquinas e equipamentos",
+      "Aquisição de móveis e veículos",
+      "Aquisição de ativos intangíveis",
+      "Devolução de capital aos sócios"
+    ]
+  }
+]

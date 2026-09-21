@@ -113,3 +113,13 @@ Validação: 24 testes unitários; fluxos de navegador desktop/mobile para recor
 ### Visão mensal do Financeiro — 21/09/2026
 
 Mês de referência inicia no mês atual; é possível selecionar mês/ano, voltar ao mês atual ou ver todos os meses. Os novos cards Receita e Despesa somam o valor integral dos lançamentos não excluídos por vencimento, incluindo baixados e parciais. Parcelas e assinaturas entram no respectivo mês. Lista e CSV seguem vencimento, aba e filtros. Recebido/Pago continuam seguindo as datas das baixas; os cards não variam com busca, cliente, fornecedor ou aba. Limpar filtros mantém o mês selecionado.
+
+### Categorias e DRE gerencial — 21/09/2026
+
+Catálogo de 92 categorias com grupo automático na interface e em gatilhos do banco para lançamentos e recorrências. Categorias organizadas em receita operacional, deduções, custos, pessoal administrativo, comercial/marketing, administrativo, outras receitas/despesas, resultado financeiro, tributos sobre o lucro e movimentos patrimoniais fora da DRE. O cadastro exige escolha; Outra categoria permite nome e grupo personalizados. Parcelas herdam a classificação. Contratos anteriores mantêm receita operacional; não há reclassificação em massa de históricos.
+
+A DRE de caixa mostra receita líquida, resultado bruto, operacional, financeiro, antes dos tributos e final, com detalhes por categoria e exportação dos subtotais. Aportes, principal de empréstimos/aplicações, ativos e distribuição de lucros permanecem no caixa, separados do resultado. Categorias antigas e o grupo legado de impostos são preservados e sinalizados para revisão. DAS integral é alternativa aos componentes separados, evitando duplicação.
+
+Este é um demonstrativo gerencial pelo regime de caixa, não uma DRE contábil por competência: não calcula estoque/CMV por inventário, depreciação, amortização, provisões, tributos automaticamente ou ganho/perda contábil na venda de ativos. A categoria CMV registra apenas o custo informado. Estrutura de referência: [CPC 26 — apresentação das demonstrações contábeis](https://www.cpc.org.br/CPC/Documentos-Emitidos/Pronunciamentos/Pronunciamento?Id=57).
+
+Validação: 26 testes unitários, validação SQL transacional de todas as 92 categorias incluindo baixas, recorrências e MFA, suíte financeira de permissões, testes de navegador para classificação e exclusão de aportes.

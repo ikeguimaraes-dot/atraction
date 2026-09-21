@@ -2,7 +2,8 @@
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
 import type { Account } from "@/lib/types";
-import { accountBalance, dre, payments } from "@/lib/payments";
+import { accountBalance, dre, dreLines, payments } from "@/lib/payments";
+import { categoryGroup, dreLabels } from "@/lib/finance-categories";
 import { cents, today } from "@/lib/finance";
 import { addDays } from "@/lib/journey";
 import { money, alive } from "@/lib/domain";
@@ -114,19 +115,14 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           </label>
         </div>
         <p className="management-hint">
-          Considera cada baixa, inclusive parcial, pela data em que ocorreu.
-          Saldos iniciais e transferências não entram no resultado. Classifique
-          custos, despesas e impostos ao editar cada lançamento.
+          Considera cada baixa, inclusive parcial, pela data em que ocorreu. As
+          categorias definem a classificação automaticamente. Saldos iniciais,
+          transferências e movimentos patrimoniais não entram no resultado. Este
+          relatório por caixa não apura ajustes contábeis sem baixa, como
+          depreciação e provisões.
         </p>
         <div className="dre-lines">
-          {[
-            ["Receitas recebidas", result.revenue],
-            ["− Custos diretos", result.cost],
-            ["Resultado bruto", result.gross],
-            ["− Despesas operacionais", result.expense],
-            ["− Impostos", result.tax],
-            ["Resultado do período", result.net],
-          ].map(([label, value]) => (
+          {dreLines(result).map(([label, value]) => (
             <div key={label}>
               <span>{label}</span>
               <strong>{money(Number(value) / 100)}</strong>
@@ -136,22 +132,66 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
         <button
           className="secondary"
           onClick={() =>
-            exportCsv("dre-gerencial.csv", [
-              {
+            exportCsv(
+              "dre-gerencial.csv",
+              dreLines(result).map(([linha, valor]) => ({
                 de: from,
                 ate: to,
                 regime: "Caixa",
-                receitas: result.revenue / 100,
-                custos: result.cost / 100,
-                despesas: result.expense / 100,
-                impostos: result.tax / 100,
-                resultado: result.net / 100,
-              },
-            ])
+                linha,
+                valor: (valor / 100).toFixed(2),
+              })),
+            )
           }
         >
           Exportar DRE
         </button>
+        <details style={{ marginTop: 16 }}>
+          <summary>Detalhar por categoria</summary>
+          {result.categories
+            .filter((c) => c.group !== "non_dre")
+            .map((c) => (
+              <div
+                className="setting-line"
+                key={`${c.group}-${c.direction}-${c.category}`}
+              >
+                <span>
+                  {c.category}
+                  <small style={{ display: "block" }}>
+                    {dreLabels[c.group]}
+                  </small>
+                </span>
+                <strong>{money(c.amount / 100)}</strong>
+              </div>
+            ))}
+          {!result.categories.some((c) => c.group !== "non_dre") && (
+            <p>Sem baixas classificadas no período.</p>
+          )}
+        </details>
+        <details style={{ marginTop: 16 }}>
+          <summary>Movimentos fora da DRE</summary>
+          <p>
+            Entradas: {money(result.excludedIncome / 100)} · Saídas:{" "}
+            {money(result.excludedExpense / 100)}
+          </p>
+          {result.categories
+            .filter((c) => c.group === "non_dre")
+            .map((c) => (
+              <p key={`${c.direction}-${c.category}`}>
+                {c.category} · {c.direction === "income" ? "Entrada" : "Saída"}:{" "}
+                {money(c.amount / 100)}
+              </p>
+            ))}
+        </details>
+        {s.finance.some(
+          (f) => !f.deleted_at && !categoryGroup(f.direction, f.category),
+        ) && (
+          <p className="management-hint">
+            Existem categorias anteriores ou personalizadas. A classificação
+            salva foi preservada. Revise lançamentos genéricos, como “Impostos”,
+            para detalhar a DRE.
+          </p>
+        )}
         <p className="management-hint">
           Baixas sem conta vinculada:{" "}
           {money(
@@ -161,7 +201,8 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
               .filter((p) => !p.account_id && p.date >= from && p.date <= to)
               .reduce((n, p) => n + p.amount_cents, 0) / 100,
           )}
-          . Elas entram na DRE, mas não no saldo de uma conta.
+          . Essas baixas não compõem o saldo de uma conta. Sua participação na
+          DRE depende da categoria.
         </p>
       </section>
       <section className="card attribution">

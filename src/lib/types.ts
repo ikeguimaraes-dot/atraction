@@ -133,11 +133,25 @@ export type Payment = {
   amount_cents: number;
   account_id: string | null;
 };
+export type DreGroup =
+  | "revenue"
+  | "cost"
+  | "expense"
+  | "tax"
+  | "sales_deduction"
+  | "personnel"
+  | "sales"
+  | "financial_revenue"
+  | "financial_expense"
+  | "other_revenue"
+  | "other_expense"
+  | "income_tax"
+  | "non_dre";
 export type FinanceEntry = Base & {
   recurrence_id?: string | null;
   recurrence_index?: number | null;
   payments?: Payment[];
-  dre_group?: "revenue" | "cost" | "expense" | "tax";
+  dre_group?: DreGroup;
   contract_id?: string | null;
   installment?: number | null;
   title: string;

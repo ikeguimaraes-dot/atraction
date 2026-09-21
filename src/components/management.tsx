@@ -1,4 +1,10 @@
 "use client";
+import { FinanceCategory } from "./finance-category";
+import {
+  categoryGroup,
+  dreLabels,
+  effectiveDreGroup,
+} from "@/lib/finance-categories";
 import { Recurrences } from "./recurrences";
 import { createRecurrence } from "@/lib/recurrences";
 import { installmentPlan } from "@/lib/installments";
@@ -597,6 +603,7 @@ export function Finance({
                 descricao: r.title,
                 tipo: r.direction === "income" ? "Receita" : "Despesa",
                 categoria: r.category,
+                grupo_dre: dreLabels[effectiveDreGroup(r)],
                 vencimento: r.due_date,
                 valor: (r.amount_cents / 100).toFixed(2),
                 baixado: (paid(r) / 100).toFixed(2),
@@ -766,7 +773,8 @@ function EntryForm({
       title: "",
       direction,
       amount_cents: 0,
-      category: direction === "income" ? "Serviços" : "Custos operacionais",
+      category: "",
+      dre_group: direction === "income" ? "revenue" : "expense",
       due_date: today(),
       settled_date: null,
       contact_id: direction === "income" ? contact || null : null,
@@ -807,6 +815,8 @@ function EntryForm({
           setError("");
           setSaving(true);
           try {
+            if (!data.category.trim())
+              throw new Error("Selecione uma categoria.");
             if (!value && monthly) {
               if (
                 await createRecurrence(
@@ -814,6 +824,10 @@ function EntryForm({
                   {
                     ...data,
                     title: data.title.trim(),
+                    category: data.category.trim(),
+                    dre_group:
+                      categoryGroup(direction, data.category) ||
+                      effectiveDreGroup(data),
                     amount_cents: cents(amount),
                     settled_date: null,
                     payments: [],
@@ -833,6 +847,10 @@ function EntryForm({
                 ...data,
                 ...part,
                 id: ids[i],
+                category: data.category.trim(),
+                dre_group:
+                  categoryGroup(direction, data.category) ||
+                  effectiveDreGroup(data),
                 title: `${data.title.trim().slice(0, 190)} · ${i + 1}/${count}`,
                 settled_date: null,
                 payments: [],
@@ -846,6 +864,10 @@ function EntryForm({
               await w.write("finance", {
                 ...data,
                 title: data.title.trim(),
+                category: data.category.trim(),
+                dre_group:
+                  categoryGroup(direction, data.category) ||
+                  effectiveDreGroup(data),
                 amount_cents: cents(amount),
               })
             )
@@ -949,33 +971,10 @@ function EntryForm({
               />
             </label>
           )}
-          <label>
-            Categoria
-            <input
-              required
-              maxLength={100}
-              list="finance-categories"
-              value={data.category}
-              onChange={(e) => setData({ ...data, category: e.target.value })}
-            />
-            <datalist id="finance-categories">
-              {(direction === "income"
-                ? ["Serviços", "Produtos", "Mensalidades", "Outras receitas"]
-                : [
-                    "Custos operacionais",
-                    "Materiais",
-                    "Aluguel",
-                    "Equipe",
-                    "Marketing",
-                    "Impostos",
-                    "Serviços",
-                    "Outras despesas",
-                  ]
-              ).map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </datalist>
-          </label>
+          <FinanceCategory
+            value={data}
+            onChange={(patch) => setData({ ...data, ...patch })}
+          />
           {direction === "income" ? (
             <label>
               Cliente ou pessoa
@@ -1044,24 +1043,6 @@ function EntryForm({
           <p className="management-hint">
             As alterações e baixas afetam somente este lançamento.
           </p>
-        )}
-        {direction === "expense" && (
-          <label>
-            Grupo na DRE
-            <select
-              value={data.dre_group || "expense"}
-              onChange={(e) =>
-                setData({
-                  ...data,
-                  dre_group: e.target.value as FinanceEntry["dre_group"],
-                })
-              }
-            >
-              <option value="cost">Custo direto</option>
-              <option value="expense">Despesa operacional</option>
-              <option value="tax">Impostos</option>
-            </select>
-          </label>
         )}
         <label className="checkbox">
           <input

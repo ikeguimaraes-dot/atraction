@@ -1,3 +1,5 @@
+import { effectiveDreGroup, dreLabels } from "./finance-categories";
+import type { DreGroup } from "./types";
 import type { FinanceEntry, Payment, State, Account } from "./types";
 export const payments = (f: FinanceEntry): Payment[] =>
   f.payments ??
@@ -35,23 +37,78 @@ export function accountBalance(s: State, a: Account, until = "9999-12-31") {
   return total;
 }
 export function dre(s: State, from: string, to: string) {
-  const result = { revenue: 0, cost: 0, expense: 0, tax: 0 };
+  const result = Object.fromEntries(
+    Object.keys(dreLabels).map((k) => [k, 0]),
+  ) as Record<DreGroup, number>;
+  const categories = new Map<
+    string,
+    { category: string; group: DreGroup; direction: string; amount: number }
+  >();
+  let excludedIncome = 0,
+    excludedExpense = 0;
   for (const f of s.finance.filter((f) => !f.deleted_at)) {
-    const group =
-      f.direction === "income"
-        ? "revenue"
-        : f.dre_group === "cost"
-          ? "cost"
-          : f.dre_group === "tax"
-            ? "tax"
-            : "expense";
-    result[group] += payments(f)
+    const group = effectiveDreGroup(f);
+    const amount = payments(f)
       .filter((p) => inPeriod(p.date, from, to))
       .reduce((n, p) => n + p.amount_cents, 0);
+    if (!amount) continue;
+    if (group === "non_dre") {
+      if (f.direction === "income") excludedIncome += amount;
+      else excludedExpense += amount;
+    } else result[group] += amount;
+    const key = `${group}:${f.direction}:${f.category}`;
+    const previous = categories.get(key);
+    categories.set(key, {
+      category: f.category,
+      group,
+      direction: f.direction,
+      amount: (previous?.amount || 0) + amount,
+    });
   }
+  const netRevenue = result.revenue - result.sales_deduction;
+  const gross = netRevenue - result.cost;
+  const operating =
+    gross -
+    result.personnel -
+    result.sales -
+    result.expense +
+    result.other_revenue -
+    result.other_expense -
+    result.tax;
+  const financial = result.financial_revenue - result.financial_expense;
+  const beforeTax = operating + financial;
   return {
     ...result,
-    gross: result.revenue - result.cost,
-    net: result.revenue - result.cost - result.expense - result.tax,
+    netRevenue,
+    gross,
+    operating,
+    financial,
+    beforeTax,
+    net: beforeTax - result.income_tax,
+    excludedIncome,
+    excludedExpense,
+    categories: [...categories.values()],
   };
+}
+export function dreLines(result: ReturnType<typeof dre>): [string, number][] {
+  return [
+    ["Receitas recebidas — operacionais", result.revenue],
+    ["− Deduções da receita", -result.sales_deduction],
+    ["Receita líquida", result.netRevenue],
+    ["− Custos dos produtos e serviços", -result.cost],
+    ["Resultado bruto", result.gross],
+    ["− Despesas com pessoal", -result.personnel],
+    ["− Despesas comerciais e marketing", -result.sales],
+    ["− Despesas administrativas", -result.expense],
+    ["+ Outras receitas operacionais", result.other_revenue],
+    ["− Outras despesas operacionais", -result.other_expense],
+    ["− Tributos sem detalhamento (legado)", -result.tax],
+    ["Resultado operacional — caixa", result.operating],
+    ["+ Receitas financeiras", result.financial_revenue],
+    ["− Despesas financeiras", -result.financial_expense],
+    ["Resultado financeiro", result.financial],
+    ["Resultado antes dos tributos sobre o lucro", result.beforeTax],
+    ["− Tributos sobre o lucro", -result.income_tax],
+    ["Resultado do período", result.net],
+  ];
 }

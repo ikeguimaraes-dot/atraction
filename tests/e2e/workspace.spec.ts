@@ -203,6 +203,10 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
   await page.getByLabel("Descrição", { exact: true }).fill("Mensalidade teste");
   await page.getByLabel("Valor total (R$)", { exact: true }).fill("123,45");
   await expect(page.getByLabel("Cliente ou pessoa")).not.toHaveValue("");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Categoria", { exact: true })
+    .selectOption("Prestação de serviços");
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   const income = page
     .locator(".ledger-row")
@@ -224,6 +228,10 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
     .getByRole("combobox", { name: "Fornecedor", exact: true })
     .selectOption({ label: "Fornecedor teste" });
   await page.getByLabel("Já paguei esse valor").check();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Categoria", { exact: true })
+    .selectOption("Materiais aplicados nos serviços");
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   await expect(
     page.locator(".finance-summary:not(.monthly-totals)"),
