@@ -101,3 +101,11 @@ Validação: 22 testes unitários, 30 testes de navegador desktop/celular e suí
 ### Abas financeiras — 21/09/2026
 
 O Financeiro separa Receitas e Despesas em abas acessíveis por teclado. A aba Receitas mostra o filtro de cliente e a aba Despesas mostra fornecedor. Lista e CSV seguem a aba e filtros; o resumo superior inclui ambas as direções e segue somente o período. Limpar filtros mantém a aba. Abrir um novo lançamento seleciona a aba correspondente.
+
+### Recorrências mensais — 21/09/2026
+
+Receitas e despesas oferecem Repetir mensalmente, valor mensal e data final opcional. O valor inteiro se repete, sem divisão em parcelas. O Supabase gera uma previsão móvel de aproximadamente 12 meses, ancorada no dia do primeiro vencimento, e repõe lançamentos diariamente às 06:23 UTC pelo pg_cron existente. O cadastro e a geração são transacionais; uma chave por recorrência/mês impede duplicatas. Datas iniciais aceitas no banco vão de cinco anos atrás a dez anos adiante.
+
+Recorrências mensais, dentro de cada aba, permite encerrar com confirmação. O encerramento remove somente lançamentos futuros sem baixa; vencidos, vencimentos do dia e qualquer pagamento parcial/integral são preservados. Alterar um lançamento afeta só aquela ocorrência. Para mudar o valor permanente, encerre e cadastre uma nova recorrência. A rotina cria contas previstas; não cobra nem paga automaticamente. Na demonstração, a reposição ocorre ao abrir o sistema.
+
+Validação: 24 testes unitários; fluxos de navegador desktop/mobile para recorrências, encerramento, parcelas e empresas; SQL transacional com rollback validando datas, valor integral, idempotência, reposição, término, baixas parciais, isolamento e MFA. Cron confirmado ativo.

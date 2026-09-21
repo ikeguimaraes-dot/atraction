@@ -1,4 +1,6 @@
 "use client";
+import { Recurrences } from "./recurrences";
+import { createRecurrence } from "@/lib/recurrences";
 import { installmentPlan } from "@/lib/installments";
 import { PaymentModal } from "./payment-modal";
 import { payments, paid, remaining, financeInPeriod } from "@/lib/payments";
@@ -464,6 +466,7 @@ export function Finance({
         role="tabpanel"
         aria-labelledby={`finance-tab-${direction}`}
       >
+        <Recurrences w={w} direction={direction} />
         <div className="management-toolbar finance-filters">
           <label>
             Buscar lançamento
@@ -588,6 +591,7 @@ export function Finance({
               </span>
               <div className="ledger-description">
                 <strong>{r.title}</strong>
+                {r.recurrence_id && <small>Recorrência mensal</small>}
                 <small>
                   {r.category} · {party(r)}
                 </small>
@@ -739,6 +743,8 @@ function EntryForm({
     value ? (value.amount_cents / 100).toFixed(2) : "",
   );
   const [count, setCount] = useState("1");
+  const [monthly, setMonthly] = useState(false);
+  const [endDate, setEndDate] = useState("");
   const [ids] = useState(() => Array.from({ length: 60 }, () => uuid()));
   let preview: ReturnType<typeof installmentPlan> = [];
   try {
@@ -766,6 +772,23 @@ function EntryForm({
           setError("");
           setSaving(true);
           try {
+            if (!value && monthly) {
+              if (
+                await createRecurrence(
+                  w,
+                  {
+                    ...data,
+                    title: data.title.trim(),
+                    amount_cents: cents(amount),
+                    settled_date: null,
+                    payments: [],
+                  },
+                  endDate || null,
+                )
+              )
+                onClose();
+              return;
+            }
             if (!value && Number(count) > 1) {
               const rows = installmentPlan(
                 cents(amount),
@@ -804,7 +827,7 @@ function EntryForm({
           <input
             autoFocus
             required
-            maxLength={200}
+            maxLength={monthly ? 180 : 200}
             value={data.title}
             onChange={(e) => setData({ ...data, title: e.target.value })}
             placeholder={
@@ -814,9 +837,35 @@ function EntryForm({
             }
           />
         </label>
+        {!value && (
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={monthly}
+              onChange={(e) => {
+                setMonthly(e.target.checked);
+                setCount("1");
+                setData({ ...data, settled_date: null });
+              }}
+            />
+            Repetir mensalmente
+          </label>
+        )}
+        {!value && monthly && (
+          <p className="management-hint">
+            O valor se repete por inteiro a cada mês. O sistema mantém os
+            próximos 12 meses previstos e continua gerando automaticamente até
+            você encerrar ou chegar à data final. Cada lançamento fica em aberto
+            para baixa individual.
+          </p>
+        )}
         <div className="form-grid">
           <label>
-            {value ? "Valor (R$)" : "Valor total (R$)"}
+            {value
+              ? "Valor (R$)"
+              : monthly
+                ? "Valor mensal (R$)"
+                : "Valor total (R$)"}
             <input
               required
               inputMode="decimal"
@@ -826,7 +875,9 @@ function EntryForm({
             />
           </label>
           <label>
-            {!value && Number(count) > 1 ? "Primeiro vencimento" : "Vencimento"}
+            {!value && (monthly || Number(count) > 1)
+              ? "Primeiro vencimento"
+              : "Vencimento"}
             <input
               type="date"
               required
@@ -834,7 +885,7 @@ function EntryForm({
               onChange={(e) => setData({ ...data, due_date: e.target.value })}
             />
           </label>
-          {!value && (
+          {!value && !monthly && (
             <label>
               Quantidade de parcelas
               <input
@@ -849,6 +900,17 @@ function EntryForm({
                   if (Number(e.target.value) > 1)
                     setData({ ...data, settled_date: null });
                 }}
+              />
+            </label>
+          )}
+          {!value && monthly && (
+            <label>
+              Repetir até (opcional)
+              <input
+                type="date"
+                min={data.due_date}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
               />
             </label>
           )}
@@ -970,7 +1032,7 @@ function EntryForm({
           <input
             type="checkbox"
             checked={!!data.settled_date}
-            disabled={!!value || Number(count) > 1}
+            disabled={!!value || monthly || Number(count) > 1}
             onChange={(e) =>
               setData({
                 ...data,
@@ -1014,7 +1076,7 @@ function EntryForm({
             Cancelar
           </button>
           <button className="primary" disabled={saving || w.busy}>
-            Salvar lançamento
+            {monthly ? "Salvar recorrência" : "Salvar lançamento"}
           </button>
         </footer>
       </form>

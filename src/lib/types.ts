@@ -134,6 +134,8 @@ export type Payment = {
   account_id: string | null;
 };
 export type FinanceEntry = Base & {
+  recurrence_id?: string | null;
+  recurrence_index?: number | null;
   payments?: Payment[];
   dre_group?: "revenue" | "cost" | "expense" | "tax";
   contract_id?: string | null;
@@ -196,7 +198,27 @@ export type ChatMessage = Base & {
   direction: "in" | "out";
   client_id: string;
 };
+export type Recurrence = {
+  id: string;
+  tenant_id: string;
+  owner_id: string | null;
+  title: string;
+  direction: "income" | "expense";
+  amount_cents: number;
+  category: string;
+  first_due_date: string;
+  end_date: string | null;
+  active: boolean;
+  next_index: number;
+  contact_id: string | null;
+  supplier_id: string | null;
+  notes: string;
+  dre_group?: FinanceEntry["dre_group"];
+  created_at: string;
+  updated_at: string;
+};
 export type State = {
+  recurrences?: Recurrence[];
   accounts: Account[];
   transfers: Transfer[];
   segments: Segment[];

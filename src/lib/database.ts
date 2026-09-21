@@ -9,6 +9,7 @@ import type {
   CustomerDocument,
   Supplier,
   FinanceEntry,
+  Recurrence,
   Deal,
   Activity,
   Message,
@@ -38,6 +39,7 @@ export type Database = {
       }>;
       atraction_suppliers: Table<Supplier>;
       atraction_finance: Table<FinanceEntry>;
+      atraction_recurrences: Table<Recurrence>;
       atraction_contracts: Table<Contract>;
       atraction_documents: Table<CustomerDocument>;
       atraction_contacts: Table<Contact>;
@@ -59,6 +61,19 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      atraction_create_recurrence: {
+        Args: {
+          t: string;
+          request_id: string;
+          entry: FinanceEntry;
+          ends_on: string | null;
+        };
+        Returns: string;
+      };
+      atraction_stop_recurrence: {
+        Args: { series: string };
+        Returns: undefined;
+      };
       atraction_record_payment: {
         Args: {
           entry: string;

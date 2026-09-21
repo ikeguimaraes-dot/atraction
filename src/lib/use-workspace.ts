@@ -1,4 +1,5 @@
 "use client";
+import { replenishRecurrences } from "./recurrences";
 import { paid, payments } from "./payments";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
@@ -118,7 +119,10 @@ export function useWorkspace() {
       chosen = available[0].id;
     const ids = chosen === "all" ? available.map((t) => t.id) : [chosen];
     const fetchRows = async (
-      table: `atraction_${Collection}` | "atraction_events",
+      table:
+        | `atraction_${Collection}`
+        | "atraction_events"
+        | "atraction_recurrences",
     ) => {
       const rows: unknown[] = [];
       for (let offset = 0; offset < 50000; offset += 1000) {
@@ -138,6 +142,7 @@ export function useWorkspace() {
     const results = await Promise.all([
       ...collections.map((c) => fetchRows(`atraction_${c}`)),
       fetchRows("atraction_events"),
+      fetchRows("atraction_recurrences"),
     ]);
     if (version !== readVersion.current) return true;
     const tenant = available.find((t) => t.id === chosen) || available[0];
@@ -145,6 +150,7 @@ export function useWorkspace() {
       tenant,
       role: chosen === "all" ? "viewer" : tenant.role,
       events: results[collections.length],
+      recurrences: results[collections.length + 1],
     } as unknown as State;
     collections.forEach((c, i) => Object.assign(next, { [c]: results[i] }));
     setCompanies(available);
@@ -187,20 +193,22 @@ export function useWorkspace() {
     try {
       const saved = localStorage.getItem(storageKey);
       setState(
-        saved
-          ? {
-              accounts: [],
-              transfers: [],
-              segments: [],
-              chat_sessions: [],
-              chat_messages: [],
-              contracts: [],
-              documents: [],
-              suppliers: [],
-              finance: [],
-              ...JSON.parse(saved),
-            }
-          : demo(),
+        replenishRecurrences(
+          saved
+            ? {
+                accounts: [],
+                transfers: [],
+                segments: [],
+                chat_sessions: [],
+                chat_messages: [],
+                contracts: [],
+                documents: [],
+                suppliers: [],
+                finance: [],
+                ...JSON.parse(saved),
+              }
+            : demo(),
+        ),
       );
     } catch {
       setState(demo());
