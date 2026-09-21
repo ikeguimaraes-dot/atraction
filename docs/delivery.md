@@ -97,3 +97,7 @@ O cadastro oferece estética, academia, pet, fintech, software/SaaS, restaurante
 No cadastro financeiro, informe valor total, quantidade de parcelas (1 a 60) e primeiro vencimento. A prévia mostra valores e vencimentos mensais. Centavos restantes são distribuídos nas primeiras parcelas; datas usam o dia original, limitado ao último dia de cada mês. Cada parcela vira um lançamento em aberto numerado no título, com cliente/fornecedor, categoria e grupo DRE preservados. Baixas e edições são individuais. O conjunto é inserido em uma única operação no banco; IDs estáveis evitam duplicação ao repetir uma tentativa sem resposta. Não há juros calculados automaticamente nem edição conjunta de séries.
 
 Validação: 22 testes unitários, 30 testes de navegador desktop/celular e suíte SQL transacional de soma, gravação atômica e MFA.
+
+### Abas financeiras — 21/09/2026
+
+O Financeiro separa Receitas e Despesas em abas acessíveis por teclado. A aba Receitas mostra o filtro de cliente e a aba Despesas mostra fornecedor. Lista e CSV seguem a aba e filtros; o resumo superior inclui ambas as direções e segue somente o período. Limpar filtros mantém a aba. Abrir um novo lançamento seleciona a aba correspondente.

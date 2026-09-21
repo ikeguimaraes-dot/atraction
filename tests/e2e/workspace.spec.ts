@@ -228,6 +228,13 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
   await expect(page.locator(".finance-summary")).toContainText("R$ 100");
   await page.reload();
   await go(page, "Financeiro");
+  await page.getByRole("tab", { name: "Despesas", exact: true }).click();
+  await expect(
+    page.getByRole("tab", { name: "Despesas", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.locator(".ledger-row").filter({ hasText: "Mensalidade teste" }),
+  ).toHaveCount(0);
   const expense = page
     .locator(".ledger-row")
     .filter({ hasText: "Materiais teste" });
@@ -244,7 +251,10 @@ test("cliente manual, fornecedor e financeiro com baixa e persistência", async 
     .getByRole("combobox", { name: "Status", exact: true })
     .selectOption("settled");
   await expect(expense).toHaveCount(0);
-  await expect(page.locator(".ledger-row")).toHaveCount(1);
+  await expect(page.locator(".ledger-row")).toHaveCount(0);
+  await page.getByRole("tab", { name: "Receitas", exact: true }).click();
+  await expect(income).toContainText("Recebido");
+  await expect(expense).toHaveCount(0);
   await page.screenshot({
     path: `test-results/finance-${test.info().project.name}.png`,
     fullPage: true,

@@ -356,7 +356,7 @@ export function Finance({
 }) {
   const s = w.state!;
   const [query, setQuery] = useState("");
-  const [direction, setDirection] = useState("");
+  const [direction, setDirection] = useState<"income" | "expense">("income");
   const [status, setStatus] = useState("");
   const [contact, setContact] = useState(initialContact);
   const [supplier, setSupplier] = useState("");
@@ -370,9 +370,9 @@ export function Finance({
   const rows = alive(s.finance)
     .filter(
       (r) =>
-        (!direction || r.direction === direction) &&
-        (!contact || r.contact_id === contact) &&
-        (!supplier || r.supplier_id === supplier) &&
+        r.direction === direction &&
+        (direction !== "income" || !contact || r.contact_id === contact) &&
+        (direction !== "expense" || !supplier || r.supplier_id === supplier) &&
         financeInPeriod(r, from, to) &&
         (!status ||
           (status === "open"
@@ -398,233 +398,296 @@ export function Finance({
         subtitle="Receitas, custos e despesas. Acompanhe o previsto e registre o que já aconteceu."
         action={
           <div className="management-actions">
-            <button className="secondary" onClick={() => setEditing("expense")}>
+            <button
+              className="secondary"
+              onClick={() => {
+                setDirection("expense");
+                setEditing("expense");
+              }}
+            >
               <ArrowDownLeft size={17} /> Nova despesa
             </button>
-            <button className="primary" onClick={() => setEditing("income")}>
+            <button
+              className="primary"
+              onClick={() => {
+                setDirection("income");
+                setEditing("income");
+              }}
+            >
               <Plus size={17} /> Nova receita
             </button>
           </div>
         }
       />
-      <FinancialSummary rows={rows} from={from} to={to} />
-      <div className="management-toolbar finance-filters">
-        <label>
-          Buscar lançamento
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Descrição ou categoria"
-          />
-        </label>
-        <label>
-          Tipo
-          <select
-            value={direction}
-            onChange={(e) => setDirection(e.target.value)}
-          >
-            <option value="">Entradas e saídas</option>
-            <option value="income">Receitas</option>
-            <option value="expense">Despesas</option>
-          </select>
-        </label>
-        <label>
-          Status
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Todos</option>
-            <option value="open">Em aberto</option>
-            <option value="overdue">Atrasados</option>
-            <option value="settled">Recebidos / pagos</option>
-          </select>
-        </label>
-        <label>
-          Cliente
-          <select value={contact} onChange={(e) => setContact(e.target.value)}>
-            <option value="">Todos</option>
-            {s.contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.deleted_at ? " (arquivado)" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Fornecedor
-          <select
-            value={supplier}
-            onChange={(e) => setSupplier(e.target.value)}
-          >
-            <option value="">Todos</option>
-            {s.suppliers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.deleted_at ? " (arquivado)" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          De
-          <input
-            type="date"
-            value={from}
-            max={to || undefined}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </label>
-        <label>
-          Até
-          <input
-            type="date"
-            min={from || undefined}
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </label>
-        <button
-          className="text-button"
-          onClick={() => {
-            setQuery("");
-            setDirection("");
-            setStatus("");
-            setContact("");
-            setSupplier("");
-            setFrom("");
-            setTo("");
-          }}
-        >
-          Limpar filtros
-        </button>
-      </div>
-      <button
-        className="secondary"
-        onClick={() =>
-          exportCsv(
-            "financeiro.csv",
-            rows.map((r) => ({
-              descricao: r.title,
-              tipo: r.direction === "income" ? "Receita" : "Despesa",
-              categoria: r.category,
-              vencimento: r.due_date,
-              valor: (r.amount_cents / 100).toFixed(2),
-              baixado: (paid(r) / 100).toFixed(2),
-              restante: (remaining(r) / 100).toFixed(2),
-              pessoa: party(r),
-              status: entryStatus(r),
-            })),
-          )
-        }
-      >
-        Exportar financeiro (CSV)
-      </button>
+      <FinancialSummary rows={s.finance} from={from} to={to} />
       <p className="management-hint">
-        Totais seguem os filtros. O período usa a data da baixa para valores
-        recebidos/pagos e o vencimento para contas em aberto. Vendas ganhas no
-        CRM não geram recebimentos automaticamente.
+        Resumo geral da empresa no período selecionado, incluindo receitas e
+        despesas.
       </p>
-      <section className="card ledger" aria-label="Lançamentos financeiros">
-        {rows.map((r) => (
-          <article className="ledger-row" key={r.id}>
-            <span className={`ledger-icon ${r.direction}`}>
-              {r.direction === "income" ? (
-                <ArrowUpRight size={20} />
-              ) : (
-                <ArrowDownLeft size={20} />
-              )}
-            </span>
-            <div className="ledger-description">
-              <strong>{r.title}</strong>
-              <small>
-                {r.category} · {party(r)}
-              </small>
-              <small>
-                Baixado: {money(paid(r) / 100)} · Restante:{" "}
-                {money(remaining(r) / 100)}
-              </small>
-              <small>
-                Vence {dateLabel(r.due_date)}
-                {r.settled_date ? ` · Baixa ${dateLabel(r.settled_date)}` : ""}
-              </small>
-            </div>
-            <div className={`ledger-value ${r.direction}`}>
-              <strong>
-                {r.direction === "expense" ? "− " : ""}
-                {money(r.amount_cents / 100)}
-              </strong>
-              <span
-                className={
-                  !r.settled_date && r.due_date < today() ? "overdue" : ""
-                }
-              >
-                {entryStatus(r)}
-              </span>
-            </div>
-            <div className="ledger-actions">
-              {payments(r).length > 0 && (
-                <button className="text-button" onClick={() => setSettling(r)}>
-                  Ver baixas
-                </button>
-              )}
-              <button
-                className="secondary"
-                disabled={w.busy}
-                onClick={() => {
-                  if (r.settled_date)
-                    void recordPayment(
-                      w,
-                      r,
-                      {
-                        id: uuid(),
-                        date: today(),
-                        amount_cents: 0,
-                        account_id: null,
-                      },
-                      "00000000-0000-0000-0000-000000000000",
-                    );
-                  else {
-                    setSettleDate(today());
-                    setSettling(r);
-                  }
-                }}
-              >
-                {r.settled_date
-                  ? "Reabrir"
-                  : r.direction === "income"
-                    ? "Receber"
-                    : "Pagar"}
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Editar ${r.title}`}
-                onClick={() => setEditing(r)}
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={`Excluir ${r.title}`}
-                disabled={w.busy}
-                onClick={() =>
-                  w.write("finance", {
-                    ...r,
-                    deleted_at: new Date().toISOString(),
-                  })
-                }
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </article>
+      <div
+        className="management-actions hub-tabs"
+        role="tablist"
+        aria-label="Tipo de lançamento"
+      >
+        {(["income", "expense"] as const).map((tab) => (
+          <button
+            key={tab}
+            id={`finance-tab-${tab}`}
+            role="tab"
+            aria-selected={direction === tab}
+            aria-controls="finance-panel"
+            tabIndex={direction === tab ? 0 : -1}
+            className={direction === tab ? "primary" : "secondary"}
+            onClick={() => setDirection(tab)}
+            onKeyDown={(e) => {
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key))
+                return;
+              e.preventDefault();
+              const next =
+                e.key === "Home"
+                  ? "income"
+                  : e.key === "End"
+                    ? "expense"
+                    : tab === "income"
+                      ? "expense"
+                      : "income";
+              setDirection(next);
+              document.getElementById(`finance-tab-${next}`)?.focus();
+            }}
+          >
+            {tab === "income" ? "Receitas" : "Despesas"}
+          </button>
         ))}
-        {!rows.length && (
-          <Empty
-            title="Tudo começa com um lançamento"
-            text="Registre receitas ou despesas e acompanhe suas contas aqui."
-            action={<Wallet size={24} />}
-          />
-        )}
-      </section>
+      </div>
+      <div
+        id="finance-panel"
+        role="tabpanel"
+        aria-labelledby={`finance-tab-${direction}`}
+      >
+        <div className="management-toolbar finance-filters">
+          <label>
+            Buscar lançamento
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Descrição ou categoria"
+            />
+          </label>
+          <label>
+            Status
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Todos</option>
+              <option value="open">Em aberto</option>
+              <option value="overdue">Atrasados</option>
+              <option value="settled">
+                {direction === "income" ? "Recebidos" : "Pagos"}
+              </option>
+            </select>
+          </label>
+          {direction === "income" && (
+            <label>
+              Cliente
+              <select
+                value={contact}
+                onChange={(e) => setContact(e.target.value)}
+              >
+                <option value="">Todos</option>
+                {s.contacts.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.deleted_at ? " (arquivado)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {direction === "expense" && (
+            <label>
+              Fornecedor
+              <select
+                value={supplier}
+                onChange={(e) => setSupplier(e.target.value)}
+              >
+                <option value="">Todos</option>
+                {s.suppliers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.deleted_at ? " (arquivado)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            De
+            <input
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </label>
+          <label>
+            Até
+            <input
+              type="date"
+              min={from || undefined}
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </label>
+          <button
+            className="text-button"
+            onClick={() => {
+              setQuery("");
+              setStatus("");
+              setContact("");
+              setSupplier("");
+              setFrom("");
+              setTo("");
+            }}
+          >
+            Limpar filtros
+          </button>
+        </div>
+        <button
+          className="secondary"
+          onClick={() =>
+            exportCsv(
+              direction === "income" ? "receitas.csv" : "despesas.csv",
+              rows.map((r) => ({
+                descricao: r.title,
+                tipo: r.direction === "income" ? "Receita" : "Despesa",
+                categoria: r.category,
+                vencimento: r.due_date,
+                valor: (r.amount_cents / 100).toFixed(2),
+                baixado: (paid(r) / 100).toFixed(2),
+                restante: (remaining(r) / 100).toFixed(2),
+                pessoa: party(r),
+                status: entryStatus(r),
+              })),
+            )
+          }
+        >
+          Exportar financeiro (CSV)
+        </button>
+        <p className="management-hint">
+          A lista e a exportação seguem a aba e os filtros. O resumo geral segue
+          somente o período, usando a data da baixa para valores recebidos/pagos
+          e o vencimento para contas em aberto.
+        </p>
+        <section className="card ledger" aria-label="Lançamentos financeiros">
+          {rows.map((r) => (
+            <article className="ledger-row" key={r.id}>
+              <span className={`ledger-icon ${r.direction}`}>
+                {r.direction === "income" ? (
+                  <ArrowUpRight size={20} />
+                ) : (
+                  <ArrowDownLeft size={20} />
+                )}
+              </span>
+              <div className="ledger-description">
+                <strong>{r.title}</strong>
+                <small>
+                  {r.category} · {party(r)}
+                </small>
+                <small>
+                  Baixado: {money(paid(r) / 100)} · Restante:{" "}
+                  {money(remaining(r) / 100)}
+                </small>
+                <small>
+                  Vence {dateLabel(r.due_date)}
+                  {r.settled_date
+                    ? ` · Baixa ${dateLabel(r.settled_date)}`
+                    : ""}
+                </small>
+              </div>
+              <div className={`ledger-value ${r.direction}`}>
+                <strong>
+                  {r.direction === "expense" ? "− " : ""}
+                  {money(r.amount_cents / 100)}
+                </strong>
+                <span
+                  className={
+                    !r.settled_date && r.due_date < today() ? "overdue" : ""
+                  }
+                >
+                  {entryStatus(r)}
+                </span>
+              </div>
+              <div className="ledger-actions">
+                {payments(r).length > 0 && (
+                  <button
+                    className="text-button"
+                    onClick={() => setSettling(r)}
+                  >
+                    Ver baixas
+                  </button>
+                )}
+                <button
+                  className="secondary"
+                  disabled={w.busy}
+                  onClick={() => {
+                    if (r.settled_date)
+                      void recordPayment(
+                        w,
+                        r,
+                        {
+                          id: uuid(),
+                          date: today(),
+                          amount_cents: 0,
+                          account_id: null,
+                        },
+                        "00000000-0000-0000-0000-000000000000",
+                      );
+                    else {
+                      setSettleDate(today());
+                      setSettling(r);
+                    }
+                  }}
+                >
+                  {r.settled_date
+                    ? "Reabrir"
+                    : r.direction === "income"
+                      ? "Receber"
+                      : "Pagar"}
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Editar ${r.title}`}
+                  onClick={() => setEditing(r)}
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`Excluir ${r.title}`}
+                  disabled={w.busy}
+                  onClick={() =>
+                    w.write("finance", {
+                      ...r,
+                      deleted_at: new Date().toISOString(),
+                    })
+                  }
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </article>
+          ))}
+          {!rows.length && (
+            <Empty
+              title={
+                direction === "income"
+                  ? "Nenhuma receita encontrada"
+                  : "Nenhuma despesa encontrada"
+              }
+              text="Revise os filtros ou cadastre um lançamento nesta aba."
+              action={<Wallet size={24} />}
+            />
+          )}
+        </section>
+      </div>
       {editing && (
         <EntryForm
           w={w}
