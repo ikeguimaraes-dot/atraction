@@ -123,3 +123,7 @@ A DRE de caixa mostra receita líquida, resultado bruto, operacional, financeiro
 Este é um demonstrativo gerencial pelo regime de caixa, não uma DRE contábil por competência: não calcula estoque/CMV por inventário, depreciação, amortização, provisões, tributos automaticamente ou ganho/perda contábil na venda de ativos. A categoria CMV registra apenas o custo informado. Estrutura de referência: [CPC 26 — apresentação das demonstrações contábeis](https://www.cpc.org.br/CPC/Documentos-Emitidos/Pronunciamentos/Pronunciamento?Id=57).
 
 Validação: 26 testes unitários, validação SQL transacional de todas as 92 categorias incluindo baixas, recorrências e MFA, suíte financeira de permissões, testes de navegador para classificação e exclusão de aportes.
+
+### CAPEX visível no cadastro — 21/09/2026
+
+As categorias de aquisição de máquinas/equipamentos, móveis/veículos e intangíveis agora aparecem no grupo CAPEX — investimentos em ativos, com o prefixo CAPEX nas opções. Os valores salvos e o enquadramento fora da DRE continuam os mesmos.

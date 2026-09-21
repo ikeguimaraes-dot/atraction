@@ -20,6 +20,11 @@ export function FinanceCategory({
     (g) => g.direction === value.direction,
   );
   const group = effectiveDreGroup(value);
+  const categorySection = options.find((g) =>
+    g.categories.includes(value.category.trim()),
+  );
+  const isCapex = categorySection?.label.startsWith("CAPEX");
+  const manualGroups = [...new Map(options.map((g) => [g.key, g])).values()];
   return (
     <>
       <label>
@@ -54,10 +59,10 @@ export function FinanceCategory({
             </option>
           )}
           {options.map((g) => (
-            <optgroup key={`${g.key}-${g.direction}`} label={g.label}>
+            <optgroup key={g.label} label={g.label}>
               {g.categories.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {g.label.startsWith("CAPEX") ? `CAPEX — ${c}` : c}
                 </option>
               ))}
             </optgroup>
@@ -87,7 +92,11 @@ export function FinanceCategory({
       )}
       {mapped ? (
         <p className="management-hint">
-          Classificação automática: <strong>{dreLabels[mapped]}</strong>.
+          Classificação automática:{" "}
+          <strong>
+            {isCapex ? categorySection?.label : dreLabels[mapped]}
+          </strong>
+          .
         </p>
       ) : value.category || custom ? (
         <label>
@@ -98,7 +107,7 @@ export function FinanceCategory({
               onChange({ dre_group: e.target.value as DreGroup })
             }
           >
-            {options.map((g) => (
+            {manualGroups.map((g) => (
               <option key={g.key} value={g.key}>
                 {g.label}
               </option>
@@ -109,8 +118,9 @@ export function FinanceCategory({
       ) : null}
       {(mapped || group) === "non_dre" && (
         <p className="management-hint">
-          Este movimento afeta o caixa, mas não o resultado da DRE. Registre os
-          juros separadamente do principal.
+          {isCapex
+            ? "Investimento em ativos (CAPEX). O pagamento fica registrado no financeiro, fora do resultado da DRE gerencial por caixa."
+            : "Este movimento afeta o caixa, mas não o resultado da DRE. Registre os juros separadamente do principal."}
         </p>
       )}
       {value.category === "Simples Nacional (DAS integral)" && (

@@ -166,6 +166,16 @@
   },
   {
     "key": "non_dre",
+    "label": "CAPEX — investimentos em ativos",
+    "direction": "expense",
+    "categories": [
+      "Aquisição de máquinas e equipamentos",
+      "Aquisição de móveis e veículos",
+      "Aquisição de ativos intangíveis"
+    ]
+  },
+  {
+    "key": "non_dre",
     "label": "Fora da DRE — saídas patrimoniais",
     "direction": "expense",
     "categories": [
@@ -173,9 +183,6 @@
       "Pagamento de empréstimo (principal)",
       "Aplicação financeira (principal)",
       "Empréstimo concedido (principal)",
-      "Aquisição de máquinas e equipamentos",
-      "Aquisição de móveis e veículos",
-      "Aquisição de ativos intangíveis",
       "Devolução de capital aos sócios"
     ]
   }
