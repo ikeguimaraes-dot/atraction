@@ -9,21 +9,16 @@ export const ui = {
   este_convite_expirou_foi_usado_ou_pertence_a_outro_e_ma:
     "Este convite expirou, foi usado ou pertence a outro e-mail. Peça um novo link ao dono do negócio.",
   atraction: "Atraction",
-  nao_conseguimos_preparar_a_protecao_da_conta_tente_entr:
-    "Não conseguimos preparar a proteção da conta. Tente entrar novamente.",
   confira_sua_conexao_e_tente_novamente:
     "Confira sua conexão e tente novamente.",
   nao_foi_possivel_criar_a_conta_use_uma_senha_com_pelo_m:
     "Não foi possível criar a conta. Use uma senha com pelo menos 8 caracteres ou tente entrar.",
   e_mail_ou_senha_nao_conferem_revise_e_tente_novamente:
     "E-mail ou senha não conferem. Revise e tente novamente.",
-  esse_codigo_nao_conferiu_digite_o_codigo_atual_do_seu_a:
-    "Esse código não conferiu. Digite o código atual do seu aplicativo autenticador.",
   nao_foi_possivel_criar_seu_espaco_tente_novamente:
     "Não foi possível criar seu espaço. Tente novamente.",
   nao_conseguimos_conectar_confira_sua_internet_e_tente_n:
     "Não conseguimos conectar. Confira sua internet e tente novamente.",
-  sua_conta_protegida: "Sua conta protegida",
   seu_negocio_comeca_aqui: "Seu negócio começa aqui",
   crie_seu_espaco: "Crie seu espaço",
   que_bom_ter_voce_por_aqui: "Que bom ter você por aqui",
@@ -39,14 +34,6 @@ export const ui = {
   abra_o_link_de_confirmacao_e_volte_para_entrar_na_sua_c:
     "Abra o link de confirmação e volte para entrar na sua conta.",
   voltar_para_entrar: "Voltar para entrar",
-  use_um_aplicativo_autenticador_para_proteger_os_dados_d:
-    "Use um aplicativo autenticador para proteger os dados dos seus clientes.",
-  codigo_qr_para_configurar_seu_autenticador:
-    "Código QR para configurar seu autenticador",
-  leia_o_qr_no_seu_autenticador_e_digite_os_seis_numeros_:
-    "Leia o QR no seu autenticador e digite os seis números abaixo.",
-  codigo_de_verificacao: "Código de verificação",
-  verificar_e_continuar: "Verificar e continuar",
   nome_do_seu_negocio: "Nome do seu negócio",
   qual_e_o_seu_negocio: "Qual é o seu negócio?",
   quantas_pessoas_atendem: "Quantas pessoas atendem?",

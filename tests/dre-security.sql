@@ -1,7 +1,7 @@
 begin;
 create function pg_temp.assert_true(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;end $$;
 insert into auth.users(id,email,email_confirmed_at) values('00000000-0000-4000-8000-00000000ef01','dre-test@example.invalid',now());
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ef01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ef01","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
 insert into public.atraction_tenants(id,name,owner_id) values('00000000-0000-4000-8000-00000000ef02','DRE teste','00000000-0000-4000-8000-00000000ef01');
 do $$ declare r record; actual text; entry_id uuid; begin
@@ -112,6 +112,6 @@ select public.atraction_create_recurrence('00000000-0000-4000-8000-00000000ef02'
 select pg_temp.assert_true((select dre_group='financial_revenue' from public.atraction_recurrences where id='00000000-0000-4000-8000-00000000ef03'),'recurrence classified');
 select pg_temp.assert_true((select dre_group='financial_revenue' from public.atraction_finance where recurrence_id='00000000-0000-4000-8000-00000000ef03'),'generated occurrence classified');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ef01","role":"authenticated","aal":"aal1"}',true);
-select pg_temp.assert_true((select count(*)=0 from public.atraction_finance),'MFA still protects finance');
-select 'DRE category mapping, payments, recurrence and MFA passed' as result;
+select pg_temp.assert_true((select count(*)>0 from public.atraction_finance),'owner password session reads finance');
+select 'DRE category mapping, payments, recurrence and password access passed' as result;
 rollback;

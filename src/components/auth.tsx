@@ -1,8 +1,8 @@
 "use client";
 import { uuid } from "@/lib/demo";
 import { ui } from "@/lib/pt-ui";
-import { useEffect, useState, useRef } from "react";
-import { ShieldCheck, Mail, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Modal } from "./ui";
 import { niches } from "@/data/niches";
@@ -21,9 +21,6 @@ export function Auth({
   const [signup, setSignup] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
-  const [qr, setQr] = useState("");
-  const [factor, setFactor] = useState("");
   const [name, setName] = useState("");
   const [niche, setNiche] = useState<Niche>("outro");
   const [segmentLabel, setSegmentLabel] = useState("");
@@ -48,7 +45,6 @@ export function Auth({
     }
     return onReady(id);
   };
-  const enrolling = useRef(false);
   const afterAuth = async () => {
     const db = supabase();
     const {
@@ -56,53 +52,12 @@ export function Auth({
     } = await db.auth.getUser();
     if (!user) return;
     setUid(user.id);
-    const { data: member } = await db
-      .from("atraction_members")
-      .select("role")
-      .eq("user_id", user.id);
-    if (
-      !createCompany &&
-      member?.length &&
-      member.every((m) => ["agent", "viewer"].includes(m.role))
-    ) {
-      if (await finish(user.id)) onClose();
+    if (createCompany) {
+      setStep("business");
       return;
     }
-    const { data: aal } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (aal?.currentLevel === "aal2") {
-      if (createCompany) {
-        setStep("business");
-        return;
-      }
-      if (await finish(user.id)) onClose();
-      else setStep("business");
-      return;
-    }
-    const { data: factors } = await db.auth.mfa.listFactors();
-    const verified = factors?.totp.find((f) => f.status === "verified");
-    if (verified) {
-      setFactor(verified.id);
-      setStep("mfa");
-      return;
-    }
-    if (enrolling.current) return;
-    enrolling.current = true;
-    // Reuse no unverified secret; remove only this application's stale enrollment.
-    for (const f of factors?.all || [])
-      if (f.status === "unverified" && f.friendly_name === ui.atraction)
-        await db.auth.mfa.unenroll({ factorId: f.id });
-    const { data, error } = await db.auth.mfa.enroll({
-      factorType: "totp",
-      friendlyName: ui.atraction,
-    });
-    if (error || !data) {
-      enrolling.current = false;
-      setError(ui.nao_conseguimos_preparar_a_protecao_da_conta_tente_entr);
-      return;
-    }
-    setFactor(data.id);
-    setQr(data.totp.qr_code);
-    setStep("mfa");
+    if (await finish(user.id)) onClose();
+    else setStep("business");
   };
   useEffect(() => {
     afterAuth().catch(() => setError(ui.confira_sua_conexao_e_tente_novamente));
@@ -138,21 +93,6 @@ export function Auth({
           return;
         }
         await afterAuth();
-      } else if (step === "mfa") {
-        const { error } = await db.auth.mfa.challengeAndVerify({
-          factorId: factor,
-          code,
-        });
-        if (error) {
-          setError(ui.esse_codigo_nao_conferiu_digite_o_codigo_atual_do_seu_a);
-          return;
-        }
-        if (createCompany) {
-          setStep("business");
-          return;
-        }
-        if (await finish(uid)) onClose();
-        else setStep("business");
       } else if (step === "business") {
         const { error } = await db.from("atraction_tenants").insert({
           id: companyId,
@@ -200,13 +140,11 @@ export function Auth({
   return (
     <Modal
       title={
-        step === "mfa"
-          ? ui.sua_conta_protegida
-          : step === "business"
-            ? ui.seu_negocio_comeca_aqui
-            : signup
-              ? ui.crie_seu_espaco
-              : ui.que_bom_ter_voce_por_aqui
+        step === "business"
+          ? ui.seu_negocio_comeca_aqui
+          : signup
+            ? ui.crie_seu_espaco
+            : ui.que_bom_ter_voce_por_aqui
       }
       onClose={onClose}
     >
@@ -270,39 +208,6 @@ export function Auth({
               {ui.voltar_para_entrar}
             </button>
           </div>
-        )}
-        {step === "mfa" && (
-          <>
-            <ShieldCheck className="purple" size={32} />
-            <p>{ui.use_um_aplicativo_autenticador_para_proteger_os_dados_d}</p>
-            {qr && (
-              <>
-                <img
-                  className="qr"
-                  src={qr}
-                  alt={ui.codigo_qr_para_configurar_seu_autenticador}
-                />
-                <p className="muted">
-                  {ui.leia_o_qr_no_seu_autenticador_e_digite_os_seis_numeros_}
-                </p>
-              </>
-            )}
-            <label>
-              {ui.codigo_de_verificacao}
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-              />
-            </label>
-            <button className="primary" disabled={busy}>
-              {ui.verificar_e_continuar}
-            </button>
-          </>
         )}
         {step === "business" && (
           <>

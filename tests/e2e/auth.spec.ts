@@ -11,6 +11,14 @@ test("usuário existente entra sem novo cadastro e configura seu espaço", async
     email_confirmed_at: new Date().toISOString(),
     app_metadata: { provider: "email", providers: ["email"] },
     user_metadata: {},
+    factors: [
+      {
+        id: "00000000-0000-4000-8000-000000000992",
+        factor_type: "totp",
+        status: "verified",
+        friendly_name: "Atraction",
+      },
+    ],
     created_at: new Date().toISOString(),
   };
   const token =
@@ -20,7 +28,7 @@ test("usuário existente entra sem novo cadastro e configura seu espaço", async
         sub: id,
         aud: "authenticated",
         role: "authenticated",
-        aal: "aal2",
+        aal: "aal1",
         exp: Math.floor(Date.now() / 1000) + 3600,
         iat: Math.floor(Date.now() / 1000),
       },
@@ -28,6 +36,14 @@ test("usuário existente entra sem novo cadastro e configura seu espaço", async
       .map((x) => Buffer.from(JSON.stringify(x)).toString("base64url"))
       .join(".") + ".fixture";
   let signups = 0;
+  let factorRequests = 0;
+  await page.route("**/auth/v1/factors**", (r) => {
+    factorRequests++;
+    return r.fulfill({
+      status: 400,
+      json: { message: "Unexpected MFA request" },
+    });
+  });
   let credentials: Record<string, string> | undefined;
   await page.route("**/auth/v1/signup*", (r) => {
     signups++;
@@ -71,5 +87,6 @@ test("usuário existente entra sem novo cadastro e configura seu espaço", async
     password: "old123",
   });
   expect(signups).toBe(0);
+  expect(factorRequests).toBe(0);
   await expect(modal.getByLabel("Nome do seu negócio")).toBeVisible();
 });

@@ -1,9 +1,9 @@
 begin;
 create function pg_temp.assert_true(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;end $$;
 insert into auth.users(id,email) values('00000000-0000-4000-8000-00000000da01','operations-owner@example.invalid'),('00000000-0000-4000-8000-00000000db01','operations-agent@example.invalid');
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal1"}',true);
 insert into public.atraction_tenants(id,name,owner_id,capture_slug,capture_enabled) values('00000000-0000-4000-8000-00000000da02','Operations test','00000000-0000-4000-8000-00000000da01','operations-fixture',true);
 insert into public.atraction_contacts(id,tenant_id,owner_id,name,phone) values('00000000-0000-4000-8000-00000000da03','00000000-0000-4000-8000-00000000da02','00000000-0000-4000-8000-00000000da01','Source','+5521998888777'),('00000000-0000-4000-8000-00000000da04','00000000-0000-4000-8000-00000000da02','00000000-0000-4000-8000-00000000da01','Target','+5521998888778');
 insert into public.atraction_accounts(id,tenant_id,name,kind,initial_date) values('00000000-0000-4000-8000-00000000da05','00000000-0000-4000-8000-00000000da02','Bank','bank',current_date);
@@ -24,7 +24,7 @@ do $$begin begin update public.atraction_contacts set deleted_at=null where id='
 reset role;
 insert into public.atraction_members(tenant_id,user_id,role) values('00000000-0000-4000-8000-00000000da02','00000000-0000-4000-8000-00000000db01','agent');
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal1"}',true);
 update public.atraction_contacts set owner_id='00000000-0000-4000-8000-00000000db01' where id='00000000-0000-4000-8000-00000000da04';
 select public.atraction_member_role('00000000-0000-4000-8000-00000000da02','00000000-0000-4000-8000-00000000db01','viewer');
 select pg_temp.assert_true((select owner_id='00000000-0000-4000-8000-00000000da01' from public.atraction_contacts where id='00000000-0000-4000-8000-00000000da04'),'member reassignment');
@@ -36,14 +36,14 @@ select public.atraction_chat_send((current_setting('test.chat')::jsonb->>'id')::
 select pg_temp.assert_true(jsonb_array_length(public.atraction_chat_poll((current_setting('test.chat')::jsonb->>'id')::uuid,current_setting('test.chat')::jsonb->>'token')->'messages')=1,'public visitor chat');
 do $$begin begin perform public.atraction_chat_poll((current_setting('test.chat')::jsonb->>'id')::uuid,'wrong-token');raise exception 'FAIL: token isolation';exception when raise_exception then if sqlerrm like 'FAIL:%' then raise;end if;end;end $$;
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal1"}',true);
 insert into public.atraction_chat_messages(tenant_id,session_id,body,direction,client_id) values('00000000-0000-4000-8000-00000000da02',(current_setting('test.chat')::jsonb->>'id')::uuid,'Welcome','out',gen_random_uuid());
 select pg_temp.assert_true((select contact_id='00000000-0000-4000-8000-00000000da04' from public.atraction_chat_sessions where id=(current_setting('test.chat')::jsonb->>'id')::uuid),'merged phone routes to target');
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select pg_temp.assert_true(jsonb_array_length(public.atraction_chat_poll((current_setting('test.chat')::jsonb->>'id')::uuid,current_setting('test.chat')::jsonb->>'token')->'messages')=2,'visitor receives reply');
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000da01","role":"authenticated","aal":"aal1"}',true);
 update public.atraction_chat_sessions set closed=true;
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);

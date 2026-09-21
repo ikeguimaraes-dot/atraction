@@ -2,7 +2,7 @@
 begin;
 create function pg_temp.assert_true(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;end $$;
 insert into auth.users(id,email) values('00000000-0000-4000-8000-00000000fa01','finance-owner@example.invalid'),('00000000-0000-4000-8000-00000000fb01','finance-other@example.invalid'),('00000000-0000-4000-8000-00000000fc01','finance-viewer@example.invalid');
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fa01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fa01","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
 insert into public.atraction_tenants(id,name,owner_id) values('00000000-0000-4000-8000-00000000fa02','Finance A','00000000-0000-4000-8000-00000000fa01');
 insert into public.atraction_contacts(id,tenant_id,name,phone,lifecycle) values('00000000-0000-4000-8000-00000000fa03','00000000-0000-4000-8000-00000000fa02','Existing client','+5521998888777','customer');
@@ -13,7 +13,7 @@ select pg_temp.assert_true((select count(*)=1 from public.atraction_finance wher
 select pg_temp.assert_true((select count(*)=1 from public.atraction_events where entity='finance' and kind='UPDATE' and payload->'before'->>'settled_date' is null and payload->'after'->>'settled_date' is not null),'settlement audit has before and after');
 do $$begin begin update public.atraction_finance set amount_cents=-1;raise exception 'FAIL: negative accepted';exception when raise_exception then if sqlerrm like 'FAIL:%' then raise;end if;end;end $$;
 do $$begin begin perform public.atraction_record_payment('00000000-0000-4000-8000-00000000fa05',1,current_date+1,null,gen_random_uuid());raise exception 'FAIL: future payment';exception when raise_exception then if sqlerrm like 'FAIL:%' then raise;end if;end;end $$;
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fb01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fb01","role":"authenticated","aal":"aal1"}',true);
 insert into public.atraction_tenants(id,name,owner_id) values('00000000-0000-4000-8000-00000000fb02','Finance B','00000000-0000-4000-8000-00000000fb01');
 select pg_temp.assert_true((select count(*)=0 from public.atraction_finance),'cross tenant hidden');
 do $$begin begin insert into public.atraction_finance(tenant_id,title,direction,amount_cents,category,due_date,supplier_id) values('00000000-0000-4000-8000-00000000fb02','Intrusion','expense',1,'Other',current_date,'00000000-0000-4000-8000-00000000fa04');raise exception 'FAIL: cross tenant supplier';exception when foreign_key_violation then null;end;end $$;
@@ -32,9 +32,9 @@ select pg_temp.assert_true((select count(*)=0 from public.atraction_finance),'ag
 reset role;
 update public.atraction_members set role='manager' where user_id='00000000-0000-4000-8000-00000000fc01';
 set local role authenticated;
-select pg_temp.assert_true((select count(*)=0 from public.atraction_finance),'manager without MFA hidden');
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fc01","role":"authenticated","aal":"aal2"}',true);
-select pg_temp.assert_true((select count(*)=1 from public.atraction_finance),'manager with MFA reads');
+select pg_temp.assert_true((select count(*)=1 from public.atraction_finance),'manager password session reads');
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000fc01","role":"authenticated","aal":"aal1"}',true);
+select pg_temp.assert_true((select count(*)=1 from public.atraction_finance),'manager reads own company');
 select public.atraction_record_payment('00000000-0000-4000-8000-00000000fa05',0,current_date,null,gen_random_uuid(),'00000000-0000-0000-0000-000000000000');
 update public.atraction_finance set deleted_at=now();
 update public.atraction_finance set deleted_at=null;

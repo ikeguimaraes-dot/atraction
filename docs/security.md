@@ -1,7 +1,7 @@
 # Segurança e isolamento
 
 - Toda tabela operacional do Atraction tem RLS e tenant_id. Referências entre contatos e negócios/tarefas/mensagens usam chaves compostas `(tenant_id, id)`.
-- Papéis são consultados em `atraction_members`; nunca em metadados editáveis do usuário. Donos/gerentes exigem AAL2. Atendentes só veem registros atribuídos, e somente leitura não escreve.
+- Papéis são consultados em `atraction_members`; nunca em metadados editáveis do usuário. Donos e gestores acessam com e-mail e senha, sem exigência de autenticador. Atendentes só veem registros atribuídos, e somente leitura não escreve.
 - Funções privilegiadas ficam em schema não exposto, com search_path vazio e EXECUTE explicitamente concedido. Wrappers da API são SECURITY INVOKER.
 - Exceção intencional de autenticação: as duas implementações de captação aceitam visitantes públicos. A leitura retorna apenas nome/título/nicho de páginas habilitadas. A escrita exige opt-in e telefone válido, não retorna cadastro, deduplica e limita novas pessoas por hora com trava por conta. Não oferece leitura arbitrária de contatos. Esse limite ainda não substitui proteção per-IP/antibot em uma publicação pública.
 - Eventos, histórico de consentimentos e fila não aceitam mutações pelo cliente. Os triggers registram alterações; o worker tem execução revogada para todas as funções de cliente e só roda pelo administrador/agendador.
@@ -16,7 +16,7 @@ Os testes SQL fazem ROLLBACK. Não executar rotinas de reset/migração geral do
 
 ## Contratos e documentos
 
-Contratos só podem ser criados/alterados pelas RPCs transacionais da jornada. Funções privilegiadas ficam em `atraction_private`, verificam `auth.uid()` e papel com MFA, usam `search_path` vazio e concessões explícitas. Chaves únicas impedem cobranças repetidas e contratos duplicados por venda/renovação. Contas de contrato não podem ser reassociadas a outro cliente.
+Contratos só podem ser criados/alterados pelas RPCs transacionais da jornada. Funções privilegiadas ficam em `atraction_private`, verificam `auth.uid()` e papel na empresa, usam `search_path` vazio e concessões explícitas. Chaves únicas impedem cobranças repetidas e contratos duplicados por venda/renovação. Contas de contrato não podem ser reassociadas a outro cliente.
 
 Bucket `atraction-documents` privado: políticas exigem metadados visíveis pela RLS, uploads do proprietário do registro, sem upsert ou acesso público. Limites de 5 MB/arquivo e 20 arquivos/espaço protegem o consumo máximo de armazenamento do módulo. Metadados, quotas e auditoria incluem arquivos arquivados. Não alterar políticas/buckets dos outros aplicativos do projeto compartilhado.
 

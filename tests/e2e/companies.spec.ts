@@ -124,7 +124,7 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
         sub: uid,
         aud: "authenticated",
         role: "authenticated",
-        aal: "aal2",
+        aal: "aal1",
         exp: Math.floor(Date.now() / 1000) + 3600,
       },
     ]

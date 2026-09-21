@@ -2,7 +2,7 @@
 begin;
 create function pg_temp.assert_true(ok boolean,label text) returns void language plpgsql as $$begin if ok is distinct from true then raise exception 'FAIL: %',label;end if;end $$;
 insert into auth.users(id,email) values('00000000-0000-4000-8000-00000000ca01','journey-owner@example.invalid'),('00000000-0000-4000-8000-00000000cb01','journey-other@example.invalid'),('00000000-0000-4000-8000-00000000cc01','journey-viewer@example.invalid');
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ca01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ca01","role":"authenticated","aal":"aal1"}',true);
 set local role authenticated;
 insert into public.atraction_tenants(id,name,owner_id,capture_enabled,capture_slug) values('00000000-0000-4000-8000-00000000ca02','Journey A','00000000-0000-4000-8000-00000000ca01',true,'journey-capture-test');
 insert into public.atraction_contacts(id,tenant_id,owner_id,name,phone) values('00000000-0000-4000-8000-00000000ca03','00000000-0000-4000-8000-00000000ca02','00000000-0000-4000-8000-00000000ca01','Journey client','+5521999999991');
@@ -32,7 +32,7 @@ insert into public.atraction_documents(id,tenant_id,owner_id,contact_id,name,pat
 insert into storage.objects(bucket_id,name) values('atraction-documents','00000000-0000-4000-8000-00000000ca02/00000000-0000-4000-8000-00000000ca09');
 select pg_temp.assert_true((select count(*)=1 from storage.objects where bucket_id='atraction-documents'),'owner can read own file');
 -- Other account cannot read or operate on these contracts or document objects.
-select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000cb01","role":"authenticated","aal":"aal2"}',true);
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000cb01","role":"authenticated","aal":"aal1"}',true);
 insert into public.atraction_tenants(id,name,owner_id) values('00000000-0000-4000-8000-00000000cb02','Journey B','00000000-0000-4000-8000-00000000cb01');
 select pg_temp.assert_true((select count(*)=0 from public.atraction_contracts),'cross tenant contracts hidden');
 select pg_temp.assert_true((select count(*)=0 from storage.objects where bucket_id='atraction-documents'),'cross tenant files hidden');
@@ -45,7 +45,7 @@ select pg_temp.assert_true((select count(*)=0 from public.atraction_contracts),'
 select pg_temp.assert_true((select count(*)=0 from storage.objects where bucket_id='atraction-documents'),'viewer files hidden');
 select pg_temp.assert_true((select count(*)=0 from public.atraction_events where entity in ('contracts','documents')),'viewer sensitive audit hidden');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-00000000ca01","role":"authenticated","aal":"aal1"}',true);
-select pg_temp.assert_true((select count(*)=0 from public.atraction_contracts),'MFA required');
+select pg_temp.assert_true((select count(*)>0 from public.atraction_contracts),'owner password session reads contracts');
 -- Anonymous attributed capture and first touch retention.
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);

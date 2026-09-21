@@ -219,26 +219,14 @@ export function useWorkspace() {
       .auth.getUser()
       .then(async ({ data }) => {
         if (data.user) {
-          const { data: aal } =
-            await supabase().auth.mfa.getAuthenticatorAssuranceLevel();
-          const { data: member } = await supabase()
-            .from("atraction_members")
-            .select("role")
-            .eq("user_id", data.user.id);
-          if (
-            aal?.currentLevel === "aal2" ||
-            (member?.length &&
-              member.every((m) => ["agent", "viewer"].includes(m.role)))
-          ) {
-            try {
-              if (!(await read(data.user.id))) setAuthOpen(true);
-            } catch {
-              notify(
-                "Não conseguimos carregar sua conta. Confira a conexão e entre novamente.",
-              );
-              setAuthOpen(true);
-            }
-          } else setAuthOpen(true);
+          try {
+            if (!(await read(data.user.id))) setAuthOpen(true);
+          } catch {
+            notify(
+              "Não conseguimos carregar sua conta. Confira a conexão e entre novamente.",
+            );
+            setAuthOpen(true);
+          }
         }
       });
     return () => {

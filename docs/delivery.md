@@ -2,9 +2,9 @@
 
 ## Entregue e verificado
 
-Publicado em https://atraction.vercel.app/. O núcleo também funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, 14 pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação/MFA, equipe, atribuição e lixeira.
+Publicado em https://atraction.vercel.app/. O núcleo também funciona localmente em Next.js/React/TypeScript e usa o Supabase fornecido para dados reais. As telas funcionam em 360 px. Existe demonstração isolada, 14 pacotes de nicho, cadastro e importação de contatos, quadro de negócios, histórico, rascunhos/notas, agenda, robôs de tarefas, captação com consentimento, resultados, autenticação por e-mail e senha, equipe, atribuição e lixeira.
 
-Foram executados testes unitários de normalização, CSV, deduplicação, exportação e indicadores; testes Playwright de uso em computador/celular; e testes transacionais de segurança no Supabase, sem deixar usuários ou dados de teste persistidos. O agendador `atraction-task-worker` registrou execução bem-sucedida. Verificações específicas de MFA usam claims de teste no banco; entrega de e-mail e inscrição TOTP ponta a ponta com uma conta humana não foram exercitadas.
+Foram executados testes unitários de normalização, CSV, deduplicação, exportação e indicadores; testes Playwright de uso em computador/celular; e testes transacionais de segurança no Supabase, sem deixar usuários ou dados de teste persistidos. O agendador `atraction-task-worker` registrou execução bem-sucedida. Verificações específicas de acesso por senha usam claims de teste no banco; entrega de e-mail e inscrição TOTP ponta a ponta com uma conta humana não foram exercitadas.
 
 O banco existente não foi reestruturado. Foram adicionados objetos exclusivos do Atraction e dois agendamentos próprios. O segundo remove apenas o histórico de cron desses agendamentos após 30 dias.
 
@@ -12,7 +12,7 @@ O banco existente não foi reestruturado. Foram adicionados objetos exclusivos d
 
 O escopo foi ampliado para CRM + gestão operacional, preservando inbound. Clientes existentes podem ser cadastrados manualmente sem criar uma venda fictícia. Pessoas existentes podem ser classificadas como cliente ativo/inativo sem duplicação. O cadastro mantém origem, anotações, negócios e tarefas, com documento, endereço e início do relacionamento.
 
-Receitas e despesas têm categoria, vencimento, vínculo opcional com cliente/fornecedor e baixa manual com data. A visão mostra recebido, pago, saldo dos lançamentos, a receber e a pagar. Filtros seguem data da baixa para realizados e vencimento para abertos. Não inclui saldo inicial bancário; valores ganhos no funil não entram automaticamente no caixa. Valores armazenados em centavos, exclusão reversível e auditoria antes/depois. Donos e gestores com MFA acessam o financeiro; atendentes e leitores não recebem esses dados nem os respectivos eventos.
+Receitas e despesas têm categoria, vencimento, vínculo opcional com cliente/fornecedor e baixa manual com data. A visão mostra recebido, pago, saldo dos lançamentos, a receber e a pagar. Filtros seguem data da baixa para realizados e vencimento para abertos. Não inclui saldo inicial bancário; valores ganhos no funil não entram automaticamente no caixa. Valores armazenados em centavos, exclusão reversível e auditoria antes/depois. Donos e gestores acessam o financeiro; atendentes e leitores não recebem esses dados nem os respectivos eventos.
 
 É controle financeiro operacional manual. Não inclui contabilidade fiscal, nota fiscal, conciliação bancária, transferências, baixa parcial, estoque ou folha. Contratos geram parcelas e mensalidades automaticamente dentro da vigência; a baixa de recebimento continua manual. Essas integrações não foram contratadas.
 
@@ -21,7 +21,7 @@ Receitas e despesas têm categoria, vencimento, vínculo opcional com cliente/fo
 1. **Venda → operação:** ganhar um negócio oferece continuar a jornada; o usuário revisa cliente, plano e calendário antes de confirmar. Uma transação cria contrato, contas a receber e boas-vindas, promove o cliente e marca a venda ganha. Uma venda só pode originar um contrato. Repetir a mesma requisição não duplica parcelas.
 2. **Contratos:** serviço/plano, vigência, cobrança única, parcelada ou mensal por 1 a 60 meses. Parcelas distribuem centavos sem diferença e vencimentos respeitam o fim de cada mês. Calendário completo gerado no cadastro; não depende de navegador aberto nem de um job de geração mensal. Reajustes atingem somente mensalidades em aberto a partir da data escolhida. Renovação confirmada cria um novo período. Cancelamento arquiva contas não pagas com vencimento de hoje em diante, mantendo dívidas anteriores e pagamentos. O cadastro operacional não é assinatura eletrônica nem emissão jurídica automática.
 3. **Hoje:** prioridades para retornos vencidos, propostas sem avanço há sete dias, contas atrasadas e a vencer em sete dias, contratos a renovar em 30 dias e clientes sem interação dentro do intervalo definido. Links abrem a ficha ou o módulo responsável; tarefas também podem ser concluídas na ficha.
-4. **Ficha completa:** linha do tempo cronológica de cadastro/origem, negócios/propostas, notas/conversas, tarefas/atendimentos, contratos, pagamentos e documentos. Documentos privados em PDF/PNG/JPEG, 5 MB por arquivo e 20 documentos por espaço, incluindo arquivados (máximo de 100 MB). Proprietário e gestores com MFA acessam arquivos; demonstração guarda até 1 MB/arquivo no navegador. Arquivo arquivado é ocultado e restaurável por 30 dias; não há expurgo físico automático. Testes de Storage verificam políticas em transação; upload completo via login humano não foi exercitado.
+4. **Ficha completa:** linha do tempo cronológica de cadastro/origem, negócios/propostas, notas/conversas, tarefas/atendimentos, contratos, pagamentos e documentos. Documentos privados em PDF/PNG/JPEG, 5 MB por arquivo e 20 documentos por espaço, incluindo arquivados (máximo de 100 MB). Proprietário e gestores acessam arquivos; demonstração guarda até 1 MB/arquivo no navegador. Arquivo arquivado é ocultado e restaurável por 30 dias; não há expurgo físico automático. Testes de Storage verificam políticas em transação; upload completo via login humano não foi exercitado.
 5. **Atribuição:** gerador de links UTM, captura pública de origem/meio/campanha/indicação, preservação da primeira atribuição em envio repetido. Relatório por origem/campanha separa contatos adquiridos e conversão desse grupo dos recebimentos realizados no período (que podem ser de clientes mais antigos). Sem pixels externos, rastreamento entre dispositivos, cálculo de ROI ou integração de mídia paga.
 6. **Pós-venda:** intervalo por cliente, registro de atendimento, retorno agendado, satisfação de 0 a 10, atenção a notas até 6, renovação e indicação sugerida para notas 9/10 sem pedido recente. Tarefas abertas do mesmo tipo não se duplicam. São ações internas; contato, cobrança e pedido de indicação são realizados pela equipe, sem envio automático.
 
@@ -86,7 +86,7 @@ Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua 
 - Financeiro consolidado considera somente empresas em que o usuário possui acesso financeiro. Recebimentos/pagamentos seguem a data de cada baixa; contas abertas seguem o vencimento. Cadastros repetidos em empresas distintas continuam separados e são contados por empresa.
 - A lista consolidada exibe até 200 registros por vez; a busca filtra a coleção carregada. Continua valendo o limite de leitura do cliente de 50.000 itens por coleção. Configurações, equipe e captação são abertas por empresa.
 - Seleção persistida por usuário, formulários reiniciados na troca, bloqueio de gravações na visão consolidada e proteção contra gravação de um registro na empresa errada. Nenhuma empresa existente foi migrada para outro proprietário.
-- Testes SQL transacionais verificam dois cadastros para o mesmo dono, convites múltiplos, papéis distintos, MFA e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.
+- Testes SQL transacionais verificam dois cadastros para o mesmo dono, convites múltiplos, papéis distintos, acesso por senha e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.
 
 ### Segmentos de empresa — 21/09/2026
 
@@ -96,7 +96,7 @@ O cadastro oferece estética, academia, pet, fintech, software/SaaS, restaurante
 
 No cadastro financeiro, informe valor total, quantidade de parcelas (1 a 60) e primeiro vencimento. A prévia mostra valores e vencimentos mensais. Centavos restantes são distribuídos nas primeiras parcelas; datas usam o dia original, limitado ao último dia de cada mês. Cada parcela vira um lançamento em aberto numerado no título, com cliente/fornecedor, categoria e grupo DRE preservados. Baixas e edições são individuais. O conjunto é inserido em uma única operação no banco; IDs estáveis evitam duplicação ao repetir uma tentativa sem resposta. Não há juros calculados automaticamente nem edição conjunta de séries.
 
-Validação: 22 testes unitários, 30 testes de navegador desktop/celular e suíte SQL transacional de soma, gravação atômica e MFA.
+Validação: 22 testes unitários, 30 testes de navegador desktop/celular e suíte SQL transacional de soma, gravação atômica e acesso por senha.
 
 ### Abas financeiras — 21/09/2026
 
@@ -108,7 +108,7 @@ Receitas e despesas oferecem Repetir mensalmente, valor mensal e data final opci
 
 Recorrências mensais, dentro de cada aba, permite encerrar com confirmação. O encerramento remove somente lançamentos futuros sem baixa; vencidos, vencimentos do dia e qualquer pagamento parcial/integral são preservados. Alterar um lançamento afeta só aquela ocorrência. Para mudar o valor permanente, encerre e cadastre uma nova recorrência. A rotina cria contas previstas; não cobra nem paga automaticamente. Na demonstração, a reposição ocorre ao abrir o sistema.
 
-Validação: 24 testes unitários; fluxos de navegador desktop/mobile para recorrências, encerramento, parcelas e empresas; SQL transacional com rollback validando datas, valor integral, idempotência, reposição, término, baixas parciais, isolamento e MFA. Cron confirmado ativo.
+Validação: 24 testes unitários; fluxos de navegador desktop/mobile para recorrências, encerramento, parcelas e empresas; SQL transacional com rollback validando datas, valor integral, idempotência, reposição, término, baixas parciais, isolamento e acesso por senha. Cron confirmado ativo.
 
 ### Visão mensal do Financeiro — 21/09/2026
 
@@ -122,8 +122,14 @@ A DRE de caixa mostra receita líquida, resultado bruto, operacional, financeiro
 
 Este é um demonstrativo gerencial pelo regime de caixa, não uma DRE contábil por competência: não calcula estoque/CMV por inventário, depreciação, amortização, provisões, tributos automaticamente ou ganho/perda contábil na venda de ativos. A categoria CMV registra apenas o custo informado. Estrutura de referência: [CPC 26 — apresentação das demonstrações contábeis](https://www.cpc.org.br/CPC/Documentos-Emitidos/Pronunciamentos/Pronunciamento?Id=57).
 
-Validação: 26 testes unitários, validação SQL transacional de todas as 92 categorias incluindo baixas, recorrências e MFA, suíte financeira de permissões, testes de navegador para classificação e exclusão de aportes.
+Validação: 26 testes unitários, validação SQL transacional de todas as 92 categorias incluindo baixas, recorrências e acesso por senha, suíte financeira de permissões, testes de navegador para classificação e exclusão de aportes.
 
 ### CAPEX visível no cadastro — 21/09/2026
 
 As categorias de aquisição de máquinas/equipamentos, móveis/veículos e intangíveis agora aparecem no grupo CAPEX — investimentos em ativos, com o prefixo CAPEX nas opções. Os valores salvos e o enquadramento fora da DRE continuam os mesmos.
+
+## Acesso por e-mail e senha — 21/09/2026
+
+Removidas a inscrição e a verificação de autenticador no login, na restauração de sessão, na criação de empresas e na aceitação de convites de gestores. A migração `20260921204100_atraction_password_access.sql` remove a exigência AAL2 das regras do Atraction, mantendo RLS, papéis e isolamento entre empresas. Não altera configurações globais nem fatores de outros aplicativos no Supabase compartilhado.
+
+Regressão: login simulado AAL1 com fator já verificado, criação/alternância de empresas, testes transacionais de CRM, financeiro, contratos/documentos, convites, parcelas, recorrências e DRE usando AAL1, com rollback.
