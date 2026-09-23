@@ -1,21 +1,11 @@
 "use client";
-import { spreadsheetText } from "@/lib/files";
-import { ui } from "@/lib/pt-ui";
-import { useState } from "react";
-import { Upload, Check, FileSpreadsheet } from "lucide-react";
-import { Modal, Avatar } from "./ui";
-import { phone, parseContacts, alive, money } from "@/lib/domain";
-import type {
-  Contact,
-  Deal,
-  Activity,
-  State,
-  Base,
-  Tenant,
-  Automation,
-} from "@/lib/types";
+import { alive, phone } from "@/lib/domain";
 import { today } from "@/lib/finance";
-import { niches, accountPack } from "@/data/niches";
+import { ui } from "@/lib/pt-ui";
+import type { Activity, Base, Contact, State, Tenant } from "@/lib/types";
+import { Check } from "lucide-react";
+import { useState } from "react";
+import { Modal } from "./ui";
 export function ContactForm({
   tenant,
   customer = false,
@@ -54,7 +44,7 @@ export function ContactForm({
     <Modal
       title={
         contact
-          ? ui.editar_pessoa
+          ? "Editar cliente"
           : customer
             ? "Cadastrar cliente"
             : ui.vamos_conhecer_alguem
@@ -137,37 +127,6 @@ export function ContactForm({
               onChange={(e) => setData({ ...data, email: e.target.value })}
             />
           </label>
-          <label>
-            {ui.como_chegou}
-            <select
-              value={data.source}
-              onChange={(e) => setData({ ...data, source: e.target.value })}
-            >
-              {data.source &&
-                ![
-                  ui.cadastro,
-                  ui.instagram,
-                  ui.whatsapp,
-                  ui.indicacao,
-                  ui.site,
-                  ui.planilha,
-                  ui.pagina,
-                ].some((source) => source === data.source) && (
-                  <option>{data.source}</option>
-                )}
-              {[
-                ui.cadastro,
-                ui.instagram,
-                ui.whatsapp,
-                ui.indicacao,
-                ui.site,
-                ui.planilha,
-                ui.pagina,
-              ].map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
         </div>
         <div className="form-grid">
           <label>
@@ -185,7 +144,7 @@ export function ContactForm({
                 })
               }
             >
-              <option value="prospect">Interessado</option>
+              <option value="prospect">Cadastro anterior</option>
               <option value="customer">Cliente ativo</option>
               <option value="inactive">Cliente inativo</option>
             </select>
@@ -218,32 +177,6 @@ export function ContactForm({
           </label>
         </div>
         <div className="form-grid">
-          <label>
-            Campanha
-            <input
-              maxLength={160}
-              value={data.campaign || ""}
-              onChange={(e) => setData({ ...data, campaign: e.target.value })}
-            />
-          </label>
-          <label>
-            Meio de captação
-            <input
-              maxLength={100}
-              value={data.medium || ""}
-              onChange={(e) => setData({ ...data, medium: e.target.value })}
-            />
-          </label>
-          <label>
-            Indicado por
-            <input
-              maxLength={160}
-              value={data.referred_by || ""}
-              onChange={(e) =>
-                setData({ ...data, referred_by: e.target.value })
-              }
-            />
-          </label>
           <label>
             Acompanhar a cada (dias)
             <input
@@ -299,27 +232,7 @@ export function ContactForm({
             onChange={(e) => setData({ ...data, notes: e.target.value })}
           />
         </label>
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={data.consent}
-            onChange={(e) => setData({ ...data, consent: e.target.checked })}
-          />
-          {ui.autorizou_receber_mensagens_pelo_whatsapp}
-        </label>
-        {data.consent && (
-          <label>
-            {ui.como_a_autorizacao_foi_recebida}
-            <input
-              required
-              placeholder={ui.ex_formulario_preenchido_em_19_09}
-              value={data.consent_proof}
-              onChange={(e) =>
-                setData({ ...data, consent_proof: e.target.value })
-              }
-            />
-          </label>
-        )}
+
         {error && (
           <p className="error" role="alert">
             {error}
@@ -330,7 +243,7 @@ export function ContactForm({
             {ui.cancelar}
           </button>
           <button className="primary" disabled={busy}>
-            {ui.salvar_pessoa}
+            Salvar cliente
             <Check size={16} />
           </button>
         </footer>
@@ -338,143 +251,7 @@ export function ContactForm({
     </Modal>
   );
 }
-export function DealForm({
-  pipelineId = "main",
-  deal,
-  state,
-  base,
-  onSave,
-  onClose,
-}: {
-  pipelineId?: string;
-  deal?: Deal;
-  state: State;
-  base: () => Base;
-  onSave: (r: Deal) => Promise<boolean>;
-  onClose: () => void;
-}) {
-  const [data, setData] = useState(
-    deal || {
-      ...base(),
-      pipeline_id: pipelineId,
-      contact_id: alive(state.contacts)[0]?.id || "",
-      title: accountPack(state.tenant).service,
-      value: 0,
-      stage: 0,
-      loss_reason: "",
-    },
-  );
-  const [busy, setBusy] = useState(false);
-  return (
-    <Modal
-      title={deal ? ui.cuidar_deste_negocio : ui.uma_nova_oportunidade}
-      onClose={onClose}
-    >
-      <form
-        className="form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          if (await onSave(data)) onClose();
-          setBusy(false);
-        }}
-      >
-        <label>
-          Funil
-          <select
-            value={data.pipeline_id || "main"}
-            onChange={(e) => setData({ ...data, pipeline_id: e.target.value })}
-          >
-            <option value="main">Principal</option>
-            {(state.tenant.settings?.pipelines || []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {ui.pessoa}
-          <select
-            required
-            value={data.contact_id}
-            onChange={(e) => setData({ ...data, contact_id: e.target.value })}
-          >
-            <option value="">{ui.escolha_uma_pessoa}</option>
-            {alive(state.contacts).map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {ui.o_que_voce_esta_oferecendo}
-          <input
-            required
-            value={data.title}
-            onChange={(e) => setData({ ...data, title: e.target.value })}
-          />
-        </label>
-        <div className="form-grid">
-          <label>
-            {ui.valor_em_reais}
-            <input
-              type="number"
-              required
-              min="0"
-              step="0.01"
-              value={data.value}
-              onChange={(e) =>
-                setData({ ...data, value: Number(e.target.value) })
-              }
-            />
-          </label>
-          <label>
-            {ui.em_que_momento_esta}
-            <select
-              value={data.stage}
-              onChange={(e) =>
-                setData({ ...data, stage: Number(e.target.value) })
-              }
-            >
-              {(
-                state.tenant.settings?.pipelines?.find(
-                  (p) => p.id === data.pipeline_id,
-                )?.stages || accountPack(state.tenant).stages
-              ).map((s, i) => (
-                <option value={i} key={s}>
-                  {s}
-                </option>
-              ))}
-              <option value={-1}>{ui.nao_foi_desta_vez}</option>
-            </select>
-          </label>
-        </div>
-        {data.stage === -1 && (
-          <label>
-            {ui.o_que_aconteceu}
-            <input
-              required
-              value={data.loss_reason}
-              onChange={(e) =>
-                setData({ ...data, loss_reason: e.target.value })
-              }
-            />
-          </label>
-        )}
-        <footer>
-          <button type="button" className="secondary" onClick={onClose}>
-            {ui.cancelar}
-          </button>
-          <button className="primary" disabled={busy || !data.contact_id}>
-            {ui.salvar_negocio}
-          </button>
-        </footer>
-      </form>
-    </Modal>
-  );
-}
+
 export function TaskForm({
   state,
   base,
@@ -557,246 +334,6 @@ export function TaskForm({
           </button>
           <button className="primary" disabled={busy}>
             {ui.guardar_na_agenda}
-          </button>
-        </footer>
-      </form>
-    </Modal>
-  );
-}
-export function ImportForm({
-  state,
-  base,
-  onSave,
-  onClose,
-}: {
-  state: State;
-  base: () => Base;
-  onSave: (r: Contact[]) => Promise<boolean>;
-  onClose: () => void;
-}) {
-  const [preview, setPreview] = useState<ReturnType<
-    typeof parseContacts
-  > | null>(null);
-  const [busy, setBusy] = useState(false);
-  return (
-    <Modal title={ui.suas_pessoas_todas_aqui} onClose={onClose} wide>
-      <div className="form">
-        <p>
-          Importe CSV ou a primeira aba de um Excel (.xlsx), com as colunas
-          <strong>{ui.nome_2}</strong> {ui.e}
-          <strong>{ui.telefone}</strong>
-          {ui.e_mail_e_origem_sao_opcionais}
-        </p>
-        <label className="upload-zone">
-          <Upload />
-          <strong>Escolher CSV ou Excel (.xlsx)</strong>
-          <span>{ui.ate_10_000_pessoas_maximo_de_5_mb}</span>
-          <input
-            type="file"
-            accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (f) {
-                if (f.size > 5 * 1024 * 1024) {
-                  setPreview({
-                    rows: [],
-                    errors: [ui.escolha_um_arquivo_de_ate_5_mb],
-                  });
-                  return;
-                }
-                setBusy(true);
-                try {
-                  setPreview(
-                    parseContacts(await spreadsheetText(f), state.contacts),
-                  );
-                } catch (err) {
-                  setPreview({ rows: [], errors: [(err as Error).message] });
-                } finally {
-                  setBusy(false);
-                }
-              }
-            }}
-          />
-        </label>
-        <a
-          className="text-button"
-          download="modelo-contatos.csv"
-          href={
-            "data:text/csv;charset=utf-8," +
-            encodeURIComponent(
-              ui.nome_telefone_email_origem_maria_exemplo_11999999999_in,
-            )
-          }
-        >
-          <FileSpreadsheet size={16} />
-          {ui.baixar_planilha_de_exemplo}
-        </a>
-        {preview && (
-          <>
-            <div className="inline-notice">
-              {preview.rows.length} {ui.pessoas_prontas_para_importar}
-              {preview.errors.length} {ui.avisos}
-            </div>
-            {preview.errors.length > 0 && (
-              <div className="import-errors">
-                {preview.errors.slice(0, 30).map((x, i) => (
-                  <p key={i}>{x}</p>
-                ))}
-              </div>
-            )}
-            <div className="preview-list">
-              {preview.rows.slice(0, 5).map((r) => (
-                <div key={r.phone}>
-                  <Avatar name={r.name} small />
-                  <strong>{r.name}</strong>
-                  <span>{r.phone}</span>
-                </div>
-              ))}
-            </div>
-            <p className="muted">
-              {ui.a_importacao_nao_registra_autorizacao_de_envio_registre}
-            </p>
-          </>
-        )}
-        <footer>
-          <button className="secondary" onClick={onClose}>
-            {ui.cancelar}
-          </button>
-          <button
-            className="primary"
-            disabled={!preview?.rows.length || busy}
-            onClick={async () => {
-              setBusy(true);
-              const ok = await onSave(
-                preview!.rows.map((r) => ({
-                  ...base(),
-                  ...r,
-                  tags: [],
-                  notes: "",
-                  consent: false,
-                  consent_proof: "",
-                })),
-              );
-              setBusy(false);
-              if (ok) onClose();
-            }}
-          >
-            {ui.importar}
-            {preview?.rows.length || ""} {ui.pessoas}
-          </button>
-        </footer>
-      </div>
-    </Modal>
-  );
-}
-export function RobotForm({
-  robot,
-  state,
-  base,
-  onSave,
-  onClose,
-}: {
-  robot?: Automation;
-  state: State;
-  base: () => Base;
-  onSave: (r: Automation) => Promise<boolean>;
-  onClose: () => void;
-}) {
-  const [data, setData] = useState(
-    robot || {
-      ...base(),
-      name: ui.meu_lembrete,
-      trigger: "contact_created" as const,
-      delay_hours: 24,
-      action: "create_task" as const,
-      enabled: false,
-    },
-  );
-  const [busy, setBusy] = useState(false);
-  return (
-    <Modal title={ui.um_ajudante_do_seu_jeito} onClose={onClose}>
-      <form
-        className="form"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          if (await onSave({ ...data, enabled: false })) onClose();
-          setBusy(false);
-        }}
-      >
-        <label>
-          {ui.nome_do_robo}
-          <input
-            value={data.name}
-            required
-            onChange={(e) => setData({ ...data, name: e.target.value })}
-          />
-        </label>
-        <div className="robot-block">
-          <span>{ui["1"]}</span>
-          <label>
-            {ui.quando_acontecer}
-            <select
-              value={data.trigger}
-              onChange={(e) =>
-                setData({
-                  ...data,
-                  trigger: e.target.value as Automation["trigger"],
-                })
-              }
-            >
-              <option value="contact_created">
-                {ui.uma_pessoa_nova_chegar}
-              </option>
-              <option value="deal_stale">{ui.um_negocio_ficar_parado}</option>
-            </select>
-          </label>
-        </div>
-        <div className="robot-block">
-          <span>{ui["2"]}</span>
-          <label>
-            {ui.esperar_quantas_horas}
-            <input
-              type="number"
-              min={0}
-              max={8760}
-              required
-              value={data.delay_hours}
-              onChange={(e) =>
-                setData({ ...data, delay_hours: Number(e.target.value) })
-              }
-            />
-          </label>
-        </div>
-        <div className="robot-block">
-          <span>{ui["3"]}</span>
-          <label>
-            {ui.fazer_isto}
-            <select>
-              <option>{ui.criar_uma_tarefa_de_retorno}</option>
-            </select>
-          </label>
-        </div>
-        <div className="inline-notice">
-          {ui.previa}
-          {data.trigger === "contact_created"
-            ? "quando uma nova pessoa chegar"
-            : ui.quando_um_negocio_ficar_parado}
-          {ui.criar_a_tarefa}
-          {data.name}
-          {ui.apos}
-          {data.delay_hours}
-          {ui.h_nenhuma_mensagem_sera_enviada}
-        </div>
-        <p className="muted">
-          {ui.o_robo_e_salvo_desligado_voce_decide_quando_ativar}
-        </p>
-        <footer>
-          <button type="button" className="secondary" onClick={onClose}>
-            {ui.cancelar}
-          </button>
-          <button className="primary" disabled={busy}>
-            {ui.salvar_robo}
           </button>
         </footer>
       </form>

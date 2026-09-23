@@ -100,7 +100,7 @@ export function useWorkspace() {
     if (tenantError) throw tenantError;
     if (!tenants?.length)
       throw new Error(
-        "Confirme sua proteção de acesso para abrir as empresas.",
+        "Não foi possível carregar suas empresas. Entre novamente.",
       );
     const available = tenants.map((t) => ({
       ...t,
@@ -140,7 +140,18 @@ export function useWorkspace() {
       return rows;
     };
     const results = await Promise.all([
-      ...collections.map((c) => fetchRows(`atraction_${c}`)),
+      ...collections.map((c) =>
+        [
+          "deals",
+          "messages",
+          "automations",
+          "segments",
+          "chat_sessions",
+          "chat_messages",
+        ].includes(c)
+          ? Promise.resolve([])
+          : fetchRows(`atraction_${c}`),
+      ),
       fetchRows("atraction_events"),
       fetchRows("atraction_recurrences"),
     ]);

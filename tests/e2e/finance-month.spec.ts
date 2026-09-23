@@ -4,7 +4,7 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Um bom dia para crescer." }),
+    page.getByRole("heading", { name: "Seu negócio em dia" }),
   ).toBeVisible();
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem("atraction-demo-v1")!);

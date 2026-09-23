@@ -109,8 +109,6 @@ export function Auth({
           pack_version: 1,
           onboarding: {
             team_size: String(form.get("team_size")),
-            source: String(form.get("source")),
-            goal: String(form.get("goal")),
           },
         });
         if (error) {
@@ -255,23 +253,6 @@ export function Auth({
                 <option>{ui.so_eu}</option>
                 <option>{ui["2_a_5_pessoas"]}</option>
                 <option>{ui["6_a_20_pessoas"]}</option>
-              </select>
-            </label>
-            <label>
-              {ui.de_onde_vem_os_clientes}
-              <select name="source">
-                <option>{ui.instagram}</option>
-                <option>{ui.indicacao}</option>
-                <option>{ui.whatsapp}</option>
-                <option>{ui.passagem_na_rua}</option>
-              </select>
-            </label>
-            <label>
-              {ui.seu_principal_objetivo}
-              <select name="goal">
-                <option>{ui.nao_esquecer_de_ninguem}</option>
-                <option>{ui.fechar_mais_negocios}</option>
-                <option>{ui.fazer_clientes_voltarem}</option>
               </select>
             </label>
             <button className="primary" disabled={busy}>

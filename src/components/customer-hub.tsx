@@ -1,13 +1,12 @@
 "use client";
-import { useState } from "react";
-import type { Contact, CustomerDocument, Activity } from "@/lib/types";
-import type { useWorkspace } from "@/lib/use-workspace";
-import { supabase } from "@/lib/supabase";
 import { alive, money } from "@/lib/domain";
-import { payments, remaining } from "@/lib/payments";
 import { today } from "@/lib/finance";
-import { lastContact, addDays } from "@/lib/journey";
-import { accountPack } from "@/data/niches";
+import { addDays, lastContact } from "@/lib/journey";
+import { payments, remaining } from "@/lib/payments";
+import { supabase } from "@/lib/supabase";
+import type { Activity, Contact, CustomerDocument } from "@/lib/types";
+import type { useWorkspace } from "@/lib/use-workspace";
+import { useState } from "react";
 type Work = ReturnType<typeof useWorkspace>;
 export async function careTask(
   w: Work,
@@ -65,46 +64,8 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
       id: "created",
       date: c.created_at,
       title: "Primeiro cadastro",
-      body: `${c.source}${c.campaign ? ` · Campanha: ${c.campaign}` : ""}${c.referred_by ? ` · Indicação: ${c.referred_by}` : ""}`,
+      body: "Cliente cadastrado",
     },
-    ...s.chat_messages
-      .filter((m) =>
-        s.chat_sessions.some(
-          (x) => x.id === m.session_id && x.contact_id === id,
-        ),
-      )
-      .map((m) => ({
-        id: m.id,
-        date: m.created_at,
-        title:
-          m.direction === "in"
-            ? "Chat do site: recebida"
-            : "Chat do site: enviada",
-        body: m.body,
-      })),
-    ...alive(s.messages)
-      .filter((m) => m.contact_id === id)
-      .map((m) => ({
-        id: m.id,
-        date: m.created_at,
-        title:
-          m.direction === "note"
-            ? "Nota da equipe"
-            : m.status === "draft"
-              ? "Rascunho"
-              : m.direction === "in"
-                ? "Mensagem recebida"
-                : "Mensagem enviada",
-        body: m.body,
-      })),
-    ...alive(s.deals)
-      .filter((d) => d.contact_id === id)
-      .map((d) => ({
-        id: d.id,
-        date: d.updated_at,
-        title: `Negócio: ${d.title}`,
-        body: `${money(d.value)} · ${d.stage === -1 ? "Perdido" : (s.tenant.settings?.pipelines?.find((p) => p.id === d.pipeline_id)?.stages || accountPack(s.tenant).stages)[d.stage]}`,
-      })),
     ...alive(s.activities)
       .filter((a) => a.contact_id === id)
       .map((a) => ({
@@ -411,18 +372,8 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
             >
               Agendar retorno
             </button>
-            <button
-              className="secondary"
-              disabled={!canWrite || w.busy}
-              onClick={() => careTask(w, c, "referral")}
-            >
-              Agendar pedido de indicação
-            </button>
           </div>
-          <p>
-            Essas ações organizam tarefas internas. O pedido de indicação e o
-            contato com o cliente são feitos pela sua equipe.
-          </p>
+          <p>Os retornos são tarefas internas realizadas pela sua equipe.</p>
         </div>
       )}
       {tab === "documents" && manage && (

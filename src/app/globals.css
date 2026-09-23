@@ -4488,3 +4488,12 @@ tbody tr:hover {
 .finance-summary.monthly-totals {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.management-overview .today-card {
+  min-height: 0;
+  height: auto;
+  padding: 24px;
+}
+.management-overview .today-card p {
+  margin: 12px 0 24px;
+}

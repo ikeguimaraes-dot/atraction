@@ -88,9 +88,8 @@ export function BusinessSettings({
         </label>
       )}
       <p className="management-hint">
-        O segmento orienta as sugestões de serviço, mensagem e automação. Ao
-        trocar, seus cadastros e funis personalizados são preservados. Se já
-        houver negócios, as etapas do funil principal também permanecem.
+        Escolha o segmento da empresa. Alterar o segmento preserva seus
+        clientes, contratos e lançamentos financeiros.
       </p>
       <button
         className="primary"

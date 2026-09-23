@@ -10,7 +10,7 @@ async function go(p: Page, label: string) {
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "Um bom dia para crescer." }),
+    page.getByRole("heading", { name: "Seu negócio em dia" }),
   ).toBeVisible();
 });
 test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova", async ({
@@ -96,33 +96,15 @@ test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova",
     fullPage: true,
   });
 });
-test("venda ganha oferece jornada sem duplicar contrato", async ({ page }) => {
-  await go(page, "Caminho do cliente");
-  await page.getByLabel("Etapa de Mariana Costa").selectOption("4");
-  await page.getByRole("button", { name: "Continuar jornada" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Continuar a jornada");
-  await page.getByRole("button", { name: "Ver prévia" }).click();
-  await page
-    .getByRole("button", { name: "Confirmar contrato e cobranças" })
-    .click();
-  await go(page, "Caminho do cliente");
-  await expect(
-    page.locator(".stage-4").getByLabel("Etapa de Mariana Costa"),
-  ).toBeVisible();
-  await go(page, "Financeiro");
-  await page
-    .getByRole("button", { name: "Todos os meses", exact: true })
-    .click();
-  await expect(page.locator(".ledger-row")).toHaveCount(1);
-});
-test("ficha registra atendimento, indicação e documento privado na demonstração", async ({
+
+test("ficha registra atendimento e documento privado na demonstração", async ({
   page,
 }) => {
   await go(page, "Clientes");
   await page.getByRole("button", { name: "Novo cliente" }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Cliente satisfeito");
   await page.getByLabel("Telefone com DDD").fill("11912345678");
-  await page.getByRole("button", { name: "Salvar pessoa" }).click();
+  await page.getByRole("button", { name: "Salvar cliente" }).click();
   await page
     .getByRole("button", { name: /Cliente satisfeito Cliente ativo/ })
     .click();
@@ -149,30 +131,5 @@ test("ficha registra atendimento, indicação e documento privado na demonstraç
   );
   await page.getByRole("button", { name: "Fechar", exact: true }).click();
   await go(page, "Pós-venda");
-  await page
-    .getByRole("button", { name: "Agendar indicação", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Agendar indicação", exact: true }),
-  ).toHaveCount(0);
-  await go(page, "Agenda");
-  await expect(
-    page.getByText("Pedir indicação após um bom atendimento").first(),
-  ).toBeVisible();
-});
-test("links de campanha e novas telas cabem no celular", async ({ page }) => {
-  await go(page, "Atrair clientes");
-  await page.getByLabel("Campanha", { exact: true }).fill("primavera");
-  await expect(page.getByLabel("Link da campanha")).toHaveValue(
-    /utm_campaign=primavera/,
-  );
-  for (const screen of ["Contratos", "Pós-venda", "Resultados", "Hoje"]) {
-    await go(page, screen);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth > innerWidth,
-      ),
-      screen,
-    ).toBe(false);
-  }
+  await expect(page.getByRole("button", { name: /indicação/i })).toHaveCount(0);
 });

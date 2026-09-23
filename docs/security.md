@@ -1,3 +1,5 @@
+> Atualização de 23/09/2026: endpoints de captação/chat e execução dos robôs revogados; gatilho e cron do robô removidos. Tabelas históricas de marketing preservadas sem escrita pelos usuários. As descrições anteriores desses módulos abaixo são históricas. Login por e-mail e senha e isolamento por empresa permanecem ativos.
+
 # Segurança e isolamento
 
 - Toda tabela operacional do Atraction tem RLS e tenant_id. Referências entre contatos e negócios/tarefas/mensagens usam chaves compostas `(tenant_id, id)`.

@@ -41,7 +41,8 @@ export function demo(niche: Niche = "estetica"): State {
     name,
     phone: `+55119999000${String(i).padStart(2, "0")}`,
     email: "",
-    source: sources[i],
+    source: "Cadastro",
+    lifecycle: "customer" as const,
     tags: [
       i % 3 === 0
         ? "Novo interesse"

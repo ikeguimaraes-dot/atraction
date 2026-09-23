@@ -1,3 +1,13 @@
+# Estado atual — 23/09/2026
+
+O Atraction agora é focado na gestão de empresas, clientes, contratos, agenda, pós-venda operacional e financeiro. Foram removidos os módulos Pessoas, Caminho do cliente, Conversas, Robôs, Atrair clientes, resultados de marketing, campanhas, públicos e funis. A tela inicial, busca e ferramentas foram reorganizadas para gestão. Categorias contábeis de despesas com marketing continuam disponíveis na DRE.
+
+A migração `20260923142125_atraction_retire_marketing.sql` revoga os endpoints públicos de captação/chat e execução dos robôs, remove o gatilho de enfileiramento e o cron do robô. Não apaga registros históricos nem altera os demais sistemas do Supabase compartilhado. O cron de recorrências financeiras continua ativo. Links antigos `/c/...` retornam 404.
+
+## Histórico de entregas anteriores
+
+Os registros abaixo descrevem o produto na data de cada entrega; módulos de marketing citados foram descontinuados pela mudança acima.
+
 # Estado de entrega — 20/09/2026
 
 ## Entregue e verificado

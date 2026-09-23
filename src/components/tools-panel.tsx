@@ -1,15 +1,12 @@
 "use client";
-import { useState } from "react";
-import type { useWorkspace } from "@/lib/use-workspace";
-import type { Segment, Contact, DocumentTemplate } from "@/lib/types";
-import { segmentContacts } from "@/lib/segments";
-import { alive, money } from "@/lib/domain";
-import { supabase } from "@/lib/supabase";
 import { uuid } from "@/lib/demo";
-import { today } from "@/lib/finance";
+import { alive, money } from "@/lib/domain";
 import { downloadFile, makePdf } from "@/lib/files";
-import { accountPack } from "@/data/niches";
-import { Modal, SectionTitle, Empty } from "./ui";
+import { today } from "@/lib/finance";
+import type { DocumentTemplate } from "@/lib/types";
+import type { useWorkspace } from "@/lib/use-workspace";
+import { useState } from "react";
+import { Modal, SectionTitle } from "./ui";
 type Work = ReturnType<typeof useWorkspace>;
 const defaultTemplates: DocumentTemplate[] = [
   {
@@ -23,22 +20,11 @@ const defaultTemplates: DocumentTemplate[] = [
     body: "REGISTRO DO CONTRATO\n\nContratante: {cliente}\nCPF/CNPJ: {documento}\nEndereço: {endereco}\nContratada: {empresa}\n\nObjeto: {servico}\nValor: {valor}\nCondições: {condicoes}\n\nData: {data}\n\nAssinaturas: __________________________________\n\nRevise as condições antes de utilizar este documento.",
   },
 ];
-export function ToolsPanel({
-  w,
-  onCustomer,
-}: {
-  w: Work;
-  onCustomer: (c: Contact) => void;
-}) {
+export function ToolsPanel({ w }: { w: Work }) {
   const s = w.state!;
-  const manage = ["owner", "manager"].includes(s.role);
   const owner = s.role === "owner";
-  const [tab, setTab] = useState("segments");
-  const [segmentRule, setSegmentRule] = useState("all");
+  const [tab, setTab] = useState("templates");
   const [modal, setModal] = useState<string | null>(null);
-  const [selected, setSelected] = useState("");
-  const [source, setSource] = useState("");
-  const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [templateId, setTemplateId] = useState("proposal");
@@ -50,115 +36,16 @@ export function ToolsPanel({
   const templates = s.tenant.settings?.templates?.length
     ? s.tenant.settings.templates
     : defaultTemplates;
-  const segment = alive(s.segments).find((x) => x.id === selected);
-  const members = segment ? segmentContacts(s, segment) : [];
-  async function merge() {
-    setBusy(true);
-    try {
-      if (w.userId) {
-        const { error } = await supabase().rpc("atraction_merge_contacts", {
-          source_id: source,
-          target_id: target,
-        });
-        if (error) throw error;
-        await w.read(w.userId);
-      } else
-        w.setState((state) => {
-          if (!state) return state;
-          const src = state.contacts.find((c) => c.id === source)!;
-          const dst = state.contacts.find((c) => c.id === target)!;
-          return {
-            ...state,
-            contacts: state.contacts.map((c) =>
-              c.id === source
-                ? {
-                    ...c,
-                    deleted_at: new Date().toISOString(),
-                    merged_into: target,
-                  }
-                : c.id === target
-                  ? {
-                      ...c,
-                      tags: [...new Set([...c.tags, ...src.tags])],
-                      notes:
-                        c.notes +
-                        "\nCadastro mesclado: " +
-                        src.name +
-                        " / " +
-                        src.phone +
-                        "\n" +
-                        src.notes,
-                      custom_data: { ...src.custom_data, ...c.custom_data },
-                    }
-                  : c,
-            ),
-            contracts: state.contracts.map((x) =>
-              x.contact_id === source ? { ...x, contact_id: target } : x,
-            ),
-            finance: state.finance.map((x) =>
-              x.contact_id === source ? { ...x, contact_id: target } : x,
-            ),
-            deals: state.deals.map((x) =>
-              x.contact_id === source
-                ? { ...x, contact_id: target, owner_id: dst.owner_id }
-                : x,
-            ),
-            messages: state.messages.map((x) =>
-              x.contact_id === source
-                ? { ...x, contact_id: target, owner_id: dst.owner_id }
-                : x,
-            ),
-            activities: state.activities.map((x) =>
-              x.contact_id === source
-                ? {
-                    ...x,
-                    contact_id: target,
-                    owner_id: dst.owner_id,
-                    done:
-                      x.done ||
-                      !!(
-                        x.purpose &&
-                        state.activities.some(
-                          (a) =>
-                            a.contact_id === target &&
-                            a.purpose === x.purpose &&
-                            !a.done &&
-                            !a.deleted_at,
-                        )
-                      ),
-                  }
-                : x,
-            ),
-            documents: state.documents.map((x) =>
-              x.contact_id === source ? { ...x, contact_id: target } : x,
-            ),
-            chat_sessions: state.chat_sessions.map((x) =>
-              x.contact_id === source ? { ...x, contact_id: target } : x,
-            ),
-          };
-        });
-      w.notify("Cadastros mesclados. Histórico reunido no cadastro principal.");
-      setModal(null);
-      setSource("");
-      setTarget("");
-    } catch {
-      setError("Não foi possível mesclar. Confira os cadastros e sua conexão.");
-    } finally {
-      setBusy(false);
-    }
-  }
   return (
     <>
       <SectionTitle
         title="Ferramentas do seu negócio"
-        subtitle="Organize públicos, personalize cadastros e prepare seus documentos."
+        subtitle="Personalize cadastros e prepare seus documentos."
       />
       <div className="management-actions hub-tabs">
         {[
-          ["segments", "Segmentos"],
-          ["settings", "Funis e campos"],
+          ["settings", "Campos do cadastro"],
           ["templates", "Modelos e PDFs"],
-          ...(manage ? [["merge", "Mesclar pessoas"]] : []),
         ].map(([id, label]) => (
           <button
             key={id}
@@ -172,90 +59,9 @@ export function ToolsPanel({
           </button>
         ))}
       </div>
-      {tab === "segments" && (
-        <>
-          <div className="management-actions">
-            <button
-              className="primary"
-              disabled={s.role === "viewer"}
-              onClick={() => setModal("segment")}
-            >
-              Salvar novo segmento
-            </button>
-            {alive(s.segments).map((x) => (
-              <button
-                className={selected === x.id ? "primary" : "secondary"}
-                key={x.id}
-                onClick={() => setSelected(x.id)}
-              >
-                {x.name}
-              </button>
-            ))}
-          </div>
-          {segment ? (
-            <section className="card attribution">
-              <h3>
-                {segment.name} · {members.length} pessoas
-              </h3>
-              <p className="management-hint">
-                A lista é recalculada com os dados atuais e respeita seu acesso.
-              </p>
-              {members.map((c) => (
-                <button
-                  className="segment-person"
-                  key={c.id}
-                  onClick={() => onCustomer(c)}
-                >
-                  <strong>{c.name}</strong>
-                  <span>
-                    {c.phone} · {c.source}
-                  </span>
-                </button>
-              ))}
-              <button
-                className="text-button"
-                disabled={w.busy || s.role === "viewer"}
-                onClick={() =>
-                  w.write("segments", {
-                    ...segment,
-                    deleted_at: new Date().toISOString(),
-                  })
-                }
-              >
-                Excluir segmento
-              </button>
-            </section>
-          ) : (
-            <Empty
-              title="Seus públicos, sempre atualizados"
-              text="Salve filtros de origem, etiquetas, relacionamento, inadimplência e renovação."
-            />
-          )}
-        </>
-      )}
+
       {tab === "settings" && (
         <div className="care-grid">
-          <section className="card supplier-card">
-            <h3>Funis de venda</h3>
-            <p>
-              O funil principal do nicho é preservado. Cada novo funil tem cinco
-              etapas: quatro abertas e a última ganha.
-            </p>
-            {(s.tenant.settings?.pipelines || []).map((p) => (
-              <p key={p.id}>
-                <strong>{p.name}</strong>
-                <br />
-                {p.stages.join(" → ")}
-              </p>
-            ))}
-            <button
-              className="primary"
-              disabled={!owner}
-              onClick={() => setModal("pipeline")}
-            >
-              Novo funil personalizado
-            </button>
-          </section>
           <section className="card supplier-card">
             <h3>Campos do cadastro</h3>
             {(s.tenant.settings?.fields || []).map((f) => (
@@ -277,7 +83,7 @@ export function ToolsPanel({
             </button>
             <p className="management-hint">
               Proprietários configuram; a equipe utiliza os campos no cadastro
-              de pessoas.
+              de clientes.
             </p>
           </section>
         </div>
@@ -301,7 +107,7 @@ export function ToolsPanel({
                 </select>
               </label>
               <label>
-                Pessoa do documento
+                Cliente do documento
                 <select
                   value={person}
                   onChange={(e) => setPerson(e.target.value)}
@@ -438,91 +244,11 @@ export function ToolsPanel({
           </div>
         </section>
       )}
-      {tab === "merge" && manage && (
-        <section className="card attribution">
-          <h3>Reunir dois cadastros da mesma pessoa</h3>
-          <div className="form-grid">
-            <label>
-              Cadastro que será arquivado
-              <select
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-              >
-                <option value="">Escolha</option>
-                {alive(s.contacts).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} · {c.phone}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Cadastro principal que será mantido
-              <select
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-              >
-                <option value="">Escolha</option>
-                {alive(s.contacts)
-                  .filter((c) => c.id !== source)
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} · {c.phone}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          </div>
-          <button
-            className="primary"
-            disabled={!source || !target || source === target}
-            onClick={() => {
-              setError("");
-              setModal("merge");
-            }}
-          >
-            Ver prévia da mesclagem
-          </button>
-        </section>
-      )}
-      {modal === "merge" && (
-        <Modal title="Confira a mesclagem" onClose={() => setModal(null)}>
-          <div className="form">
-            <p>
-              <strong>{s.contacts.find((c) => c.id === source)?.name}</strong>{" "}
-              será reunido em{" "}
-              <strong>{s.contacts.find((c) => c.id === target)?.name}</strong>.
-            </p>
-            <p>
-              {s.deals.filter((x) => x.contact_id === source).length} negócios,{" "}
-              {s.contracts.filter((x) => x.contact_id === source).length}{" "}
-              contratos,{" "}
-              {s.finance.filter((x) => x.contact_id === source).length}{" "}
-              lançamentos e seus atendimentos/documentos serão transferidos.
-            </p>
-            <p>
-              Telefone, origem, consentimento e dados principais do cadastro de
-              destino permanecem. Etiquetas e anotações serão reunidas. O
-              cadastro de origem será arquivado e não poderá ser restaurado
-              isoladamente. Essa mesclagem não tem desfazer automático.
-            </p>
-            <button className="primary" disabled={busy} onClick={merge}>
-              Confirmar mesclagem
-            </button>
-            {error && <p role="alert">{error}</p>}
-          </div>
-        </Modal>
-      )}
-      {modal && modal !== "merge" && (
+
+      {modal && (
         <Modal
           title={
-            modal === "segment"
-              ? "Salvar segmento"
-              : modal === "pipeline"
-                ? "Novo funil"
-                : modal === "field"
-                  ? "Campo personalizado"
-                  : "Modelo de documento"
+            modal === "field" ? "Campo personalizado" : "Modelo de documento"
           }
           onClose={() => setModal(null)}
         >
@@ -534,53 +260,29 @@ export function ToolsPanel({
               const f = new FormData(e.currentTarget);
               const name = String(f.get("name")).trim();
               try {
-                if (modal === "segment") {
-                  const row: Segment = {
-                    ...w.base(),
+                const settings = { ...s.tenant.settings };
+                if (modal === "field")
+                  settings.fields = [
+                    ...(settings.fields || []),
+                    {
+                      id: uuid(),
+                      label: name,
+                      type: f.get("type") as "text" | "number" | "date",
+                    },
+                  ];
+                if (modal === "template") {
+                  const t = {
+                    id: templateEdit!.id,
                     name,
-                    rule: String(f.get("rule")),
-                    value: String(f.get("value") || ""),
+                    body: String(f.get("body")),
                   };
-                  if (await w.write("segments", row)) {
-                    setSelected(row.id);
-                    setModal(null);
-                  }
-                } else {
-                  const settings = { ...s.tenant.settings };
-                  if (modal === "pipeline")
-                    settings.pipelines = [
-                      ...(settings.pipelines || []),
-                      {
-                        id: uuid(),
-                        name,
-                        stages: Array.from({ length: 5 }, (_, i) =>
-                          String(f.get("stage" + i)).trim(),
-                        ),
-                      },
-                    ];
-                  if (modal === "field")
-                    settings.fields = [
-                      ...(settings.fields || []),
-                      {
-                        id: uuid(),
-                        label: name,
-                        type: f.get("type") as "text" | "number" | "date",
-                      },
-                    ];
-                  if (modal === "template") {
-                    const t = {
-                      id: templateEdit!.id,
-                      name,
-                      body: String(f.get("body")),
-                    };
-                    settings.templates = [
-                      ...templates.filter((x) => x.id !== t.id),
-                      t,
-                    ];
-                    setTemplateId(t.id);
-                  }
-                  if (await w.updateTenant({ settings })) setModal(null);
+                  settings.templates = [
+                    ...templates.filter((x) => x.id !== t.id),
+                    t,
+                  ];
+                  setTemplateId(t.id);
                 }
+                if (await w.updateTenant({ settings })) setModal(null);
               } catch {
                 setError("Não foi possível salvar.");
               } finally {
@@ -597,67 +299,6 @@ export function ToolsPanel({
                 defaultValue={modal === "template" ? templateEdit?.name : ""}
               />
             </label>
-            {modal === "segment" && (
-              <>
-                <label>
-                  Filtro
-                  <select
-                    name="rule"
-                    value={segmentRule}
-                    onChange={(e) => setSegmentRule(e.target.value)}
-                  >
-                    <option value="all">Todas as pessoas</option>
-                    <option value="source">Origem contém</option>
-                    <option value="tag">Possui etiqueta</option>
-                    <option value="lifecycle">Relacionamento</option>
-                    {manage && (
-                      <>
-                        <option value="overdue">Clientes inadimplentes</option>
-                        <option value="renewals">
-                          Contratos encerrando em até 30 dias
-                        </option>
-                      </>
-                    )}
-                  </select>
-                </label>
-                {segmentRule === "lifecycle" ? (
-                  <label>
-                    Relacionamento
-                    <select name="value">
-                      <option value="prospect">Interessado</option>
-                      <option value="customer">Cliente ativo</option>
-                      <option value="inactive">Cliente inativo</option>
-                    </select>
-                  </label>
-                ) : ["source", "tag"].includes(segmentRule) ? (
-                  <label>
-                    {segmentRule === "source"
-                      ? "Nome da origem"
-                      : "Nome da etiqueta"}
-                    <input
-                      name="value"
-                      required
-                      maxLength={200}
-                      placeholder={
-                        segmentRule === "source" ? "Ex.: Instagram" : "Ex.: VIP"
-                      }
-                    />
-                  </label>
-                ) : null}
-              </>
-            )}
-            {modal === "pipeline" &&
-              accountPack(s.tenant).stages.map((stage, i) => (
-                <label key={i}>
-                  {i === 4 ? "Etapa final — venda ganha" : `Etapa ${i + 1}`}
-                  <input
-                    name={"stage" + i}
-                    required
-                    maxLength={60}
-                    defaultValue={stage}
-                  />
-                </label>
-              ))}
             {modal === "field" && (
               <label>
                 Tipo do campo

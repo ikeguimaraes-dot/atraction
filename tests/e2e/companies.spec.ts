@@ -209,7 +209,7 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
     .fill("fixture123");
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await go(page, "Pessoas");
+  await go(page, "Clientes");
   await expect(page.locator("main")).toContainText("Cliente Alfa");
   await expect(page.locator("main")).not.toContainText("Cliente Beta");
   await menu(page);
@@ -217,10 +217,10 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
   await page.getByLabel("Selecionar empresa").selectOption(b);
   await expect(page.locator("main")).toContainText("Cliente Beta");
   await expect(page.locator("main")).not.toContainText("Cliente Alfa");
-  await page.getByRole("button", { name: "Nova pessoa", exact: true }).click();
+  await page.getByRole("button", { name: "Novo cliente", exact: true }).click();
   await page.getByLabel("Nome", { exact: true }).fill("Cadastro na Beta");
   await page.getByLabel("Telefone com DDD").fill("11922223333");
-  await page.getByRole("button", { name: "Salvar pessoa" }).click();
+  await page.getByRole("button", { name: "Salvar cliente" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(writes.find((x) => x.table === "atraction_contacts")).toMatchObject({
     tenant_id: b,

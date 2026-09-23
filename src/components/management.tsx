@@ -1,35 +1,35 @@
 "use client";
-import { FinanceCategory } from "./finance-category";
+import { uuid } from "@/lib/demo";
+import { alive, money } from "@/lib/domain";
+import { exportCsv } from "@/lib/files";
+import { balance, cents, entryStatus, today } from "@/lib/finance";
 import {
   categoryGroup,
   dreLabels,
   effectiveDreGroup,
 } from "@/lib/finance-categories";
-import { Recurrences } from "./recurrences";
-import { createRecurrence } from "@/lib/recurrences";
 import { installmentPlan } from "@/lib/installments";
-import { PaymentModal } from "./payment-modal";
-import { payments, paid, remaining, inPeriod } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
-import { exportCsv } from "@/lib/files";
-import { uuid } from "@/lib/demo";
-import { useState } from "react";
-import {
-  Plus,
-  Wallet,
-  Users,
-  Truck,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { inPeriod, paid, payments, remaining } from "@/lib/payments";
+import { createRecurrence } from "@/lib/recurrences";
+import type { Contact, FinanceEntry, Supplier } from "@/lib/types";
 import type { useWorkspace } from "@/lib/use-workspace";
-import type { Contact, Supplier, FinanceEntry } from "@/lib/types";
-import { alive, money } from "@/lib/domain";
-import { today, cents, balance, entryStatus } from "@/lib/finance";
-import { SectionTitle, Empty, Modal, Avatar } from "./ui";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Pencil,
+  Plus,
+  Trash2,
+  Truck,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { useState } from "react";
+import { FinanceCategory } from "./finance-category";
 import { ContactForm } from "./forms";
+import { PaymentModal } from "./payment-modal";
+import { Recurrences } from "./recurrences";
+import { Avatar, Empty, Modal, SectionTitle } from "./ui";
 type Work = ReturnType<typeof useWorkspace>;
 const dateLabel = (date: string) => date.split("-").reverse().join("/");
 export function FinancialSummary({
@@ -71,11 +71,11 @@ export function Clients({
   const [status, setStatus] = useState("customer");
   const [creating, setCreating] = useState(false);
   const contacts = alive(s.contacts).filter((c) =>
-    ["customer", "inactive"].includes(c.lifecycle || ""),
+    ["customer", "inactive", "prospect"].includes(c.lifecycle || "prospect"),
   );
   const filtered = contacts.filter(
     (c) =>
-      (!status || c.lifecycle === status) &&
+      (!status || (c.lifecycle || "prospect") === status) &&
       `${c.name} ${c.phone} ${c.document || ""}`
         .toLocaleLowerCase()
         .includes(query.toLocaleLowerCase()),
@@ -100,6 +100,7 @@ export function Clients({
         <label>
           Buscar cliente
           <input
+            id="client-search"
             placeholder="Nome, telefone ou documento"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -110,13 +111,14 @@ export function Clients({
           <select value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="customer">Ativos</option>
             <option value="inactive">Inativos</option>
-            <option value="">Todos os clientes</option>
+            <option value="">Todos os cadastros</option>
+            <option value="prospect">Cadastros anteriores</option>
           </select>
         </label>
       </div>
       <p className="management-hint">
-        Já está em Pessoas? Abra o cadastro e altere o relacionamento para
-        Cliente ativo. A origem da captação e o histórico são preservados.
+        Cadastre clientes manualmente e acompanhe contratos, atendimentos e
+        finanças pela ficha de cada cliente.
       </p>
       <div className="customer-grid">
         {filtered.map((c) => {
@@ -142,9 +144,7 @@ export function Clients({
                 </div>
                 <ArrowUpRight size={18} />
               </div>
-              <p>
-                {c.phone} · {c.source}
-              </p>
+              <p>{c.phone}</p>
               {manage && (
                 <div className="customer-amounts">
                   <span>

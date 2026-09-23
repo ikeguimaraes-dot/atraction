@@ -3,6 +3,9 @@ test("assinaturas repetem o valor mensal e podem ser encerradas", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Seu negócio em dia" }),
+  ).toBeVisible();
   const menu = page.getByRole("button", {
     name: "Abrir navegação",
     exact: true,

@@ -1,17 +1,17 @@
 "use client";
-import { useState } from "react";
-import type { useWorkspace } from "@/lib/use-workspace";
-import type { Collection } from "@/lib/types";
-import { money, alive } from "@/lib/domain";
+import { alive, money } from "@/lib/domain";
 import { balance, today } from "@/lib/finance";
-import {
-  dre,
-  remaining,
-  accountBalance,
-  financeInPeriod,
-} from "@/lib/payments";
 import { addDays } from "@/lib/journey";
-import { SectionTitle, Empty } from "./ui";
+import {
+  accountBalance,
+  dre,
+  financeInPeriod,
+  remaining,
+} from "@/lib/payments";
+import type { Collection } from "@/lib/types";
+import type { useWorkspace } from "@/lib/use-workspace";
+import { useState } from "react";
+import { Empty, SectionTitle } from "./ui";
 type Work = ReturnType<typeof useWorkspace>;
 export function CompanySelector({
   w,
@@ -70,31 +70,22 @@ export function AllCompanies({
     ["owner", "manager"].includes(c.role),
   );
   const metrics = [
-    ["Pessoas", alive(s.contacts).length],
     [
       "Clientes",
       alive(s.contacts).filter((c) => c.lifecycle === "customer").length,
-    ],
-    [
-      "Negócios abertos",
-      alive(s.deals).filter((d) => d.stage >= 0 && d.stage < 4).length,
     ],
     ["Tarefas pendentes", alive(s.activities).filter((a) => !a.done).length],
   ];
   const companyName = (id: string) =>
     w.companies.find((c) => c.id === id)?.name || "Empresa";
   const tables: Record<string, Collection> = {
-    contacts: "contacts",
     clients: "contacts",
-    deals: "deals",
     calendar: "activities",
     finance: "finance",
     suppliers: "suppliers",
     contracts: "contracts",
-    messages: "chat_sessions",
-    automations: "automations",
     retention: "contacts",
-    tools: "segments",
+    tools: "documents",
     trash: "contacts",
     cash: "accounts",
   };
@@ -193,14 +184,7 @@ export function AllCompanies({
                 <strong>{c.name}</strong>
                 <span>
                   {alive(s.contacts).filter((p) => p.tenant_id === c.id).length}{" "}
-                  pessoas ·{" "}
-                  {
-                    alive(s.deals).filter(
-                      (d) =>
-                        d.tenant_id === c.id && d.stage >= 0 && d.stage < 4,
-                    ).length
-                  }{" "}
-                  negócios abertos
+                  cadastros
                 </span>
                 {["owner", "manager"].includes(c.role) && (
                   <small>
@@ -214,31 +198,27 @@ export function AllCompanies({
           })}
         </div>
       </section>
-      {["capture", "settings"].includes(view) ? (
+      {["tools", "settings"].includes(view) ? (
         <Empty
           title="Escolha uma empresa"
-          text="As configurações, a equipe e a página de captação pertencem a cada empresa. Use o seletor ou abra uma empresa acima."
+          text="As configurações, a equipe e os modelos de documentos pertencem a cada empresa. Use o seletor ou abra uma empresa acima."
         />
       ) : (
         <section className="card attribution">
           <h2>
             {(
               {
-                contacts: "Pessoas",
                 clients: "Clientes",
-                deals: "Negócios",
                 calendar: "Agenda",
                 finance: "Lançamentos financeiros",
                 suppliers: "Fornecedores",
                 contracts: "Contratos",
-                messages: "Conversas do site",
-                automations: "Robôs",
                 retention: "Clientes para acompanhar",
-                tools: "Segmentos",
-                trash: "Pessoas arquivadas",
+                tools: "Documentos",
+                trash: "Cadastros arquivados",
                 cash: "Contas de caixa e banco",
               } as Record<string, string>
-            )[view] || "Pessoas de todas as empresas"}
+            )[view] || "Cadastros de todas as empresas"}
           </h2>
           <label className="form">
             Buscar nos registros
