@@ -50,7 +50,7 @@ export function demo(niche: Niche = "estetica"): State {
           ? "Cliente especial"
           : "Retorno",
     ],
-    notes: "Contato fictício para você conhecer o Atraction.",
+    notes: "Contato fictício para você conhecer o ION.",
     consent: false,
     consent_proof: "",
   }));

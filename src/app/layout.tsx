@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Atraction · Seu negócio, mais perto",
+  title: "ION · Gestão empresarial",
   description:
     "Gestão de empresas, clientes, contratos e finanças em um só lugar.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.svg?v=ion" },
 };
 export const viewport: Viewport = {
   width: "device-width",

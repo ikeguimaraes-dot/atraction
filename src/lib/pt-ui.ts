@@ -8,7 +8,7 @@ export const ui = {
   sem_responsavel: "Sem responsável",
   este_convite_expirou_foi_usado_ou_pertence_a_outro_e_ma:
     "Este convite expirou, foi usado ou pertence a outro e-mail. Peça um novo link ao dono do negócio.",
-  atraction: "Atraction",
+  atraction: "ION",
   confira_sua_conexao_e_tente_novamente:
     "Confira sua conexão e tente novamente.",
   nao_foi_possivel_criar_a_conta_use_uma_senha_com_pelo_m:
@@ -70,7 +70,7 @@ export const ui = {
   quero_saber_mais: "Quero saber mais",
   seus_dados_serao_disponibilizados_apenas_a_este_negocio:
     "Seus dados serão disponibilizados apenas a este negócio para responder ao seu pedido.",
-  feito_com_no_atraction: "feito com ♡ no atraction",
+  feito_com_no_atraction: "feito com ♡ no ION",
   cadastro: "Cadastro",
   editar_pessoa: "Editar pessoa",
   vamos_conhecer_alguem: "Vamos conhecer alguém?",
@@ -188,14 +188,14 @@ export const ui = {
   planilha_exportada_guarde_em_um_lugar_seguro:
     "Planilha exportada. Guarde em um lugar seguro.",
   fechar_navegacao: "Fechar navegação",
-  atraction_2: "atraction",
+  atraction_2: "ION",
   text: "®",
   seu_espaco: "SEU ESPAÇO",
   novo: "NOVO",
   um_passo_de_cada_vez: "Um passo de cada vez.",
   seu_negocio_pode_ir_longe: "Seu negócio pode ir longe.",
   a_gente_vai_junto: "A gente vai junto.",
-  conhecer_o_atraction: "Conhecer o Atraction",
+  conhecer_o_atraction: "Conhecer o ION",
   voce_aqui: "Você aqui",
   seu_espaco_de_teste: "Seu espaço de teste",
   explore_a_vontade: "Explore à vontade",

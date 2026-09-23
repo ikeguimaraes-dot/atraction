@@ -148,7 +148,7 @@ export function Workspace() {
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = "atraction-cadastros.csv";
+    a.download = "ion-cadastros.csv";
     a.click();
     URL.revokeObjectURL(url);
     w.notify(ui.planilha_exportada_guarde_em_um_lugar_seguro);
@@ -163,8 +163,8 @@ export function Workspace() {
         />
       )}
       <aside className={`sidebar ${navOpen ? "open" : ""}`}>
-        <a href="/" className="brand">
-          <img src="/icon.svg" alt="" />
+        <a href="/" className="brand" aria-label="ION — início">
+          <img src="/icon.svg?v=ion" alt="" />
           {ui.atraction_2}
         </a>
         <CompanySelector

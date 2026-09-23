@@ -119,7 +119,7 @@ export async function makePdf(title: string, body: string) {
     y -= 16;
   }
   for (const [i, p] of doc.getPages().entries())
-    p.drawText(`Atraction | ${i + 1}/${count}`, {
+    p.drawText(`ION | ${i + 1}/${count}`, {
       x: 48,
       y: 30,
       font,

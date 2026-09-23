@@ -1,4 +1,4 @@
-# Atraction
+# ION
 
 Sistema de gestão empresarial em português: empresas, clientes, contratos, agenda e financeiro. Os módulos de marketing e inbound foram retirados em 23/09/2026.
 

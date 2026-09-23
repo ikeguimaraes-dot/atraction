@@ -1,6 +1,6 @@
 // Vocabulário de navegação e ações compartilhadas. Conteúdo de nicho vive em data/niches.ts.
 export const pt = {
-  brand: "atraction",
+  brand: "ION",
   today: "Hoje",
   contacts: "Pessoas",
   deals: "Caminho do cliente",

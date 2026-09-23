@@ -1,3 +1,7 @@
+# Marca ION — 23/09/2026
+
+A marca exibida passou de Atraction para ION no logo, ícone, título do navegador, aplicativo instalado e documentos PDF. O endereço de publicação e os identificadores internos existentes permanecem compatíveis.
+
 # Estado atual — 23/09/2026
 
 O Atraction agora é focado na gestão de empresas, clientes, contratos, agenda, pós-venda operacional e financeiro. Foram removidos os módulos Pessoas, Caminho do cliente, Conversas, Robôs, Atrair clientes, resultados de marketing, campanhas, públicos e funis. A tela inicial, busca e ferramentas foram reorganizadas para gestão. Categorias contábeis de despesas com marketing continuam disponíveis na DRE.

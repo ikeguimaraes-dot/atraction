@@ -208,7 +208,7 @@ export function ContactForm({
           />
           <span>
             Opcional, para trazer o histórico de clientes que já eram atendidos
-            antes do Atraction.
+            antes do ION.
           </span>
         </label>
         <label>
