@@ -1057,7 +1057,6 @@ function EntryForm({
                 min="1"
                 max="60"
                 step="1"
-                disabled={itemPricing}
                 required
                 value={count}
                 onChange={(e) => {
