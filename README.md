@@ -38,7 +38,7 @@ Os menus Pessoas, Caminho do cliente, Conversas, Robôs, Atrair clientes e Resul
 
 O login reutiliza os usuários de `auth.users` do projeto Supabase fornecido, com o mesmo e-mail e senha. Não copia senhas ou usuários e não importa permissões de outros aplicativos. A validação mínima de oito caracteres é para novos cadastros; no login, a senha existente é validada pelo Supabase.
 
-O acesso é por e-mail e senha, sem autenticador. Sem vínculo no Atraction, cadastra sua primeira empresa; para entrar em uma empresa existente, usa o convite nominal do dono. Pode cadastrar ou participar de várias empresas. O seletor da barra lateral mostra apenas empresas reais e a opção **Todas**, com visão consolidada de leitura. Cadastros e alterações são feitos dentro da empresa selecionada. A seleção persiste por usuário no navegador. `atraction_members` mantém as permissões próprias do produto. Usuários que só possuem autenticação por provedor externo, sem senha, não entram pelo formulário de senha até terem uma senha configurada no Auth. A demonstração local não é um espaço real.
+O acesso é por e-mail e senha, sem autenticador. Sem vínculo no Atraction, cadastra sua primeira empresa; para entrar em uma empresa existente, um dono adiciona diretamente o e-mail já cadastrado. Pode cadastrar ou participar de várias empresas. O seletor da barra lateral mostra apenas empresas reais e a opção **Todas**, com visão consolidada de leitura. Cadastros e alterações são feitos dentro da empresa selecionada. A seleção persiste por usuário no navegador. `atraction_members` mantém as permissões próprias do produto. Usuários que só possuem autenticação por provedor externo, sem senha, não entram pelo formulário de senha até terem uma senha configurada no Auth. A demonstração local não é um espaço real.
 
 ## Banco
 
@@ -58,7 +58,7 @@ npm run build
 npm run test:e2e
 ```
 
-`tests/multi-company-security.sql` valida múltiplas empresas do mesmo dono, convites para diferentes empresas, consolidação com papéis distintos e isolamento dos vínculos.
+`tests/multi-company-security.sql` valida múltiplas empresas do mesmo dono, inclusão direta de membros, vários donos, consolidação com papéis distintos e isolamento dos vínculos.
 
 `tests/marketing-retirement-security.sql` verifica o bloqueio dos endpoints de marketing, retirada do robô e preservação de clientes e recorrências financeiras.
 

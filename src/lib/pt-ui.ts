@@ -151,6 +151,7 @@ export const ui = {
   dono: "Dono",
   gerente: "Gerente",
   atendente: "Atendente",
+  assistente: "Assistente",
   somente_leitura: "Somente leitura",
   sua_equipe_mais_proxima: "Sua equipe, mais próxima",
   convide_quem_cuida_dos_clientes_com_voce_ate_10_pessoas:
@@ -158,6 +159,10 @@ export const ui = {
   entre_em_uma_conta_real_para_convidar_sua_equipe:
     "Entre em uma conta real para convidar sua equipe.",
   convidar_uma_pessoa: "Convidar uma pessoa",
+  adicione_quem_trabalha_com_voce_ate_10_pessoas:
+    "Adicione quem trabalha com você. Até 10 pessoas por empresa.",
+  entre_em_uma_conta_real_para_adicionar_sua_equipe:
+    "Entre em uma conta real para adicionar sua equipe.",
   crescer_fica_melhor_em_equipe: "Crescer fica melhor em equipe",
   nao_foi_possivel_preparar_o_convite_tente_novamente:
     "Não foi possível preparar o convite. Tente novamente.",

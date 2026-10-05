@@ -89,6 +89,10 @@ export type Database = {
         Args: { tenant: string; member: string; new_role: string };
         Returns: undefined;
       };
+      atraction_add_member: {
+        Args: { tenant: string; member_email: string; member_role: string };
+        Returns: string;
+      };
       atraction_merge_contacts: {
         Args: { source_id: string; target_id: string };
         Returns: undefined;

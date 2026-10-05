@@ -51,7 +51,7 @@ Validação desta expansão: testes unitários de centavos, calendários, atribu
 | Aquisição/prospecção | Página de captação e QR implementados. Não há raspagem, compra de listas, Places/Ads nem rede de indicação. |
 | Robôs | Criam tarefas, com fila a cada minuto e até 100 execuções por ciclo. Uma execução por pessoa/robô; reativação não repete trabalhos já concluídos. Não enviam mensagens. Demonstração mostra configuração; execução real ocorre no banco. |
 | Arquivos | Importação CSV/XLSX de até 10.000 linhas/5 MB, primeira aba, prévia e validação. PDF a partir de modelos editáveis. Documentos privados PDF/PNG/JPEG na ficha. Agenda externa e áudio não integrados. |
-| Equipe | Até 10 membros, convite por link entregue manualmente. Cada usuário pode cadastrar e participar de várias empresas. Dono altera papéis e remove acessos, com reatribuição ao dono para remoção ou leitura. |
+| Equipe | Até 10 membros, adicionados diretamente pelo e-mail de uma conta já cadastrada. Cada usuário pode cadastrar e participar de várias empresas. Pode haver vários donos; um dono altera papéis e remove acessos, sem permitir que a empresa fique sem dono. |
 | Atualização entre atendentes | Consulta a cada 30 s e ao voltar à janela. O chat usa consulta a cada 5 s enquanto a caixa/página está visível. |
 | Escala | Leitura paginada até 50.000 itens por coleção no cliente. Ainda precisa de consultas/indicadores agregados no servidor e testes de carga antes de operar nesse volume. |
 | Celular | Web responsiva com manifesto instalável. Não há aplicativo nativo nem operação offline de dados reais. |
@@ -95,12 +95,12 @@ Nenhum plano, API paga ou serviço adicional foi contratado. O consumo continua 
 ## Empresas e consolidação — 21/09/2026
 
 - A barra lateral não mostra mais empresa/nicho fictícios como seletor na demonstração. Depois do login, lista as empresas acessíveis ao usuário, **Todas** e **Cadastrar empresa**.
-- Vários cadastros de empresa e convites para empresas diferentes usam o mesmo usuário Auth. Cada empresa mantém equipe, permissões, clientes, financeiro e configurações próprios.
+- Vários cadastros de empresa e inclusões em equipes diferentes usam o mesmo usuário Auth. Cada empresa mantém equipe, permissões, clientes, financeiro e configurações próprios.
 - **Todas** é uma visão consolidada de leitura com indicadores, comparativo por empresa, pessoas/clientes, negócios, agenda, lançamentos, fornecedores, contratos, contas, robôs, segmentos e sessões de chat. Cada registro identifica sua empresa e permite abri-la. Para cadastrar/editar, selecione a empresa.
 - Financeiro consolidado considera somente empresas em que o usuário possui acesso financeiro. Recebimentos/pagamentos seguem a data de cada baixa; contas abertas seguem o vencimento. Cadastros repetidos em empresas distintas continuam separados e são contados por empresa.
 - A lista consolidada exibe até 200 registros por vez; a busca filtra a coleção carregada. Continua valendo o limite de leitura do cliente de 50.000 itens por coleção. Configurações, equipe e captação são abertas por empresa.
 - Seleção persistida por usuário, formulários reiniciados na troca, bloqueio de gravações na visão consolidada e proteção contra gravação de um registro na empresa errada. Nenhuma empresa existente foi migrada para outro proprietário.
-- Testes SQL transacionais verificam dois cadastros para o mesmo dono, convites múltiplos, papéis distintos, acesso por senha e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.
+- Testes SQL transacionais verificam dois cadastros para o mesmo dono, inclusão direta, vários donos, papéis distintos, acesso por senha e impossibilidade de mover registros entre empresas. Navegador testa cadastro, alternância, gravação na empresa selecionada, consolidação e persistência em desktop/celular com API simulada.
 
 ### Segmentos de empresa — 21/09/2026
 

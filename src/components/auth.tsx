@@ -27,24 +27,6 @@ export function Auth({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [uid, setUid] = useState("");
-  const finish = async (id: string) => {
-    const token = new URLSearchParams(window.location.search).get("convite");
-    if (token) {
-      const { data: companyId, error } = await supabase().rpc(
-        "atraction_accept_invite",
-        {
-          p_token: token,
-        },
-      );
-      if (error) {
-        setError(ui.este_convite_expirou_foi_usado_ou_pertence_a_outro_e_ma);
-        throw new Error("invalid invitation");
-      }
-      window.history.replaceState({}, "", window.location.pathname);
-      return onReady(id, companyId || undefined);
-    }
-    return onReady(id);
-  };
   const afterAuth = async () => {
     const db = supabase();
     const {
@@ -56,7 +38,7 @@ export function Auth({
       setStep("business");
       return;
     }
-    if (await finish(user.id)) onClose();
+    if (await onReady(user.id)) onClose();
     else setStep("business");
   };
   useEffect(() => {
@@ -152,7 +134,7 @@ export function Auth({
             <p>
               {signup
                 ? "Crie um usuário somente se ainda não tiver cadastro."
-                : "Já tem cadastro? Entre com o mesmo e-mail e senha. No primeiro acesso, você configura seu negócio ou entra pelo convite da sua equipe."}
+                : "Já tem cadastro? Entre com o mesmo e-mail e senha. Se alguém adicionou você a uma empresa, o acesso já estará disponível."}
             </p>
             <label>
               {ui.e_mail}
@@ -211,8 +193,8 @@ export function Auth({
           <>
             <p>
               Seu usuário já está conectado. Cadastre sua empresa para começar.
-              Você poderá cadastrar outras empresas depois. Para participar de
-              uma equipe existente, abra o link de convite enviado pelo dono.
+              Você poderá cadastrar outras empresas depois. Se um dono adicionar
+              este e-mail a uma equipe, a empresa aparecerá automaticamente.
             </p>
             <label>
               {ui.nome_do_seu_negocio}

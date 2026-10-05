@@ -224,8 +224,6 @@ export function useWorkspace() {
     } catch {
       setState(demo());
     }
-    if (new URLSearchParams(window.location.search).has("convite"))
-      setAuthOpen(true);
     supabase()
       .auth.getUser()
       .then(async ({ data }) => {

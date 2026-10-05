@@ -527,7 +527,7 @@ export function Workspace() {
                     subtitle="O essencial para cuidar do negócio do seu jeito."
                   />
                   <div className="settings-grid">
-                    <Team state={s} notify={w.notify} />
+                    <Team state={s} userId={w.userId} notify={w.notify} />
                     <section className="card settings-card">
                       <h2>{ui.seu_negocio}</h2>
                       <BusinessSettings w={w} />
