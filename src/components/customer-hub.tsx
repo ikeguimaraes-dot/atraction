@@ -157,8 +157,8 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
         file.size < 1
       )
         throw new Error("Escolha PDF, PNG ou JPEG de até 5 MB.");
-      if (s.documents.length >= 20)
-        throw new Error("Limite de 20 documentos por espaço atingido.");
+      if (s.documents.length >= 500)
+        throw new Error("Limite de 500 documentos por espaço atingido.");
       const row: CustomerDocument = {
         ...w.base(),
         contact_id: id,
@@ -379,7 +379,7 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
       {tab === "documents" && manage && (
         <div className="form">
           <p>
-            PDF, PNG ou JPEG, até 5 MB. Máximo de 20 documentos por espaço,
+            PDF, PNG ou JPEG, até 5 MB. Máximo de 500 documentos por espaço,
             incluindo arquivados. Acesso reservado ao proprietário e aos
             gestores.
           </p>

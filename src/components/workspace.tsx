@@ -26,6 +26,7 @@ import {
   Trash2,
   Truck,
   Wallet,
+  ReceiptText,
 } from "lucide-react";
 import Papa from "papaparse";
 import { useEffect, useState } from "react";
@@ -43,6 +44,7 @@ import { Avatar, CardLink, Empty, Mascot, Modal, SectionTitle } from "./ui";
 import { Assignment } from "./assignment";
 import { ContactForm, TaskForm } from "./forms";
 import { Team } from "./team";
+import { ExpenseDocuments } from "./expense-documents";
 const navigation = [
   { id: "today", label: "Visão geral", icon: Home },
   { id: "clients", label: "Clientes", icon: Heart },
@@ -50,6 +52,7 @@ const navigation = [
   { id: "calendar", label: "Agenda", icon: CalendarDays },
   { id: "retention", label: "Pós-venda", icon: Heart },
   { id: "finance", label: "Financeiro", icon: Wallet },
+  { id: "expense-documents", label: "Entrada de despesas", icon: ReceiptText },
   { id: "cash", label: "Contas e DRE", icon: Wallet },
   { id: "suppliers", label: "Fornecedores", icon: Truck },
   { id: "tools", label: "Documentos e cadastros", icon: SlidersHorizontal },
@@ -181,9 +184,13 @@ export function Workspace() {
           {navigation
             .filter(
               (item) =>
-                !["finance", "suppliers", "contracts", "cash"].includes(
-                  item.id,
-                ) ||
+                ![
+                  "finance",
+                  "expense-documents",
+                  "suppliers",
+                  "contracts",
+                  "cash",
+                ].includes(item.id) ||
                 canManage ||
                 (w.allSelected &&
                   w.companies.some((c) =>
@@ -387,6 +394,9 @@ export function Workspace() {
                   w={w}
                   initialContact={financeContact}
                 />
+              )}
+              {view === "expense-documents" && canManage && (
+                <ExpenseDocuments w={w} />
               )}
               {view === "cash" && canManage && <Cash w={w} />}
               {view === "tools" && <ToolsPanel w={w} />}
