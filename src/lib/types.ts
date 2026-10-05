@@ -132,6 +132,8 @@ export type Payment = {
   date: string;
   amount_cents: number;
   account_id: string | null;
+  payer_user_id?: string | null;
+  allocations?: { user_id: string | null; amount_cents: number }[];
 };
 export type DreGroup =
   | "revenue"
@@ -192,12 +194,22 @@ export type Account = Base & {
   kind: "cash" | "bank";
   initial_cents: number;
   initial_date: string;
+  holder_user_id?: string | null;
 };
 export type Transfer = Base & {
   from_account: string;
   to_account: string;
   amount_cents: number;
   date: string;
+  notes: string;
+};
+export type Settlement = Base & {
+  from_user_id: string | null;
+  to_user_id: string | null;
+  amount_cents: number;
+  date: string;
+  from_account_id: string | null;
+  to_account_id: string | null;
   notes: string;
 };
 export type Segment = Base & { name: string; rule: string; value: string };
@@ -235,6 +247,7 @@ export type State = {
   recurrences?: Recurrence[];
   accounts: Account[];
   transfers: Transfer[];
+  settlements: Settlement[];
   segments: Segment[];
   chat_sessions: ChatSession[];
   chat_messages: ChatMessage[];
@@ -263,6 +276,7 @@ export type Collection =
   | "documents"
   | "accounts"
   | "transfers"
+  | "settlements"
   | "segments"
   | "chat_sessions"
   | "chat_messages";
@@ -278,6 +292,7 @@ export type Row =
   | CustomerDocument
   | Account
   | Transfer
+  | Settlement
   | Segment
   | ChatSession
   | ChatMessage;

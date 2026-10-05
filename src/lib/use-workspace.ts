@@ -13,6 +13,7 @@ import type {
   Contact,
   Account,
   Transfer,
+  Settlement,
   Segment,
   ChatSession,
   ChatMessage,
@@ -37,6 +38,7 @@ const collections: Collection[] = [
   "documents",
   "accounts",
   "transfers",
+  "settlements",
   "segments",
   "chat_sessions",
   "chat_messages",
@@ -209,6 +211,7 @@ export function useWorkspace() {
             ? {
                 accounts: [],
                 transfers: [],
+                settlements: [],
                 segments: [],
                 chat_sessions: [],
                 chat_messages: [],
@@ -325,6 +328,19 @@ export function useWorkspace() {
             : await db
                 .from("atraction_transfers")
                 .insert(row as Transfer)
+                .select("id");
+          break;
+        case "settlements":
+          result = exists
+            ? await db
+                .from("atraction_settlements")
+                .update(row as Settlement)
+                .eq("tenant_id", state.tenant.id)
+                .eq("id", row.id)
+                .select("id")
+            : await db
+                .from("atraction_settlements")
+                .insert(row as Settlement)
                 .select("id");
           break;
         case "accounts":
@@ -486,6 +502,7 @@ export function useWorkspace() {
         "documents",
         "accounts",
         "transfers",
+        "settlements",
       ].includes(c) &&
       !["owner", "manager"].includes(state.role)
     )

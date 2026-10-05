@@ -141,6 +141,7 @@ export function demo(niche: Niche = "estetica"): State {
     role: "owner",
     accounts: [],
     transfers: [],
+    settlements: [],
     segments: [],
     chat_sessions: [],
     chat_messages: [],

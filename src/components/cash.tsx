@@ -9,9 +9,27 @@ import { addDays } from "@/lib/journey";
 import { money, alive } from "@/lib/domain";
 import { exportCsv } from "@/lib/files";
 import { SectionTitle, Modal, Empty } from "./ui";
+import {
+  companyKey,
+  participantId,
+  participantKey,
+  sharedBalances,
+} from "@/lib/shared-expenses";
+import { useTeamMembers } from "@/lib/use-team-members";
 export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
   const s = w.state!;
-  const [modal, setModal] = useState<"account" | "transfer" | null>(null);
+  const [modal, setModal] = useState<
+    "account" | "transfer" | "settlement" | null
+  >(null);
+  const members = useTeamMembers(s.tenant.id);
+  const people = [
+    { key: companyKey, label: "Empresa" },
+    ...members.map((m) => ({ key: m.user_id, label: m.email })),
+  ];
+  const personLabel = (id: string | null) =>
+    people.find((p) => p.key === participantKey(id))?.label ||
+    "Membro removido";
+  const balances = sharedBalances(s);
   const [editing, setEditing] = useState<Account>();
   const [from, setFrom] = useState(addDays(today(), -30));
   const [to, setTo] = useState(today());
@@ -58,6 +76,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
               {a.kind === "cash" ? "Caixa" : "Banco"} · Saldo inicial em{" "}
               {a.initial_date.split("-").reverse().join("/")}
             </p>
+            <p>Titular: {personLabel(a.holder_user_id ?? null)}</p>
             <strong>{money(accountBalance(s, a, to) / 100)}</strong>
             <p>Saldo registrado até {to.split("-").reverse().join("/")}</p>
             <button
@@ -206,6 +225,59 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
         </p>
       </section>
       <section className="card attribution">
+        <SectionTitle
+          title="Acertos da equipe"
+          subtitle="Quem tem a pagar ou receber. Os acertos não entram na DRE."
+          action={
+            <button className="primary" onClick={() => setModal("settlement")}>
+              Registrar acerto
+            </button>
+          }
+        />
+        <div className="customer-grid">
+          {people.map((person) => {
+            const balance = balances.get(person.key) || 0;
+            return (
+              <div className="card" key={person.key}>
+                <strong>{person.label}</strong>
+                <p>
+                  {balance > 0
+                    ? "Tem a receber"
+                    : balance < 0
+                      ? "Tem a pagar"
+                      : "Está acertado"}
+                </p>
+                <strong>{money(Math.abs(balance) / 100)}</strong>
+              </div>
+            );
+          })}
+        </div>
+        {alive(s.settlements).map((x) => (
+          <div className="document-row" key={x.id}>
+            <span>
+              {personLabel(x.from_user_id)} → {personLabel(x.to_user_id)}
+              <small>
+                {x.date.split("-").reverse().join("/")} ·{" "}
+                {x.notes || "Acerto registrado"}
+              </small>
+            </span>
+            <strong>{money(x.amount_cents / 100)}</strong>
+            <button
+              className="text-button"
+              disabled={w.busy}
+              onClick={() =>
+                w.write("settlements", {
+                  ...x,
+                  deleted_at: new Date().toISOString(),
+                })
+              }
+            >
+              Desfazer
+            </button>
+          </div>
+        ))}
+      </section>
+      <section className="card attribution">
         <h3>Transferências registradas</h3>
         {alive(s.transfers).map((t) => (
           <div className="document-row" key={t.id}>
@@ -237,7 +309,9 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           title={
             modal === "account"
               ? "Conta e saldo inicial"
-              : "Registrar transferência"
+              : modal === "transfer"
+                ? "Registrar transferência"
+                : "Registrar acerto"
           }
           onClose={() => setModal(null)}
         >
@@ -263,8 +337,11 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                     kind: f.get("kind") as Account["kind"],
                     initial_date: String(f.get("date")),
                     initial_cents: amount,
+                    holder_user_id: participantId(
+                      String(f.get("holder") || companyKey),
+                    ),
                   });
-                } else {
+                } else if (modal === "transfer") {
                   if (f.get("from") === f.get("to"))
                     throw new Error("Escolha contas diferentes.");
                   ok = await w.write("transfers", {
@@ -274,6 +351,20 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                     amount_cents: cents(String(f.get("amount"))),
                     date: String(f.get("date")),
                     notes: String(f.get("notes")),
+                  });
+                } else {
+                  if (f.get("from_person") === f.get("to_person"))
+                    throw new Error("Escolha pessoas diferentes.");
+                  ok = await w.write("settlements", {
+                    ...w.base(),
+                    from_user_id: participantId(String(f.get("from_person"))),
+                    to_user_id: participantId(String(f.get("to_person"))),
+                    amount_cents: cents(String(f.get("amount"))),
+                    date: String(f.get("date")),
+                    from_account_id:
+                      String(f.get("from_account") || "") || null,
+                    to_account_id: String(f.get("to_account") || "") || null,
+                    notes: String(f.get("notes") || ""),
                   });
                 }
                 if (ok) setModal(null);
@@ -286,6 +377,21 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           >
             {modal === "account" ? (
               <>
+                <label>
+                  Titular da conta
+                  <select
+                    name="holder"
+                    defaultValue={participantKey(
+                      editing?.holder_user_id ?? null,
+                    )}
+                  >
+                    {people.map((person) => (
+                      <option key={person.key} value={person.key}>
+                        {person.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label>
                   Nome da conta
                   <input
@@ -328,7 +434,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                   do dia. Baixas anteriores não serão somadas a essa conta.
                 </p>
               </>
-            ) : (
+            ) : modal === "transfer" ? (
               <>
                 <div className="form-grid">
                   <label>
@@ -377,6 +483,73 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                   banco.
                 </p>
               </>
+            ) : (
+              <>
+                <div className="form-grid">
+                  <label>
+                    Quem pagou
+                    <select name="from_person" required>
+                      <option value="">Escolha</option>
+                      {people.map((person) => (
+                        <option key={person.key} value={person.key}>
+                          {person.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Quem recebeu
+                    <select name="to_person" required>
+                      <option value="">Escolha</option>
+                      {people.map((person) => (
+                        <option key={person.key} value={person.key}>
+                          {person.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Valor (R$)
+                    <input name="amount" required inputMode="decimal" />
+                  </label>
+                  <label>
+                    Data
+                    <input
+                      name="date"
+                      required
+                      type="date"
+                      max={today()}
+                      defaultValue={today()}
+                    />
+                  </label>
+                  <label>
+                    Conta de saída (opcional)
+                    <select name="from_account">
+                      <option value="">Sem conta</option>
+                      {alive(s.accounts).map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Conta de entrada (opcional)
+                    <select name="to_account">
+                      <option value="">Sem conta</option>
+                      {alive(s.accounts).map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  Observação
+                  <input name="notes" maxLength={500} />
+                </label>
+              </>
             )}
             {error && (
               <p role="alert" className="error">
@@ -392,7 +565,12 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                 Cancelar
               </button>
               <button className="primary" disabled={saving || w.busy}>
-                Salvar {modal === "account" ? "conta" : "transferência"}
+                Salvar{" "}
+                {modal === "account"
+                  ? "conta"
+                  : modal === "transfer"
+                    ? "transferência"
+                    : "acerto"}
               </button>
             </footer>
           </form>

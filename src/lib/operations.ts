@@ -10,14 +10,26 @@ export async function recordPayment(
 ) {
   try {
     if (w.userId) {
-      const { error } = await supabase().rpc("atraction_record_payment", {
-        entry: f.id,
-        amount: p.amount_cents,
-        paid_on: p.date,
-        account: p.account_id,
-        request_id: p.id,
-        reverse_id: reverse || null,
-      });
+      const shared = f.direction === "expense" && !!p.allocations?.length;
+      const { error } = shared
+        ? await supabase().rpc("atraction_record_shared_payment", {
+            entry: f.id,
+            amount: p.amount_cents,
+            paid_on: p.date,
+            account: p.account_id,
+            request_id: p.id,
+            payer: p.payer_user_id ?? null,
+            allocations: p.allocations!,
+            reverse_id: reverse || null,
+          })
+        : await supabase().rpc("atraction_record_payment", {
+            entry: f.id,
+            amount: p.amount_cents,
+            paid_on: p.date,
+            account: p.account_id,
+            request_id: p.id,
+            reverse_id: reverse || null,
+          });
       if (error) throw error;
       await w.read(w.userId);
     } else {

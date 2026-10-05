@@ -2,6 +2,7 @@ import type {
   Contact,
   Account,
   Transfer,
+  Settlement,
   Segment,
   ChatSession,
   ChatMessage,
@@ -28,6 +29,7 @@ export type Database = {
     Tables: {
       atraction_accounts: Table<Account>;
       atraction_transfers: Table<Transfer>;
+      atraction_settlements: Table<Settlement>;
       atraction_segments: Table<Segment>;
       atraction_chat_sessions: Table<ChatSession>;
       atraction_chat_messages: Table<ChatMessage>;
@@ -81,6 +83,19 @@ export type Database = {
           paid_on: string;
           account: string | null;
           request_id: string;
+          reverse_id?: string | null;
+        };
+        Returns: undefined;
+      };
+      atraction_record_shared_payment: {
+        Args: {
+          entry: string;
+          amount: number;
+          paid_on: string;
+          account: string | null;
+          request_id: string;
+          payer: string | null;
+          allocations: { user_id: string | null; amount_cents: number }[];
           reverse_id?: string | null;
         };
         Returns: undefined;

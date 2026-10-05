@@ -34,6 +34,12 @@ export function accountBalance(s: State, a: Account, until = "9999-12-31") {
     total +=
       (t.to_account === a.id ? 1 : t.from_account === a.id ? -1 : 0) *
       t.amount_cents;
+  for (const x of s.settlements.filter(
+    (x) => !x.deleted_at && inPeriod(x.date, a.initial_date, until),
+  ))
+    total +=
+      (x.to_account_id === a.id ? 1 : x.from_account_id === a.id ? -1 : 0) *
+      x.amount_cents;
   return total;
 }
 export function dre(s: State, from: string, to: string) {
