@@ -637,6 +637,14 @@ export function Finance({
                 <small>
                   {r.category} · {party(r)}
                 </small>
+                {r.quantity && r.unit_amount_cents && (
+                  <small>
+                    {Number(r.quantity).toLocaleString("pt-BR", {
+                      maximumFractionDigits: 3,
+                    })}{" "}
+                    × {money(r.unit_amount_cents / 100)}
+                  </small>
+                )}
                 <small>
                   Baixado: {money(paid(r) / 100)} · Restante:{" "}
                   {money(remaining(r) / 100)}
@@ -785,6 +793,25 @@ function EntryForm({
   const [amount, setAmount] = useState(
     value ? (value.amount_cents / 100).toFixed(2) : "",
   );
+  const [itemPricing, setItemPricing] = useState(
+    direction === "income" && !!value?.quantity && !!value?.unit_amount_cents,
+  );
+  const [quantity, setQuantity] = useState(
+    value?.quantity ? String(value.quantity) : "1",
+  );
+  const [unitAmount, setUnitAmount] = useState(
+    value?.unit_amount_cents ? (value.unit_amount_cents / 100).toFixed(2) : "",
+  );
+  const calculateItemTotal = (nextQuantity: string, nextUnit: string) => {
+    const parsedQuantity = Number(nextQuantity.replace(",", "."));
+    try {
+      const unit = cents(nextUnit);
+      if (parsedQuantity > 0 && Number.isFinite(parsedQuantity))
+        setAmount((Math.round(parsedQuantity * unit) / 100).toFixed(2));
+    } catch {
+      setAmount("");
+    }
+  };
   const [count, setCount] = useState("1");
   const [monthly, setMonthly] = useState(false);
   const [endDate, setEndDate] = useState("");
@@ -817,6 +844,17 @@ function EntryForm({
           try {
             if (!data.category.trim())
               throw new Error("Selecione uma categoria.");
+            if (itemPricing) {
+              const parsed = Number(quantity.replace(",", "."));
+              if (
+                !Number.isFinite(parsed) ||
+                parsed <= 0 ||
+                Math.round(parsed * 1000) !== parsed * 1000
+              )
+                throw new Error(
+                  "Informe uma quantidade positiva com até 3 casas decimais.",
+                );
+            }
             if (!value && monthly) {
               if (
                 await createRecurrence(
@@ -829,6 +867,10 @@ function EntryForm({
                       categoryGroup(direction, data.category) ||
                       effectiveDreGroup(data),
                     amount_cents: cents(amount),
+                    quantity: itemPricing
+                      ? Number(quantity.replace(",", "."))
+                      : null,
+                    unit_amount_cents: itemPricing ? cents(unitAmount) : null,
                     settled_date: null,
                     payments: [],
                   },
@@ -854,6 +896,8 @@ function EntryForm({
                 title: `${data.title.trim().slice(0, 190)} · ${i + 1}/${count}`,
                 settled_date: null,
                 payments: [],
+                quantity: null,
+                unit_amount_cents: null,
               }));
               if (await w.createFinanceInstallments(rows)) onClose();
               return;
@@ -869,6 +913,10 @@ function EntryForm({
                   categoryGroup(direction, data.category) ||
                   effectiveDreGroup(data),
                 amount_cents: cents(amount),
+                quantity: itemPricing
+                  ? Number(quantity.replace(",", "."))
+                  : null,
+                unit_amount_cents: itemPricing ? cents(unitAmount) : null,
               })
             )
               onClose();
@@ -899,6 +947,7 @@ function EntryForm({
             <input
               type="checkbox"
               checked={monthly}
+              disabled={itemPricing}
               onChange={(e) => {
                 setMonthly(e.target.checked);
                 setCount("1");
@@ -907,6 +956,61 @@ function EntryForm({
             />
             Repetir mensalmente
           </label>
+        )}
+        {direction === "income" && (
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={itemPricing}
+              onChange={(e) => {
+                setItemPricing(e.target.checked);
+                if (e.target.checked) {
+                  setMonthly(false);
+                  setCount("1");
+                  calculateItemTotal(quantity, unitAmount);
+                } else {
+                  setQuantity("1");
+                  setUnitAmount("");
+                  setAmount(value ? (value.amount_cents / 100).toFixed(2) : "");
+                }
+              }}
+            />
+            Calcular pela quantidade e pelo valor unitário
+          </label>
+        )}
+        {direction === "income" && itemPricing && (
+          <div className="form-grid">
+            <label>
+              Quantidade total
+              <input
+                type="text"
+                inputMode="decimal"
+                required
+                value={quantity}
+                onChange={(e) => {
+                  setQuantity(e.target.value);
+                  calculateItemTotal(e.target.value, unitAmount);
+                }}
+              />
+            </label>
+            <label>
+              Valor por item (R$)
+              <input
+                inputMode="decimal"
+                required
+                value={unitAmount}
+                onChange={(e) => {
+                  setUnitAmount(e.target.value);
+                  calculateItemTotal(quantity, e.target.value);
+                }}
+                placeholder="0,00"
+              />
+            </label>
+            <label>
+              Valor total atualizado (R$)
+              <input value={amount} readOnly aria-live="polite" />
+            </label>
+          </div>
         )}
         {!value && monthly && (
           <p className="management-hint">
@@ -917,20 +1021,23 @@ function EntryForm({
           </p>
         )}
         <div className="form-grid">
-          <label>
-            {value
-              ? "Valor (R$)"
-              : monthly
-                ? "Valor mensal (R$)"
-                : "Valor total (R$)"}
-            <input
-              required
-              inputMode="decimal"
-              placeholder="0,00"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </label>
+          {!itemPricing && (
+            <label>
+              {value
+                ? "Valor (R$)"
+                : monthly
+                  ? "Valor mensal (R$)"
+                  : "Valor total (R$)"}
+              <input
+                required
+                inputMode="decimal"
+                readOnly={itemPricing}
+                placeholder="0,00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </label>
+          )}
           <label>
             {!value && (monthly || Number(count) > 1)
               ? "Primeiro vencimento"
@@ -950,6 +1057,7 @@ function EntryForm({
                 min="1"
                 max="60"
                 step="1"
+                disabled={itemPricing}
                 required
                 value={count}
                 onChange={(e) => {

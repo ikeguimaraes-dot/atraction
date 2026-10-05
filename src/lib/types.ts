@@ -150,6 +150,8 @@ export type DreGroup =
   | "income_tax"
   | "non_dre";
 export type FinanceEntry = Base & {
+  quantity?: number | null;
+  unit_amount_cents?: number | null;
   recurrence_id?: string | null;
   recurrence_index?: number | null;
   payments?: Payment[];
