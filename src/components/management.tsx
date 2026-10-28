@@ -375,12 +375,33 @@ export function Finance({
   const [contact, setContact] = useState(initialContact);
   const [supplier, setSupplier] = useState("");
   const [month, setMonth] = useState(() => today().slice(0, 7));
-  const from = month ? `${month}-01` : "";
-  const to = month
-    ? `${month}-${new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0).getDate()}`
-    : "";
-  const monthlyRows = alive(s.finance).filter((r) =>
-    inPeriod(financeReferenceDate(r, s.documents), from, to),
+  const [dateMode, setDateMode] = useState<"month" | "period" | "all">("month");
+  const [periodFrom, setPeriodFrom] = useState(
+    () => `${today().slice(0, 7)}-01`,
+  );
+  const [periodTo, setPeriodTo] = useState(today);
+  const from =
+    dateMode === "period"
+      ? periodFrom
+      : dateMode === "month" && month
+        ? `${month}-01`
+        : "";
+  const to =
+    dateMode === "period"
+      ? periodTo
+      : dateMode === "month" && month
+        ? `${month}-${new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0).getDate()}`
+        : "";
+  const validPeriod = !from || !to || from <= to;
+  const periodLabel =
+    dateMode === "period"
+      ? "do período"
+      : dateMode === "month" && month
+        ? "do mês"
+        : "total";
+  const monthlyRows = alive(s.finance).filter(
+    (r) =>
+      validPeriod && inPeriod(financeReferenceDate(r, s.documents), from, to),
   );
   const revenue = monthlyRows
     .filter((r) => r.direction === "income")
@@ -388,6 +409,7 @@ export function Finance({
   const expense = monthlyRows
     .filter((r) => r.direction === "expense")
     .reduce((sum, r) => sum + r.amount_cents, 0);
+  const profit = revenue - expense;
   const [editing, setEditing] = useState<
     FinanceEntry | "income" | "expense" | null
   >(null);
@@ -396,6 +418,7 @@ export function Finance({
   const rows = alive(s.finance)
     .filter(
       (r) =>
+        validPeriod &&
         r.direction === direction &&
         (direction !== "income" || !contact || r.contact_id === contact) &&
         (direction !== "expense" || !supplier || r.supplier_id === supplier) &&
@@ -447,40 +470,99 @@ export function Finance({
       />
       <div className="management-toolbar">
         <label>
-          Mês de referência
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-          />
+          Filtro de datas
+          <select
+            value={dateMode}
+            onChange={(event) =>
+              setDateMode(event.target.value as typeof dateMode)
+            }
+          >
+            <option value="month">Por mês</option>
+            <option value="period">Por período</option>
+            <option value="all">Todos os meses</option>
+          </select>
         </label>
+        {dateMode === "month" && (
+          <label>
+            Mês de referência
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            />
+          </label>
+        )}
+        {dateMode === "period" && (
+          <>
+            <label>
+              Data inicial
+              <input
+                type="date"
+                value={periodFrom}
+                max={periodTo || undefined}
+                onChange={(event) => setPeriodFrom(event.target.value)}
+              />
+            </label>
+            <label>
+              Data final
+              <input
+                type="date"
+                value={periodTo}
+                min={periodFrom || undefined}
+                onChange={(event) => setPeriodTo(event.target.value)}
+              />
+            </label>
+          </>
+        )}
         <button
           className="secondary"
-          onClick={() => setMonth(today().slice(0, 7))}
+          onClick={() => {
+            setMonth(today().slice(0, 7));
+            setDateMode("month");
+          }}
         >
           Mês atual
         </button>
-        <button className="text-button" onClick={() => setMonth("")}>
+        <button
+          className="text-button"
+          onClick={() => {
+            setMonth("");
+            setDateMode("all");
+          }}
+        >
           Todos os meses
         </button>
-        {!month && <span>Exibindo todos os meses</span>}
+        {dateMode === "all" && <span>Exibindo todos os meses</span>}
       </div>
+      {!validPeriod && (
+        <p className="error" role="alert">
+          A data final deve ser igual ou posterior à data inicial.
+        </p>
+      )}
       <div
         className="finance-summary monthly-totals"
-        aria-label="Totais mensais cadastrados"
+        aria-label="Receita, despesa e lucro"
       >
         <div className="card income" aria-label="Receita cadastrada">
-          <small>Receita</small>
+          <small>Receita {periodLabel}</small>
           <strong>{money(revenue / 100)}</strong>
-          <small>
-            Total cadastrado {month ? "no mês" : "em todos os meses"}
-          </small>
+          <small>Total de receitas cadastradas</small>
         </div>
         <div className="card expense" aria-label="Despesa cadastrada">
-          <small>Despesa</small>
+          <small>Despesa {periodLabel}</small>
           <strong>{money(expense / 100)}</strong>
+          <small>Total de despesas cadastradas</small>
+        </div>
+        <div
+          className={`card ${profit < 0 ? "expense" : "income"}`}
+          aria-label="Lucro calculado"
+        >
+          <small>Lucro {periodLabel}</small>
+          <strong>{money(profit / 100)}</strong>
           <small>
-            Total cadastrado {month ? "no mês" : "em todos os meses"}
+            {profit < 0
+              ? "Prejuízo: despesas maiores que receitas"
+              : "Receitas menos despesas"}
           </small>
         </div>
       </div>
@@ -490,7 +572,11 @@ export function Finance({
         parcela. Os totais incluem o valor integral, inclusive dos lançamentos
         já baixados.
       </p>
-      <FinancialSummary rows={s.finance} from={from} to={to} />
+      <FinancialSummary
+        rows={validPeriod ? s.finance : []}
+        from={from}
+        to={to}
+      />
       <p className="management-hint">
         Resumo geral da empresa no período selecionado, incluindo receitas e
         despesas.
@@ -604,6 +690,7 @@ export function Finance({
         </div>
         <button
           className="secondary"
+          disabled={!validPeriod}
           onClick={() =>
             exportCsv(
               direction === "income" ? "receitas.csv" : "despesas.csv",
@@ -625,9 +712,9 @@ export function Finance({
           Exportar financeiro (CSV)
         </button>
         <p className="management-hint">
-          A lista e a exportação seguem o mês de referência, a aba e os filtros.
-          Os cards independem da busca e da aba. Recebido e Pago usam a data da
-          baixa; A receber e A pagar usam o vencimento.
+          A lista e a exportação seguem as datas selecionadas, a aba e os
+          filtros. Os cards independem da busca e da aba. Recebido e Pago usam a
+          data da baixa; A receber e A pagar usam o vencimento.
         </p>
         <section className="card ledger" aria-label="Lançamentos financeiros">
           {rows.map((r) => (

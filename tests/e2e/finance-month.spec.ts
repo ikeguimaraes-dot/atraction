@@ -100,6 +100,11 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
   const expense = page.getByLabel("Despesa cadastrada", { exact: true });
   await expect(income).toContainText("R$ 200");
   await expect(expense).toContainText("R$ 60");
+  const profit = page.getByLabel("Lucro calculado", { exact: true });
+  await expect(profit).toContainText("R$ 140");
+  await expect(income).toContainText("Receita do mês");
+  await expect(expense).toContainText("Despesa do mês");
+  await expect(profit).toContainText("Lucro do mês");
   await expect(page.locator(".ledger-row")).toHaveCount(2);
   await page.getByRole("tab", { name: "Despesas", exact: true }).click();
   await expect(page.locator(".ledger-row")).toHaveCount(1);
@@ -107,6 +112,8 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
   await month.fill("2028-02");
   await expect(income).toContainText("R$ 0");
   await expect(expense).toContainText("R$ 200");
+  await expect(profit).toContainText(/-R\$\s*200/);
+  await expect(profit).toContainText("Prejuízo");
   await expect(page.locator(".ledger-row")).toContainText("Despesa fevereiro");
   await page
     .getByRole("button", { name: "Limpar filtros", exact: true })
@@ -116,4 +123,57 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
   await expect(income).toContainText("R$ 0");
   await expect(expense).toContainText("R$ 0");
   await expect(page.locator(".ledger-row")).toHaveCount(0);
+  await expect(profit).toContainText("R$ 0");
+  await page
+    .getByRole("combobox", { name: "Filtro de datas", exact: true })
+    .selectOption("period");
+  await page.getByLabel("Data inicial", { exact: true }).fill("2028-01-20");
+  await page.getByLabel("Data final", { exact: true }).fill("2028-02-29");
+  await expect(income).toContainText("Receita do período");
+  await expect(income).toContainText("R$ 100");
+  await expect(expense).toContainText("R$ 260");
+  await expect(profit).toContainText(/-R\$\s*160/);
+  await expect(page.locator(".ledger-row")).toHaveCount(2);
+  await page.getByRole("tab", { name: "Receitas", exact: true }).click();
+  await expect(page.locator(".ledger-row")).toHaveCount(1);
+  await expect(page.locator(".ledger-row")).toContainText(
+    "Receita paga depois",
+  );
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar financeiro (CSV)" }).click();
+  const stream = await (await downloadPromise).createReadStream();
+  let csv = "";
+  for await (const chunk of stream!) csv += chunk.toString();
+  expect(csv).toContain("Receita paga depois");
+  expect(csv).not.toContain("Receita parcial");
+  await page.getByLabel("Data inicial", { exact: true }).fill("2028-03-01");
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "A data final deve ser igual ou posterior" }),
+  ).toContainText("A data final deve ser igual ou posterior");
+  await expect(
+    page.getByRole("button", { name: "Exportar financeiro (CSV)" }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
+  await expect(income).toContainText("R$ 200");
+  await expect(expense).toContainText("R$ 260");
+  await expect(profit).toContainText(/-R\$\s*60/);
+  await page.getByRole("button", { name: "Mês atual", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Filtro de datas", exact: true }),
+  ).toHaveValue("month");
+  await expect(page.getByLabel("Mês de referência")).toHaveValue(
+    await page.evaluate(() => {
+      const date = new Date();
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    }),
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
 });
