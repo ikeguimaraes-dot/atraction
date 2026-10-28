@@ -193,6 +193,18 @@ export function ExpenseDocuments({
                 inputMode="decimal"
                 required
                 placeholder="0,00"
+                onBlur={(event) => {
+                  try {
+                    event.currentTarget.value = (
+                      cents(event.currentTarget.value) / 100
+                    ).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    });
+                  } catch {
+                    // Keep invalid input available for correction on submit.
+                  }
+                }}
               />
             </label>
             <label>

@@ -1,11 +1,14 @@
 import { payments, remaining, inPeriod, paid } from "./payments";
-import type { FinanceEntry } from "./types";
+import type { CustomerDocument, FinanceEntry } from "./types";
 export const today = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 export function cents(input: string): number {
-  const value = input.trim().replace(",", ".");
+  const raw = input.trim();
+  const value = /^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(raw)
+    ? raw.replaceAll(".", "").replace(",", ".")
+    : raw.replace(",", ".");
   if (!/^\d+(\.\d{1,2})?$/.test(value))
     throw new Error("Informe um valor positivo com até duas casas decimais.");
   const [whole, fraction = ""] = value.split(".");
@@ -13,6 +16,19 @@ export function cents(input: string): number {
   if (!Number.isSafeInteger(amount) || amount < 1 || amount > 999999999999)
     throw new Error("Valor fora do limite permitido.");
   return amount;
+}
+export function financeReferenceDate(
+  entry: FinanceEntry,
+  documents: CustomerDocument[],
+): string {
+  // Archiving a receipt must not move its expense to another month.
+  const document =
+    entry.direction === "expense"
+      ? documents.find(
+          (item) => item.finance_id === entry.id && item.issue_date,
+        )
+      : undefined;
+  return document?.issue_date || entry.due_date;
 }
 export function balance(rows: FinanceEntry[], from = "", to = "") {
   const sums = { received: 0, paid: 0, receivable: 0, payable: 0 };

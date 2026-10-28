@@ -2,7 +2,13 @@
 import { uuid } from "@/lib/demo";
 import { alive, money } from "@/lib/domain";
 import { exportCsv } from "@/lib/files";
-import { balance, cents, entryStatus, today } from "@/lib/finance";
+import {
+  balance,
+  cents,
+  entryStatus,
+  financeReferenceDate,
+  today,
+} from "@/lib/finance";
 import {
   categoryGroup,
   dreLabels,
@@ -374,7 +380,7 @@ export function Finance({
     ? `${month}-${new Date(Number(month.slice(0, 4)), Number(month.slice(5)), 0).getDate()}`
     : "";
   const monthlyRows = alive(s.finance).filter((r) =>
-    inPeriod(r.due_date, from, to),
+    inPeriod(financeReferenceDate(r, s.documents), from, to),
   );
   const revenue = monthlyRows
     .filter((r) => r.direction === "income")
@@ -393,7 +399,7 @@ export function Finance({
         r.direction === direction &&
         (direction !== "income" || !contact || r.contact_id === contact) &&
         (direction !== "expense" || !supplier || r.supplier_id === supplier) &&
-        inPeriod(r.due_date, from, to) &&
+        inPeriod(financeReferenceDate(r, s.documents), from, to) &&
         (!status ||
           (status === "open"
             ? !r.settled_date
@@ -461,7 +467,7 @@ export function Finance({
       </div>
       <div
         className="finance-summary monthly-totals"
-        aria-label="Totais cadastrados por vencimento"
+        aria-label="Totais cadastrados por mês de referência"
       >
         <div className="card income" aria-label="Receita cadastrada">
           <small>Receita</small>
@@ -479,8 +485,9 @@ export function Finance({
         </div>
       </div>
       <p className="management-hint">
-        Receita e Despesa somam o valor integral dos lançamentos por vencimento,
-        incluindo os já baixados. Cada parcela ou recorrência entra no seu mês.
+        Despesas com nota ou recibo entram no mês de emissão do comprovante. Os
+        demais lançamentos entram pelo vencimento. Os totais incluem o valor
+        integral, inclusive dos lançamentos já baixados.
       </p>
       <FinancialSummary rows={s.finance} from={from} to={to} />
       <p className="management-hint">
@@ -617,7 +624,7 @@ export function Finance({
           Exportar financeiro (CSV)
         </button>
         <p className="management-hint">
-          A lista e a exportação seguem o mês de vencimento, a aba e os filtros.
+          A lista e a exportação seguem o mês de referência, a aba e os filtros.
           Os cards independem da busca e da aba. Recebido e Pago usam a data da
           baixa; A receber e A pagar usam o vencimento.
         </p>
