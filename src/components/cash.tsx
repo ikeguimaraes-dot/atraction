@@ -227,7 +227,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
       <section className="card attribution">
         <SectionTitle
           title="Acertos da equipe"
-          subtitle="Quem tem a pagar ou receber. Os acertos não entram na DRE."
+          subtitle="Inclui reembolsos de despesas da empresa pagas pela equipe. Registre o acerto quando a empresa devolver o dinheiro. Os acertos não entram na DRE."
           action={
             <button className="primary" onClick={() => setModal("settlement")}>
               Registrar acerto

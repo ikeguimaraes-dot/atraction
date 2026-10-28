@@ -7,11 +7,7 @@ import { recordPayment } from "@/lib/operations";
 import { cents, today } from "@/lib/finance";
 import { money, alive } from "@/lib/domain";
 import { uuid } from "@/lib/demo";
-import {
-  companyKey,
-  equalAllocations,
-  participantId,
-} from "@/lib/shared-expenses";
+import { companyKey, participantId } from "@/lib/shared-expenses";
 import { useTeamMembers } from "@/lib/use-team-members";
 import { Modal } from "./ui";
 export function PaymentModal({
@@ -33,11 +29,7 @@ export function PaymentModal({
     ...members.map((m) => ({ key: m.user_id, label: m.email })),
   ];
   const [payer, setPayer] = useState(f.purchase_payer || companyKey);
-  const [mode, setMode] = useState<"equal" | "percent" | "amount">("equal");
-  const [selected, setSelected] = useState<string[]>([companyKey]);
-  const [shares, setShares] = useState<Record<string, string>>({
-    company: "100",
-  });
+  const [expenseOwner, setExpenseOwner] = useState(companyKey);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [requestId] = useState(uuid());
@@ -60,40 +52,15 @@ export function PaymentModal({
             const value = cents(amount);
             if (value > remaining(f))
               throw new Error("O valor excede o saldo restante.");
-            let allocations;
-            if (f.direction === "expense") {
-              if (!selected.length)
-                throw new Error("Escolha quem participa da despesa.");
-              if (mode === "equal")
-                allocations = equalAllocations(value, selected);
-              else if (mode === "percent") {
-                const values = selected.map((key) =>
-                  Number((shares[key] || "0").replace(",", ".")),
-                );
-                if (Math.abs(values.reduce((n, x) => n + x, 0) - 100) > 0.001)
-                  throw new Error("Os percentuais precisam somar 100%.");
-                let used = 0;
-                allocations = selected.map((key, index) => {
-                  const amount_cents =
-                    index === selected.length - 1
-                      ? value - used
-                      : Math.round((value * values[index]) / 100);
-                  used += amount_cents;
-                  return { user_id: participantId(key), amount_cents };
-                });
-              } else {
-                allocations = selected.map((key) => ({
-                  user_id: participantId(key),
-                  amount_cents: cents(shares[key] || "0"),
-                }));
-                if (
-                  allocations.reduce((n, x) => n + x.amount_cents, 0) !== value
-                )
-                  throw new Error(
-                    "Os valores da divisão precisam somar o valor da baixa.",
-                  );
-              }
-            }
+            const allocations =
+              f.direction === "expense"
+                ? [
+                    {
+                      user_id: participantId(expenseOwner),
+                      amount_cents: value,
+                    },
+                  ]
+                : undefined;
             if (
               await recordPayment(w, f, {
                 id: requestId,
@@ -186,52 +153,28 @@ export function PaymentModal({
                     </select>
                   </label>
                   <label>
-                    Como dividir
+                    De quem é a despesa
                     <select
-                      value={mode}
-                      onChange={(e) => setMode(e.target.value as typeof mode)}
+                      value={expenseOwner}
+                      onChange={(e) => setExpenseOwner(e.target.value)}
                     >
-                      <option value="equal">Igualmente</option>
-                      <option value="percent">Por percentual</option>
-                      <option value="amount">Por valor</option>
+                      {participants.map((person) => (
+                        <option key={person.key} value={person.key}>
+                          {person.label}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 </div>
-                {participants.map((person) => {
-                  const checked = selected.includes(person.key);
-                  return (
-                    <div className="document-row" key={person.key}>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(e) => {
-                            setSelected((current) =>
-                              e.target.checked
-                                ? [...current, person.key]
-                                : current.filter((key) => key !== person.key),
-                            );
-                          }}
-                        />{" "}
-                        {person.label}
-                      </label>
-                      {checked && mode !== "equal" && (
-                        <input
-                          aria-label={`${mode === "percent" ? "Percentual" : "Valor"} de ${person.label}`}
-                          inputMode="decimal"
-                          value={shares[person.key] || ""}
-                          onChange={(e) =>
-                            setShares((current) => ({
-                              ...current,
-                              [person.key]: e.target.value,
-                            }))
-                          }
-                          placeholder={mode === "percent" ? "%" : "R$"}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
+                <p className="management-hint">
+                  Quem pagou informa de onde saiu o dinheiro. De quem é a
+                  despesa define quem deve arcar com o valor.
+                </p>
+                <p role="status">
+                  {payer === expenseOwner
+                    ? "Quem pagou é o responsável pela despesa. Não há reembolso."
+                    : `${participants.find((person) => person.key === expenseOwner)?.label || "Membro"} deve reembolsar ${participants.find((person) => person.key === payer)?.label || "o pagador"} pelo valor desta baixa.`}
+                </p>
               </section>
             )}
             <button className="primary" disabled={saving || w.busy}>
@@ -250,6 +193,17 @@ export function PaymentModal({
                 {p.allocations?.length
                   ? ` · Pago por ${participants.find((x) => x.key === (p.payer_user_id || companyKey))?.label || "membro"}`
                   : ""}
+                {p.allocations?.map((allocation, index) => (
+                  <span key={index}>
+                    {" · Despesa de "}
+                    {participants.find(
+                      (person) =>
+                        person.key === (allocation.user_id || companyKey),
+                    )?.label || "membro"}
+                    {": "}
+                    {money(allocation.amount_cents / 100)}
+                  </span>
+                ))}
               </small>
             </span>
             <button

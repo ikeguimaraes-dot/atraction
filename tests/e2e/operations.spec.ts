@@ -61,3 +61,50 @@ test("contas, baixa parcial, transferência e DRE", async ({ page }) => {
     )
     .toBe(true);
 });
+
+test("baixa identifica pagador e responsável pela despesa", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await go(page, "Financeiro");
+  await page.getByRole("button", { name: "Nova despesa", exact: true }).click();
+  await page
+    .getByLabel("Descrição", { exact: true })
+    .fill("Despesa da empresa teste");
+  await page.getByLabel("Valor total (R$)", { exact: true }).fill("100");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Categoria", { exact: true })
+    .selectOption({ index: 1 });
+  await page.getByRole("button", { name: "Salvar lançamento" }).click();
+  const row = page
+    .locator(".ledger-row")
+    .filter({ hasText: "Despesa da empresa teste" });
+  await row.getByRole("button", { name: "Pagar", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Quem pagou", exact: true }),
+  ).toHaveValue("company");
+  await expect(
+    page.getByRole("combobox", { name: "De quem é a despesa", exact: true }),
+  ).toHaveValue("company");
+  await expect(page.getByRole("dialog")).toContainText("Não há reembolso");
+  await page.getByLabel("Valor da baixa (R$)").fill("40");
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(row).toContainText("Parcial");
+  const saved = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("atraction-demo-v1")!).finance.find(
+        (f: { title: string }) => f.title === "Despesa da empresa teste",
+      ).payments[0],
+  );
+  expect(saved.payer_user_id).toBeNull();
+  expect(saved.allocations).toEqual([{ user_id: null, amount_cents: 4000 }]);
+  await row.getByRole("button", { name: "Pagar", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    /Despesa de Empresa: R\$\s*40/,
+  );
+  await page.getByRole("button", { name: "Estornar baixa" }).click();
+  await expect(
+    page.getByRole("button", { name: "Estornar baixa" }),
+  ).toHaveCount(0);
+});
