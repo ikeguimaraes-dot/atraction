@@ -59,6 +59,23 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
   const popup = await popupPromise;
   await expect.poll(() => popup.url()).toMatch(/^blob:/);
   await popup.close();
+  await purchase
+    .getByRole("button", { name: "Editar parcela 2/10", exact: true })
+    .click();
+  const editor = page.getByRole("dialog");
+  await expect(editor.getByLabel("Valor (R$)", { exact: true })).toHaveValue(
+    "162.91",
+  );
+  await editor.getByLabel("Valor (R$)", { exact: true }).fill("172,91");
+  await editor.getByLabel("Vencimento", { exact: true }).fill("2028-02-28");
+  await editor
+    .getByRole("button", { name: "Salvar lançamento", exact: true })
+    .click();
+  await expect(editor).toHaveCount(0);
+  await expect(purchase).toContainText("28/02/2028");
+  await expect(
+    purchase.getByRole("button", { name: "Abrir comprovante" }),
+  ).toBeVisible();
   await page.reload();
   await go(page, "Financeiro");
   await page.getByRole("tab", { name: "Despesas", exact: true }).click();
@@ -90,7 +107,7 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
       (sum: number, row: { amount_cents: number }) => sum + row.amount_cents,
       0,
     ),
-  ).toBe(162911);
+  ).toBe(163911);
 });
 
 test("switching to Pix resets installment count", async ({ page }) => {
@@ -100,4 +117,79 @@ test("switching to Pix resets installment count", async ({ page }) => {
   await page.getByLabel("Forma de pagamento").selectOption("pix");
   await expect(page.getByLabel("Quantidade de parcelas")).toHaveValue("1");
   await expect(page.getByLabel("Quantidade de parcelas")).toBeDisabled();
+});
+
+test("edits a single expense and preserves its recorded payment", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Seu negócio em dia" }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+    state.finance = [
+      {
+        id: "editable-expense",
+        tenant_id: "demo",
+        owner_id: null,
+        created_at: "2026-09-01",
+        updated_at: "2026-09-01",
+        deleted_at: null,
+        is_example: true,
+        direction: "expense",
+        title: "Despesa editável",
+        category: "Materiais",
+        amount_cents: 10000,
+        due_date: "2026-09-15",
+        settled_date: null,
+        contact_id: null,
+        supplier_id: null,
+        notes: "",
+        payments: [
+          {
+            id: "payment",
+            date: "2026-09-15",
+            amount_cents: 3000,
+            account_id: null,
+          },
+        ],
+      },
+    ];
+    localStorage.setItem("atraction-demo-v1", JSON.stringify(state));
+  });
+  await page.reload();
+  await go(page, "NF e Recibos");
+  const expense = page
+    .locator("details")
+    .filter({ hasText: "Despesa editável" });
+  await expense.locator("summary").click();
+  await expense
+    .getByRole("button", { name: "Editar despesa", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Descrição", { exact: true })
+    .fill("Despesa corrigida");
+  await dialog.getByLabel("Valor (R$)", { exact: true }).fill("150,00");
+  await dialog
+    .getByRole("button", { name: "Salvar lançamento", exact: true })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.locator("details").filter({ hasText: "Despesa corrigida" }),
+  ).toBeVisible();
+  await page.reload();
+  const rows = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("atraction-demo-v1")!).finance,
+  );
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    id: "editable-expense",
+    title: "Despesa corrigida",
+    amount_cents: 15000,
+  });
+  expect(rows[0].payments).toEqual([
+    { id: "payment", date: "2026-09-15", amount_cents: 3000, account_id: null },
+  ]);
 });

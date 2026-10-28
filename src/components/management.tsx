@@ -769,7 +769,7 @@ export function Finance({
     </>
   );
 }
-function EntryForm({
+export function EntryForm({
   w,
   value,
   direction,

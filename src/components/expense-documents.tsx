@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import { SectionTitle } from "./ui";
 import { companyKey } from "@/lib/shared-expenses";
 import { useTeamMembers } from "@/lib/use-team-members";
+import { EntryForm } from "./management";
 
 export function ExpenseDocuments({
   w,
@@ -24,6 +25,7 @@ export function ExpenseDocuments({
   const s = w.state!;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState<FinanceEntry | null>(null);
   const members = useTeamMembers(s.tenant.id);
   const payers = [
     { key: companyKey, label: "Empresa" },
@@ -442,13 +444,25 @@ export function ExpenseDocuments({
                       : "Não informado"}
                   </p>
                   {purchase.rows.map((row) => (
-                    <p key={row.id}>
-                      {row.purchase_installment
-                        ? `${row.purchase_installment}/${row.purchase_installments} · `
-                        : ""}
-                      Vencimento: {row.due_date.split("-").reverse().join("/")}{" "}
-                      · {money(row.amount_cents / 100)}
-                    </p>
+                    <div className="document-row" key={row.id}>
+                      <span>
+                        {row.purchase_installment
+                          ? `${row.purchase_installment}/${row.purchase_installments} · `
+                          : ""}
+                        Vencimento:{" "}
+                        {row.due_date.split("-").reverse().join("/")} ·{" "}
+                        {money(row.amount_cents / 100)}
+                      </span>
+                      <button
+                        className="secondary"
+                        disabled={w.busy}
+                        onClick={() => setEditing(row)}
+                      >
+                        {(row.purchase_installments || 1) > 1
+                          ? `Editar parcela ${row.purchase_installment}/${row.purchase_installments}`
+                          : "Editar despesa"}
+                      </button>
+                    </div>
                   ))}
                   {purchase.documents.map((document) => (
                     <div className="document-row" key={document.id}>
@@ -489,6 +503,15 @@ export function ExpenseDocuments({
         })}
         {!purchases.length && <p>Nenhuma despesa cadastrada.</p>}
       </section>
+      {editing && (
+        <EntryForm
+          w={w}
+          value={editing}
+          direction="expense"
+          contact=""
+          onClose={() => setEditing(null)}
+        />
+      )}
     </>
   );
 }
