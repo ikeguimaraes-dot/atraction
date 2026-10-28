@@ -8,6 +8,7 @@ import {
   expensePurchases,
   paymentMethods,
   purchaseInstallments,
+  type ExpensePurchase,
 } from "@/lib/expense-purchases";
 import { cents, today } from "@/lib/finance";
 import { categoryGroup } from "@/lib/finance-categories";
@@ -15,7 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { SectionTitle } from "./ui";
 import { companyKey } from "@/lib/shared-expenses";
 import { useTeamMembers } from "@/lib/use-team-members";
-import { EntryForm } from "./management";
+import { ExpensePurchaseEditor } from "./expense-purchase-editor";
 
 export function ExpenseDocuments({
   w,
@@ -25,7 +26,7 @@ export function ExpenseDocuments({
   const s = w.state!;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState<FinanceEntry | null>(null);
+  const [editing, setEditing] = useState<ExpensePurchase | null>(null);
   const members = useTeamMembers(s.tenant.id);
   const payers = [
     { key: companyKey, label: "Empresa" },
@@ -443,6 +444,13 @@ export function ExpenseDocuments({
                         )?.label || "Membro indisponível"
                       : "Não informado"}
                   </p>
+                  <button
+                    className="secondary"
+                    disabled={w.busy}
+                    onClick={() => setEditing(purchase)}
+                  >
+                    Editar despesa
+                  </button>
                   {purchase.rows.map((row) => (
                     <div className="document-row" key={row.id}>
                       <span>
@@ -453,15 +461,6 @@ export function ExpenseDocuments({
                         {row.due_date.split("-").reverse().join("/")} ·{" "}
                         {money(row.amount_cents / 100)}
                       </span>
-                      <button
-                        className="secondary"
-                        disabled={w.busy}
-                        onClick={() => setEditing(row)}
-                      >
-                        {(row.purchase_installments || 1) > 1
-                          ? `Editar parcela ${row.purchase_installment}/${row.purchase_installments}`
-                          : "Editar despesa"}
-                      </button>
                     </div>
                   ))}
                   {purchase.documents.map((document) => (
@@ -504,11 +503,10 @@ export function ExpenseDocuments({
         {!purchases.length && <p>Nenhuma despesa cadastrada.</p>}
       </section>
       {editing && (
-        <EntryForm
+        <ExpensePurchaseEditor
           w={w}
-          value={editing}
-          direction="expense"
-          contact=""
+          purchase={editing}
+          payers={payers}
           onClose={() => setEditing(null)}
         />
       )}

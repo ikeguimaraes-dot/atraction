@@ -60,19 +60,44 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
   await expect.poll(() => popup.url()).toMatch(/^blob:/);
   await popup.close();
   await purchase
-    .getByRole("button", { name: "Editar parcela 2/10", exact: true })
+    .getByRole("button", { name: "Editar despesa", exact: true })
     .click();
   const editor = page.getByRole("dialog");
-  await expect(editor.getByLabel("Valor (R$)", { exact: true })).toHaveValue(
-    "162.91",
-  );
-  await editor.getByLabel("Valor (R$)", { exact: true }).fill("172,91");
-  await editor.getByLabel("Vencimento", { exact: true }).fill("2028-02-28");
+  await expect(
+    editor.getByLabel("Valor total (R$)", { exact: true }),
+  ).toHaveValue("1629,11");
+  await editor.getByLabel("Valor total (R$)", { exact: true }).fill("1639,11");
   await editor
-    .getByRole("button", { name: "Salvar lançamento", exact: true })
+    .getByLabel("Primeiro vencimento", { exact: true })
+    .fill("2028-01-28");
+  await editor
+    .getByRole("combobox", { name: "Forma de pagamento", exact: true })
+    .selectOption("bank_slip");
+  await editor
+    .getByRole("combobox", { name: "Tipo", exact: true })
+    .selectOption("receipt");
+  await editor.getByLabel("Número (opcional)").fill("NF-EDITADA");
+  await editor.getByLabel("Data de emissão").fill("2026-09-20");
+  await editor
+    .getByRole("combobox", { name: "Quem pagou", exact: true })
+    .selectOption("company");
+  await editor.getByLabel("Observações").fill("Observação editada");
+  await editor
+    .getByLabel("Foto ou PDF (substituir comprovante)")
+    .setInputFiles({
+      name: "recibo.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  await editor
+    .getByRole("button", { name: "Salvar despesa", exact: true })
     .click();
   await expect(editor).toHaveCount(0);
   await expect(purchase).toContainText("28/02/2028");
+  await expect(purchase).toContainText("recibo.png");
   await expect(
     purchase.getByRole("button", { name: "Abrir comprovante" }),
   ).toBeVisible();
@@ -97,6 +122,23 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
     ),
   );
   expect(rows).toHaveLength(10);
+  expect(
+    rows.every(
+      (row: { payment_method: string; purchase_date: string; notes: string }) =>
+        row.payment_method === "bank_slip" &&
+        row.purchase_date === "2026-09-20" &&
+        row.notes === "Observação editada",
+    ),
+  ).toBe(true);
+  const documents = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("atraction-demo-v1")!).documents,
+  );
+  expect(
+    documents.find(
+      (doc: { document_number: string }) =>
+        doc.document_number === "NF-EDITADA",
+    ),
+  ).toMatchObject({ document_kind: "receipt", issue_date: "2026-09-20" });
   expect(
     rows.every(
       (row: { purchase_payer: string }) => row.purchase_payer === "company",
@@ -169,11 +211,14 @@ test("edits a single expense and preserves its recorded payment", async ({
     .click();
   const dialog = page.getByRole("dialog");
   await dialog
-    .getByLabel("Descrição", { exact: true })
+    .getByLabel("Descrição da despesa", { exact: true })
     .fill("Despesa corrigida");
-  await dialog.getByLabel("Valor (R$)", { exact: true }).fill("150,00");
+  await dialog.getByLabel("Valor total (R$)", { exact: true }).fill("150,00");
   await dialog
-    .getByRole("button", { name: "Salvar lançamento", exact: true })
+    .getByRole("combobox", { name: "Quem pagou", exact: true })
+    .selectOption("company");
+  await dialog
+    .getByRole("button", { name: "Salvar despesa", exact: true })
     .click();
   await expect(dialog).toHaveCount(0);
   await expect(

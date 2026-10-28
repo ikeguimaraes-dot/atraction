@@ -63,6 +63,17 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      atraction_edit_expense_purchase: {
+        Args: {
+          entry_id: string;
+          expected: { id: string; updated_at: string }[];
+          changes: import("./expense-purchases").PurchaseChanges;
+          document_id: string | null;
+          document_version: string | null;
+          replacement_id: string | null;
+        };
+        Returns: undefined;
+      };
       atraction_create_recurrence: {
         Args: {
           t: string;

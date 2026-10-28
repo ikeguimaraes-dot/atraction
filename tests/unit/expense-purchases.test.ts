@@ -1,6 +1,8 @@
 import { expect, it } from "vitest";
 import {
   expensePurchases,
+  editPurchaseRows,
+  type PurchaseChanges,
   purchaseInstallments,
 } from "../../src/lib/expense-purchases";
 import { financeReferenceDate } from "../../src/lib/finance";
@@ -111,4 +113,57 @@ it("keeps single payments in the purchase month and refuses installments for Pix
       () => "unused",
     ),
   ).toThrow();
+});
+
+const changes: PurchaseChanges = {
+  title: "Compra atualizada",
+  category: "Materiais",
+  dre_group: "expense",
+  amount_cents: 162911,
+  count: 10,
+  first_due: "2028-01-31",
+  issue_date: "2027-12-15",
+  payment_method: "bank_slip",
+  purchase_payer: "company",
+  supplier_id: null,
+  notes: "Editada",
+  kind: "receipt",
+  number: "456",
+};
+it("edits every installment while preserving individual due dates and recorded payments", () => {
+  const rows = parts();
+  rows[1].due_date = "2028-02-25";
+  rows[0].payments = [
+    { id: "paid", date: "2027-12-15", amount_cents: 10000, account_id: null },
+  ];
+  const purchase = expensePurchases(rows, [document])[0];
+  const edited = editPurchaseRows(purchase, changes, () => entry);
+  expect(edited[1].due_date).toBe("2028-02-25");
+  expect(edited[0].payments).toEqual(rows[0].payments);
+  expect(
+    edited.every(
+      (row) =>
+        row.payment_method === "bank_slip" &&
+        row.purchase_payer === "company" &&
+        row.notes === "Editada",
+    ),
+  ).toBe(true);
+  expect(() =>
+    editPurchaseRows(purchase, { ...changes, count: 5 }, () => entry),
+  ).toThrow();
+  expect(() =>
+    editPurchaseRows(purchase, { ...changes, amount_cents: 1000 }, () => entry),
+  ).toThrow();
+});
+it("replans unpaid purchases and preserves the total and original IDs", () => {
+  const purchase = expensePurchases(parts(), [document])[0];
+  const edited = editPurchaseRows(
+    purchase,
+    { ...changes, count: 5 },
+    () => entry,
+  );
+  expect(edited).toHaveLength(5);
+  expect(edited.reduce((sum, row) => sum + row.amount_cents, 0)).toBe(162911);
+  expect(edited[0].id).toBe(purchase.rows[0].id);
+  expect(edited[4].due_date).toBe("2028-05-31");
 });
