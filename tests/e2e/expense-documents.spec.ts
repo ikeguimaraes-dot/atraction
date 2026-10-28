@@ -23,6 +23,9 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
   await page.getByLabel("Data de emissão").fill("2026-09-15");
   await page.getByLabel("Valor total (R$)").fill("1.629,11");
   await page.getByLabel("Forma de pagamento").selectOption("credit_card");
+  await page
+    .getByRole("combobox", { name: "Quem pagou", exact: true })
+    .selectOption("company");
   await page.getByLabel("Quantidade de parcelas").fill("10");
   await page.getByLabel("Primeiro vencimento").fill("2028-01-31");
   await page.getByLabel("Categoria", { exact: true }).fill("Materiais");
@@ -50,6 +53,7 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
   await purchase.locator("summary").click();
   await expect(purchase).toContainText("Cartão de crédito");
   await expect(purchase).toContainText("10 parcelas");
+  await expect(purchase).toContainText("Quem pagou: Empresa");
   const popupPromise = page.waitForEvent("popup");
   await purchase.getByRole("button", { name: "Abrir comprovante" }).click();
   const popup = await popupPromise;
@@ -76,6 +80,11 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
     ),
   );
   expect(rows).toHaveLength(10);
+  expect(
+    rows.every(
+      (row: { purchase_payer: string }) => row.purchase_payer === "company",
+    ),
+  ).toBe(true);
   expect(
     rows.reduce(
       (sum: number, row: { amount_cents: number }) => sum + row.amount_cents,

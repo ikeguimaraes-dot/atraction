@@ -32,7 +32,7 @@ export function PaymentModal({
     { key: companyKey, label: "Empresa" },
     ...members.map((m) => ({ key: m.user_id, label: m.email })),
   ];
-  const [payer, setPayer] = useState(companyKey);
+  const [payer, setPayer] = useState(f.purchase_payer || companyKey);
   const [mode, setMode] = useState<"equal" | "percent" | "amount">("equal");
   const [selected, setSelected] = useState<string[]>([companyKey]);
   const [shares, setShares] = useState<Record<string, string>>({
@@ -173,6 +173,11 @@ export function PaymentModal({
                       value={payer}
                       onChange={(e) => setPayer(e.target.value)}
                     >
+                      {!participants.some((person) => person.key === payer) && (
+                        <option value={payer} disabled>
+                          Membro indisponível — escolha outro pagador
+                        </option>
+                      )}
                       {participants.map((person) => (
                         <option key={person.key} value={person.key}>
                           {person.label}

@@ -13,6 +13,8 @@ import { cents, today } from "@/lib/finance";
 import { categoryGroup } from "@/lib/finance-categories";
 import { supabase } from "@/lib/supabase";
 import { SectionTitle } from "./ui";
+import { companyKey } from "@/lib/shared-expenses";
+import { useTeamMembers } from "@/lib/use-team-members";
 
 export function ExpenseDocuments({
   w,
@@ -22,6 +24,11 @@ export function ExpenseDocuments({
   const s = w.state!;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const members = useTeamMembers(s.tenant.id);
+  const payers = [
+    { key: companyKey, label: "Empresa" },
+    ...members.map((member) => ({ key: member.user_id, label: member.email })),
+  ];
 
   const [method, setMethod] =
     useState<keyof typeof paymentMethods>("credit_card");
@@ -97,11 +104,15 @@ export function ExpenseDocuments({
               const kind = form.get("kind") as "nfe" | "receipt";
               const title = String(form.get("title")).trim();
               const category = String(form.get("category")).trim();
+              const payer = String(form.get("purchase_payer"));
+              if (!payers.some((person) => person.key === payer))
+                throw new Error("Escolha quem pagou a despesa.");
               const expense: FinanceEntry = {
                 ...w.base(),
                 direction: "expense",
                 purchase_date: String(form.get("issue_date")),
                 payment_method: method,
+                purchase_payer: payer,
                 title,
                 amount_cents: cents(String(form.get("amount"))),
                 category,
@@ -302,6 +313,16 @@ export function ExpenseDocuments({
               />
             </label>
             <label>
+              Quem pagou
+              <select name="purchase_payer" defaultValue={companyKey} required>
+                {payers.map((person) => (
+                  <option key={person.key} value={person.key}>
+                    {person.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
               Fornecedor
               <select name="supplier_id">
                 <option value="">Sem fornecedor</option>
@@ -410,6 +431,15 @@ export function ExpenseDocuments({
                     {purchase.rows.length > 1
                       ? `${purchase.rows.length} parcelas`
                       : "1 parcela"}
+                  </p>
+                  <p>
+                    Quem pagou:{" "}
+                    {purchase.rows[0].purchase_payer
+                      ? payers.find(
+                          (person) =>
+                            person.key === purchase.rows[0].purchase_payer,
+                        )?.label || "Membro indisponível"
+                      : "Não informado"}
                   </p>
                   {purchase.rows.map((row) => (
                     <p key={row.id}>

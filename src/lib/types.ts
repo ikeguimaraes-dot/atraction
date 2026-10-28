@@ -150,6 +150,8 @@ export type DreGroup =
   | "income_tax"
   | "non_dre";
 export type FinanceEntry = Base & {
+  /** "company", a team member UUID, or null for older entries without a payer. */
+  purchase_payer?: string | null;
   purchase_id?: string | null;
   purchase_date?: string | null;
   payment_method?:

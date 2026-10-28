@@ -21,6 +21,7 @@ const entry: FinanceEntry = {
   due_date: "2028-01-31",
   purchase_date: "2027-12-15",
   payment_method: "credit_card",
+  purchase_payer: "00000000-0000-4000-8000-000000000001",
   settled_date: null,
   payments: [],
   contact_id: null,
@@ -51,6 +52,9 @@ function parts() {
 it("creates exactly ten monthly charges without losing cents and groups the purchase by issue month", () => {
   const rows = parts();
   expect(rows).toHaveLength(10);
+  expect(rows.every((row) => row.purchase_payer === entry.purchase_payer)).toBe(
+    true,
+  );
   expect(new Set(rows.map((row) => row.id)).size).toBe(10);
   expect(rows.reduce((sum, row) => sum + row.amount_cents, 0)).toBe(162911);
   expect(rows[0].amount_cents).toBe(16292);
