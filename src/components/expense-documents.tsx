@@ -47,9 +47,10 @@ export function ExpenseDocuments({
           className="form"
           onSubmit={async (event) => {
             event.preventDefault();
+            const formElement = event.currentTarget;
             setSaving(true);
             setError("");
-            const form = new FormData(event.currentTarget);
+            const form = new FormData(formElement);
             const file = form.get("file") as File;
             let expense: FinanceEntry | undefined;
             let document: CustomerDocument | undefined;
@@ -119,7 +120,7 @@ export function ExpenseDocuments({
                 if (upload.error) throw upload.error;
               }
               w.notify("Despesa e comprovante cadastrados.");
-              event.currentTarget.reset();
+              formElement.reset();
             } catch (cause) {
               if (document && s.tenant.id === "demo")
                 await w.write("documents", {
