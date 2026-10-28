@@ -26,6 +26,7 @@ import type {
   Automation,
 } from "./types";
 import { pt } from "./pt";
+import { financeSaveMessage, saveFinanceRows } from "./save-finance-rows";
 const collections: Collection[] = [
   "contacts",
   "deals",
@@ -660,14 +661,17 @@ export function useWorkspace() {
       setBusy(false);
     }
   };
-  const createFinanceInstallments = async (rows: FinanceEntry[]) => {
+  const createFinanceInstallments = async (
+    rows: FinanceEntry[],
+    throwOnError = false,
+  ) => {
     if (
       !state ||
       busy ||
       switching ||
       selectionRef.current === "all" ||
       !["owner", "manager"].includes(state.role) ||
-      rows.length < 2 ||
+      rows.length < 1 ||
       rows.length > 60 ||
       rows.some(
         (r) =>
@@ -683,29 +687,47 @@ export function useWorkspace() {
     setBusy(true);
     try {
       if (userId) {
-        const { error } = await supabase()
-          .from("atraction_finance")
-          .insert(rows);
-        if (error) {
-          // Stable IDs make a retry after a lost response safe, without overwriting payments.
-          if (error.code !== "23505") throw error;
-          const saved = await supabase()
-            .from("atraction_finance")
-            .select("id")
-            .eq("tenant_id", state.tenant.id)
-            .in(
-              "id",
-              rows.map((r) => r.id),
-            );
-          if (saved.error || saved.data?.length !== rows.length) throw error;
+        await saveFinanceRows(rows, {
+          insert: (entries) =>
+            supabase().from("atraction_finance").insert(entries),
+          find: (ids) =>
+            supabase()
+              .from("atraction_finance")
+              .select("id")
+              .eq("tenant_id", state.tenant.id)
+              .in("id", ids),
+        });
+        try {
+          await read(userId);
+        } catch {
+          // The insert is confirmed; a refresh failure must not report it as unsaved.
+          setState((current) =>
+            current
+              ? {
+                  ...current,
+                  finance: [
+                    ...rows.filter(
+                      (row) =>
+                        !current.finance.some((saved) => saved.id === row.id),
+                    ),
+                    ...current.finance,
+                  ],
+                }
+              : current,
+          );
         }
-        await read(userId);
       } else
         setState((s) => (s ? { ...s, finance: [...rows, ...s.finance] } : s));
-      notify(`${rows.length} parcelas criadas.`);
+      notify(
+        rows.length === 1
+          ? "Despesa criada."
+          : `${rows.length} parcelas criadas.`,
+      );
       return true;
-    } catch {
-      notify("Não foi possível salvar as parcelas. Tente novamente.");
+    } catch (cause) {
+      const message = financeSaveMessage(cause);
+      if (throwOnError) throw new Error(message);
+      notify(message);
       return false;
     } finally {
       setBusy(false);

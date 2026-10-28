@@ -146,10 +146,7 @@ export function ExpenseDocuments({
                 size: file.size,
               };
               document.path = `${s.tenant.id}/${document.id}`;
-              financeSaved =
-                expenses.length > 1
-                  ? await w.createFinanceInstallments(expenses)
-                  : await w.write("finance", expenses[0]);
+              financeSaved = await w.createFinanceInstallments(expenses, true);
               if (!financeSaved)
                 throw new Error("Não foi possível criar a despesa.");
               if (s.tenant.id === "demo") {
