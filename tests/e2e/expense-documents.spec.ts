@@ -41,9 +41,7 @@ test("NF e Recibos groups a credit card purchase and creates ten monthly charges
   await expect(
     page.getByRole("region", { name: "Prévia das parcelas" }),
   ).toContainText("29/02/2028");
-  await page
-    .getByRole("button", { name: "Cadastrar despesa e comprovante" })
-    .click();
+  await page.getByRole("button", { name: "Cadastrar despesa" }).click();
   const purchase = page
     .getByRole("region", { name: "setembro de 2026" })
     .locator("details")
@@ -238,3 +236,58 @@ test("edits a single expense and preserves its recorded payment", async ({
     { id: "payment", date: "2026-09-15", amount_cents: 3000, account_id: null },
   ]);
 });
+
+for (const kind of ["nfe", "receipt"]) {
+  test(`creates ${kind} without attachment or description`, async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await go(page, "NF e Recibos");
+    await page
+      .getByRole("combobox", { name: "Tipo", exact: true })
+      .selectOption(kind);
+    await page.getByLabel("Número (opcional)").fill("OPCIONAL-123");
+    await page.getByLabel("Valor total (R$)").fill("1.629,11");
+    await page.getByLabel("Categoria", { exact: true }).fill("Materiais");
+    await page
+      .getByLabel("Forma de pagamento")
+      .selectOption(kind === "nfe" ? "credit_card" : "pix");
+    if (kind === "nfe")
+      await page.getByLabel("Quantidade de parcelas").fill("10");
+    await expect(page.getByLabel("Foto ou PDF (opcional)")).not.toHaveAttribute(
+      "required",
+    );
+    await expect(
+      page.getByLabel("Descrição da despesa (opcional)"),
+    ).not.toHaveAttribute("required");
+    await page
+      .getByRole("button", { name: "Cadastrar despesa", exact: true })
+      .click();
+    const title = `${kind === "nfe" ? "NF" : "Recibo"} OPCIONAL-123 · Materiais`;
+    const purchase = page.locator("details").filter({ hasText: title });
+    await expect(purchase).toBeVisible();
+    await purchase.locator("summary").click();
+    await expect(purchase).toContainText("Sem comprovante disponível.");
+    await page.reload();
+    const saved = await page.evaluate((title) => {
+      const state = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+      const rows = state.finance.filter((row: { title: string }) =>
+        row.title.startsWith(title),
+      );
+      return {
+        rows,
+        documents: state.documents.filter((doc: { finance_id: string }) =>
+          rows.some((row: { id: string }) => row.id === doc.finance_id),
+        ),
+      };
+    }, title);
+    expect(saved.rows).toHaveLength(kind === "nfe" ? 10 : 1);
+    expect(
+      saved.rows.reduce(
+        (sum: number, row: { amount_cents: number }) => sum + row.amount_cents,
+        0,
+      ),
+    ).toBe(162911);
+    expect(saved.documents).toHaveLength(0);
+  });
+}

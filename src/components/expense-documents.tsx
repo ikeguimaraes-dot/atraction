@@ -78,7 +78,7 @@ export function ExpenseDocuments({
     <>
       <SectionTitle
         title="NF e Recibos"
-        subtitle="Guarde o comprovante e crie a despesa financeira no mesmo lançamento."
+        subtitle="Cadastre a despesa e, se desejar, anexe a nota fiscal ou o recibo."
       />
       <section className="card attribution">
         <form
@@ -96,17 +96,23 @@ export function ExpenseDocuments({
             let document: CustomerDocument | undefined;
             try {
               if (
-                !file ||
-                !["application/pdf", "image/png", "image/jpeg"].includes(
+                file?.name &&
+                (!["application/pdf", "image/png", "image/jpeg"].includes(
                   file.type,
                 ) ||
-                file.size < 1 ||
-                file.size > 5 * 1024 * 1024
+                  file.size < 1 ||
+                  file.size > 5 * 1024 * 1024)
               )
                 throw new Error("Escolha uma foto JPG/PNG ou PDF de até 5 MB.");
               const kind = form.get("kind") as "nfe" | "receipt";
-              const title = String(form.get("title")).trim();
               const category = String(form.get("category")).trim();
+              const number = String(form.get("number") || "").trim();
+              const title =
+                String(form.get("title") || "").trim() ||
+                `${kind === "nfe" ? "NF" : "Recibo"}${number ? ` ${number}` : ""} · ${category}`.slice(
+                  0,
+                  200,
+                );
               const payer = String(form.get("purchase_payer"));
               if (!payers.some((person) => person.key === payer))
                 throw new Error("Escolha quem pagou a despesa.");
@@ -133,45 +139,53 @@ export function ExpenseDocuments({
                 Number(count),
                 () => w.base().id,
               );
-              document = {
-                ...w.base(),
-                contact_id: null,
-                finance_id: expense.id,
-                document_kind: kind,
-                document_number: String(form.get("number") || "").trim(),
-                issue_date: String(form.get("issue_date")),
-                name: file.name.slice(0, 200),
-                path: "",
-                mime_type: file.type,
-                size: file.size,
-              };
-              document.path = `${s.tenant.id}/${document.id}`;
               financeSaved = await w.createFinanceInstallments(expenses, true);
               if (!financeSaved)
                 throw new Error("Não foi possível criar a despesa.");
-              if (s.tenant.id === "demo") {
-                document.demo_data = await new Promise<string>(
-                  (resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(String(reader.result));
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                  },
-                );
-                if (!(await w.write("documents", document)))
-                  throw new Error("Não foi possível guardar o comprovante.");
-              } else {
-                if (!(await w.write("documents", document)))
-                  throw new Error("Não foi possível cadastrar o comprovante.");
-                const upload = await supabase()
-                  .storage.from("atraction-documents")
-                  .upload(document.path, file, {
-                    contentType: file.type,
-                    upsert: false,
-                  });
-                if (upload.error) throw upload.error;
+              if (file?.name) {
+                document = {
+                  ...w.base(),
+                  contact_id: null,
+                  finance_id: expense.id,
+                  document_kind: kind,
+                  document_number: String(form.get("number") || "").trim(),
+                  issue_date: String(form.get("issue_date")),
+                  name: file.name.slice(0, 200),
+                  path: "",
+                  mime_type: file.type,
+                  size: file.size,
+                };
+                document.path = `${s.tenant.id}/${document.id}`;
+                if (s.tenant.id === "demo") {
+                  document.demo_data = await new Promise<string>(
+                    (resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = () => resolve(String(reader.result));
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    },
+                  );
+                  if (!(await w.write("documents", document)))
+                    throw new Error("Não foi possível guardar o comprovante.");
+                } else {
+                  if (!(await w.write("documents", document)))
+                    throw new Error(
+                      "Não foi possível cadastrar o comprovante.",
+                    );
+                  const upload = await supabase()
+                    .storage.from("atraction-documents")
+                    .upload(document.path, file, {
+                      contentType: file.type,
+                      upsert: false,
+                    });
+                  if (upload.error) throw upload.error;
+                }
               }
-              w.notify("Despesa e comprovante cadastrados.");
+              w.notify(
+                document
+                  ? "Despesa e comprovante cadastrados."
+                  : "Despesa cadastrada.",
+              );
               formElement.reset();
               setAmount("");
               setCount("1");
@@ -343,13 +357,12 @@ export function ExpenseDocuments({
               />
             </label>
             <label>
-              Foto ou PDF
+              Foto ou PDF (opcional)
               <input
                 name="file"
                 type="file"
                 accept="image/jpeg,image/png,application/pdf"
                 capture="environment"
-                required
               />
             </label>
           </div>
@@ -369,10 +382,9 @@ export function ExpenseDocuments({
             </section>
           )}
           <label>
-            Descrição da despesa
+            Descrição da despesa (opcional)
             <input
               name="title"
-              required
               maxLength={200}
               placeholder="Ex.: Compra de materiais"
             />
@@ -382,8 +394,8 @@ export function ExpenseDocuments({
             <textarea name="notes" maxLength={1000} />
           </label>
           <p>
-            O arquivo é privado e pode ser consultado somente por donos e
-            gerentes.
+            Se anexar um comprovante, ele será privado e poderá ser consultado
+            somente por donos e gerentes.
           </p>
           {error && (
             <p className="error" role="alert">
@@ -391,7 +403,7 @@ export function ExpenseDocuments({
             </p>
           )}
           <button className="primary" disabled={saving || w.busy}>
-            {saving ? "Enviando…" : "Cadastrar despesa e comprovante"}
+            {saving ? "Enviando…" : "Cadastrar despesa"}
           </button>
         </form>
       </section>
