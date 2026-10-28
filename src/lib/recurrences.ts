@@ -117,7 +117,7 @@ export async function stopRecurrence(w: Work, id: string) {
     !w.state ||
     w.allSelected ||
     w.switching ||
-    !["owner", "manager"].includes(w.state.role) ||
+    w.state.role !== "owner" ||
     !w.state.recurrences?.some(
       (r) => r.id === id && r.tenant_id === w.state!.tenant.id,
     )

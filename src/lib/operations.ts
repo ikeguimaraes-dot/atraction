@@ -8,6 +8,16 @@ export async function recordPayment(
   p: Payment,
   reverse?: string,
 ) {
+  if (
+    !w.state ||
+    w.state.role !== "owner" ||
+    w.allSelected ||
+    w.switching ||
+    f.tenant_id !== w.state.tenant.id
+  ) {
+    w.notify("Somente donos podem dar baixa ou estornar pagamentos.");
+    return false;
+  }
   try {
     if (w.userId) {
       const shared = f.direction === "expense" && !!p.allocations?.length;

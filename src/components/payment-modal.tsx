@@ -19,6 +19,7 @@ export function PaymentModal({
   entry: FinanceEntry;
   onClose: () => void;
 }) {
+  const canSettle = w.state!.role === "owner";
   const f = w.state!.finance.find((x) => x.id === entry.id) || entry;
   const [amount, setAmount] = useState((remaining(f) / 100).toFixed(2));
   const [date, setDate] = useState(today());
@@ -87,7 +88,7 @@ export function PaymentModal({
           Registre valores já recebidos ou pagos, inclusive parciais. Nenhuma
           transferência bancária é executada.
         </p>
-        {remaining(f) > 0 && (
+        {remaining(f) > 0 && canSettle && (
           <>
             <div className="form-grid">
               <label>
@@ -209,7 +210,7 @@ export function PaymentModal({
             <button
               type="button"
               className="secondary"
-              disabled={saving}
+              disabled={saving || !canSettle}
               onClick={async () => {
                 setSaving(true);
                 await recordPayment(w, f, p, p.id);

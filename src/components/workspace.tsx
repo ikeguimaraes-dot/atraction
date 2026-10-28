@@ -390,13 +390,13 @@ export function Workspace() {
               )}
               {view === "finance" && canManage && (
                 <Finance
-                  key={financeContact}
+                  key={`${s.tenant.id}:${financeContact}`}
                   w={w}
                   initialContact={financeContact}
                 />
               )}
               {view === "expense-documents" && canManage && (
-                <ExpenseDocuments w={w} />
+                <ExpenseDocuments key={s.tenant.id} w={w} />
               )}
               {view === "cash" && canManage && <Cash w={w} />}
               {view === "tools" && <ToolsPanel w={w} />}
@@ -466,7 +466,7 @@ export function Workspace() {
                           </span>
                           <button
                             className="icon-button"
-                            disabled={!canWrite}
+                            disabled={!canWrite || w.state!.role === "manager"}
                             aria-label={ui.excluir + a.title}
                             onClick={() =>
                               w.write("activities", {
@@ -691,7 +691,11 @@ export function Workspace() {
                             </span>
                             <button
                               className="secondary"
-                              disabled={!canWrite || w.busy}
+                              disabled={
+                                !canWrite ||
+                                w.busy ||
+                                w.state!.role === "manager"
+                              }
                               onClick={() =>
                                 w.write(c, { ...r, deleted_at: null })
                               }
@@ -857,7 +861,7 @@ export function Workspace() {
             <footer>
               <button
                 className="text-button danger"
-                disabled={!canWrite}
+                disabled={!canWrite || w.state!.role === "manager"}
                 onClick={async () => {
                   if (
                     await w.write("contacts", {

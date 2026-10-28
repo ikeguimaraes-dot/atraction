@@ -1,4 +1,5 @@
 "use client";
+import { managerCanWrite } from "./permissions";
 import { replenishRecurrences } from "./recurrences";
 import { paid, payments } from "./payments";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -509,6 +510,19 @@ export function useWorkspace() {
     )
       return false;
     if (
+      state.role === "manager" &&
+      !managerCanWrite(
+        c,
+        row,
+        (state[c] as Row[]).find((r) => r.id === row.id),
+      )
+    ) {
+      notify(
+        "Gerentes podem cadastrar e editar, mas não dar baixa ou excluir registros.",
+      );
+      return false;
+    }
+    if (
       c === "contacts" &&
       "phone" in row &&
       state.contacts.some(
@@ -605,6 +619,10 @@ export function useWorkspace() {
         });
       if (c === "chat_messages") {
         notify("Resposta enviada pelo chat.");
+        return true;
+      }
+      if (state.role === "manager" && !previous) {
+        notify(pt.saved);
         return true;
       }
       notify(next.deleted_at ? pt.deleted : pt.saved, async () => {
@@ -756,6 +774,18 @@ export function useWorkspace() {
       !["owner", "manager"].includes(state.role)
     )
       return false;
+    if (
+      state.role === "manager" &&
+      rows.some(
+        (row) =>
+          !managerCanWrite(
+            c,
+            row,
+            (state[c] as Row[]).find((r) => r.id === row.id),
+          ),
+      )
+    )
+      return false;
     setBusy(true);
     try {
       if (userId && c === "contacts") {
@@ -787,6 +817,10 @@ export function useWorkspace() {
               }
             : s,
         );
+      if (state.role === "manager") {
+        notify(`${rows.length} pessoas importadas.`);
+        return true;
+      }
       notify(`${rows.length} pessoas importadas.`, async () => {
         if (userId) {
           const { error } = await supabase().rpc("atraction_undo_import", {

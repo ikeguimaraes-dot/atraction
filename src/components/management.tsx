@@ -246,7 +246,7 @@ export function Suppliers({ w }: { w: Work }) {
               </div>
               <button
                 className="text-button"
-                disabled={w.busy}
+                disabled={w.busy || w.state!.role === "manager"}
                 onClick={() =>
                   w.write("suppliers", {
                     ...r,
@@ -775,7 +775,7 @@ export function Finance({
                 )}
                 <button
                   className="secondary"
-                  disabled={w.busy}
+                  disabled={w.busy || s.role !== "owner"}
                   onClick={() => {
                     if (r.settled_date)
                       void recordPayment(
@@ -811,7 +811,7 @@ export function Finance({
                 <button
                   className="icon-button"
                   aria-label={`Excluir ${r.title}`}
-                  disabled={w.busy}
+                  disabled={w.busy || w.state!.role === "manager"}
                   onClick={() =>
                     w.write("finance", {
                       ...r,

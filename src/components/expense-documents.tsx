@@ -25,6 +25,7 @@ export function ExpenseDocuments({
 }) {
   const s = w.state!;
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState<ExpensePurchase | null>(null);
   const members = useTeamMembers(s.tenant.id);
@@ -408,10 +409,36 @@ export function ExpenseDocuments({
         </form>
       </section>
       <section className="card attribution">
-        <h2>Despesas por mês</h2>
+        <SectionTitle
+          title={`Despesas por mês · ${s.tenant.name}`}
+          subtitle={`${purchases.length} despesas cadastradas, com ou sem comprovante.`}
+          action={
+            w.userId ? (
+              <button
+                className="secondary"
+                disabled={refreshing || w.switching}
+                onClick={async () => {
+                  setRefreshing(true);
+                  setError("");
+                  try {
+                    await w.read(w.userId!);
+                  } catch {
+                    setError(
+                      "Não foi possível atualizar as despesas. Tente novamente.",
+                    );
+                  } finally {
+                    setRefreshing(false);
+                  }
+                }}
+              >
+                {refreshing ? "Atualizando…" : "Atualizar despesas"}
+              </button>
+            ) : undefined
+          }
+        />
         <p>
-          Compras organizadas pela emissão da nota ou recibo. Despesas sem
-          comprovante usam o vencimento.
+          Compras organizadas pela data de emissão informada, mesmo sem
+          comprovante. Quando não há data de emissão, usamos o vencimento.
         </p>
         {months.map((month) => {
           const items = purchases.filter(
@@ -489,7 +516,7 @@ export function ExpenseDocuments({
                       </button>
                       <button
                         className="text-button"
-                        disabled={w.busy}
+                        disabled={w.busy || w.state!.role === "manager"}
                         onClick={() =>
                           w.write("documents", {
                             ...document,

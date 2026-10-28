@@ -44,7 +44,7 @@ export function Recurrences({
                     : "Sem data final"}
               </small>
             </span>
-            {r.active && (
+            {r.active && w.state?.role === "owner" && (
               <button className="secondary" onClick={() => setEnding(r)}>
                 Encerrar {r.title}
               </button>

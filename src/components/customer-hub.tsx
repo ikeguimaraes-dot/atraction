@@ -411,7 +411,7 @@ export function CustomerHub({ w, id }: { w: Work; id: string }) {
                 </button>
                 <button
                   className="text-button"
-                  disabled={w.busy || uploading}
+                  disabled={w.busy || uploading || w.state!.role === "manager"}
                   onClick={() =>
                     w.write("documents", {
                       ...d,

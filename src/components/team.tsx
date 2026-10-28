@@ -14,7 +14,8 @@ const labels: Record<string, string> = {
 };
 const access: Record<string, string> = {
   owner: "Acesso total, inclusive equipe e configurações da empresa.",
-  manager: "Clientes, operação, contratos, fornecedores e financeiro.",
+  manager:
+    "Pode cadastrar e editar informações. Não pode dar baixa, estornar ou excluir registros.",
   agent: "Clientes e tarefas atribuídos, sem financeiro ou configurações.",
   viewer: "Consulta dos dados permitidos, sem fazer alterações.",
 };
@@ -198,7 +199,7 @@ export function Team({
                   Dono — acesso total e gestão da equipe
                 </option>
                 <option value="manager">
-                  Gerente — operação, contratos e financeiro
+                  Gerente — cadastros e edições, sem baixas ou exclusões
                 </option>
                 <option value="agent">
                   Assistente — clientes e tarefas atribuídos

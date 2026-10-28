@@ -139,6 +139,7 @@ export function Contracts({
                       Reajustar
                     </button>
                     <button
+                      disabled={w.state!.role !== "owner"}
                       className="text-button"
                       onClick={() => {
                         setChange({ contract: c, action: "cancel" });

@@ -98,6 +98,10 @@ export function ExpensePurchaseEditor({
               throw new Error("Escolha quem pagou a despesa.");
             if (changes.issue_date > today())
               throw new Error("A emissão não pode estar no futuro.");
+            if (s.role === "manager" && changes.count < purchase.rows.length)
+              throw new Error(
+                "Somente donos podem remover parcelas de uma despesa.",
+              );
             const rows = editPurchaseRows(purchase, changes, () => ({
               ...first,
               ...w.base(),
@@ -105,6 +109,10 @@ export function ExpensePurchaseEditor({
               settled_date: null,
             }));
             const file = form.get("file") as File;
+            if (file?.size && document && s.role === "manager")
+              throw new Error(
+                "Somente donos podem substituir um comprovante existente.",
+              );
             if (file?.size) {
               if (
                 !["application/pdf", "image/png", "image/jpeg"].includes(
@@ -318,7 +326,7 @@ export function ExpensePurchaseEditor({
             <input
               type="number"
               required
-              min="1"
+              min={s.role === "manager" ? purchase.rows.length : 1}
               max="60"
               step="1"
               value={count}
@@ -393,6 +401,7 @@ export function ExpensePurchaseEditor({
           Foto ou PDF (substituir comprovante)
           <input
             type="file"
+            disabled={s.role === "manager" && !!document}
             name="file"
             onChange={(event) =>
               setHasReplacement(!!event.target.files?.length)

@@ -45,6 +45,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           <div className="management-actions">
             <button
               className="secondary"
+              disabled={s.role !== "owner"}
               onClick={() => {
                 setError("");
                 setModal("transfer");
@@ -90,7 +91,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </button>
             <button
               className="text-button"
-              disabled={w.busy}
+              disabled={w.busy || w.state!.role === "manager"}
               onClick={() =>
                 w.write("accounts", {
                   ...a,
@@ -229,7 +230,11 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           title="Acertos da equipe"
           subtitle="Inclui reembolsos de despesas da empresa pagas pela equipe. Registre o acerto quando a empresa devolver o dinheiro. Os acertos não entram na DRE."
           action={
-            <button className="primary" onClick={() => setModal("settlement")}>
+            <button
+              className="primary"
+              disabled={s.role !== "owner"}
+              onClick={() => setModal("settlement")}
+            >
               Registrar acerto
             </button>
           }
@@ -264,7 +269,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             <strong>{money(x.amount_cents / 100)}</strong>
             <button
               className="text-button"
-              disabled={w.busy}
+              disabled={w.busy || w.state!.role === "manager"}
               onClick={() =>
                 w.write("settlements", {
                   ...x,
@@ -291,7 +296,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             <strong>{money(t.amount_cents / 100)}</strong>
             <button
               className="text-button"
-              disabled={w.busy}
+              disabled={w.busy || w.state!.role === "manager"}
               onClick={() =>
                 w.write("transfers", {
                   ...t,

@@ -125,6 +125,8 @@ export function useJourney(w: ReturnType<typeof useWorkspace>) {
     effective: string,
   ) =>
     run(async () => {
+      if (action === "cancel" && w.state?.role !== "owner")
+        throw new Error("Somente donos podem cancelar contratos.");
       if (w.userId) {
         const { error } = await supabase().rpc("atraction_contract_action", {
           contract: c.id,

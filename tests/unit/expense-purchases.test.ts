@@ -167,3 +167,23 @@ it("replans unpaid purchases and preserves the total and original IDs", () => {
   expect(edited[0].id).toBe(purchase.rows[0].id);
   expect(edited[4].due_date).toBe("2028-05-31");
 });
+
+it("shows an October expense without a receipt alongside September purchases", () => {
+  const apple = {
+    ...entry,
+    id: "apple",
+    purchase_id: "apple",
+    title: "Apple Developer",
+    amount_cents: 55000,
+    purchase_date: "2026-10-28",
+    due_date: "2026-10-28",
+    purchase_installments: 1,
+    purchase_installment: 1,
+  };
+  const september = { ...entry, id: "september", purchase_date: "2026-09-15" };
+  const groups = expensePurchases([september, apple], []);
+  expect(groups.map((p) => [p.title, p.month])).toEqual([
+    ["Apple Developer", "2026-10"],
+    ["Compra", "2026-09"],
+  ]);
+});
