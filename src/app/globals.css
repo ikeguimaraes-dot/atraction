@@ -4127,6 +4127,21 @@ tbody tr:hover {
   border-top: 1px solid #eee9f3;
   padding: 15px 0;
 }
+.expense-month {
+  margin-top: 24px;
+}
+.expense-purchase {
+  border-top: 1px solid #eee9f3;
+  padding: 16px 0;
+  overflow-wrap: anywhere;
+}
+.expense-purchase summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.expense-purchase p {
+  margin: 10px 0;
+}
 .document-row > span {
   flex: 1;
   overflow-wrap: anywhere;

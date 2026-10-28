@@ -21,6 +21,11 @@ export function financeReferenceDate(
   entry: FinanceEntry,
   documents: CustomerDocument[],
 ): string {
+  if (entry.direction === "expense" && entry.purchase_id) {
+    return (entry.purchase_installments || 1) > 1
+      ? entry.due_date
+      : entry.purchase_date || entry.due_date;
+  }
   // Archiving a receipt must not move its expense to another month.
   const document =
     entry.direction === "expense"

@@ -52,7 +52,7 @@ const navigation = [
   { id: "calendar", label: "Agenda", icon: CalendarDays },
   { id: "retention", label: "Pós-venda", icon: Heart },
   { id: "finance", label: "Financeiro", icon: Wallet },
-  { id: "expense-documents", label: "Entrada de despesas", icon: ReceiptText },
+  { id: "expense-documents", label: "NF e Recibos", icon: ReceiptText },
   { id: "cash", label: "Contas e DRE", icon: Wallet },
   { id: "suppliers", label: "Fornecedores", icon: Truck },
   { id: "tools", label: "Documentos e cadastros", icon: SlidersHorizontal },

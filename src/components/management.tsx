@@ -467,7 +467,7 @@ export function Finance({
       </div>
       <div
         className="finance-summary monthly-totals"
-        aria-label="Totais cadastrados por mês de referência"
+        aria-label="Totais mensais cadastrados"
       >
         <div className="card income" aria-label="Receita cadastrada">
           <small>Receita</small>
@@ -485,9 +485,10 @@ export function Finance({
         </div>
       </div>
       <p className="management-hint">
-        Despesas com nota ou recibo entram no mês de emissão do comprovante. Os
-        demais lançamentos entram pelo vencimento. Os totais incluem o valor
-        integral, inclusive dos lançamentos já baixados.
+        Despesas à vista com nota ou recibo entram no mês de emissão. Compras
+        parceladas e os demais lançamentos entram pelo vencimento de cada
+        parcela. Os totais incluem o valor integral, inclusive dos lançamentos
+        já baixados.
       </p>
       <FinancialSummary rows={s.finance} from={from} to={to} />
       <p className="management-hint">
