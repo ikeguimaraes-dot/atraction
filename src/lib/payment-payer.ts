@@ -12,3 +12,17 @@ export function withPaymentPayer(
     ],
   };
 }
+
+export function withPaymentResponsibility(
+  payment: Payment,
+  payer: string | null,
+  expenseOwner: string | null,
+): Payment {
+  return {
+    ...payment,
+    payer_user_id: payer,
+    allocations: [
+      { user_id: expenseOwner, amount_cents: payment.amount_cents },
+    ],
+  };
+}

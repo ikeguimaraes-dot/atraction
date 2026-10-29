@@ -166,7 +166,13 @@ test("corrige pagador de despesa paga pelo editor sem estornar", async ({
     .getByRole("combobox", { name: "Quem pagou esta baixa", exact: true })
     .selectOption("company");
   await page
-    .getByRole("button", { name: "Salvar pagador", exact: true })
+    .getByRole("combobox", {
+      name: "De quem é a despesa desta baixa",
+      exact: true,
+    })
+    .selectOption("company");
+  await page
+    .getByRole("button", { name: "Salvar correção", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toContainText("Pago por Empresa");
   const saved = await page.evaluate(

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
 import { supabase } from "@/lib/supabase";
-import { withPaymentPayer } from "@/lib/payment-payer";
+import { withPaymentResponsibility } from "@/lib/payment-payer";
 import type { Payment, FinanceEntry } from "@/lib/types";
 import { remaining, payments } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
@@ -255,6 +255,13 @@ function PaymentPayerEditor({
 }) {
   const [editing, setEditing] = useState(false);
   const [payer, setPayer] = useState(payment.payer_user_id || companyKey);
+  const [expenseOwner, setExpenseOwner] = useState(
+    !payment.allocations?.length
+      ? companyKey
+      : payment.allocations.length === 1
+        ? payment.allocations[0].user_id || companyKey
+        : "",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   if (!editing)
@@ -289,14 +296,52 @@ function PaymentPayerEditor({
           ))}
         </select>
       </label>
+      <label>
+        De quem é a despesa desta baixa
+        <select
+          value={expenseOwner}
+          onChange={(e) => setExpenseOwner(e.target.value)}
+          disabled={saving}
+        >
+          {!expenseOwner && (
+            <option value="" disabled>
+              Selecione o responsável
+            </option>
+          )}
+          {expenseOwner &&
+            !participants.some((p) => p.key === expenseOwner) && (
+              <option value={expenseOwner} disabled>
+                Membro indisponível — escolha outro responsável
+              </option>
+            )}
+          {participants.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      {!!payment.allocations && payment.allocations.length > 1 && (
+        <p>
+          Esta baixa tinha uma divisão entre participantes. Escolha quem ficará
+          responsável pelo valor total desta baixa.
+        </p>
+      )}
+      {expenseOwner && (
+        <p role="status">
+          {payer === expenseOwner
+            ? "Quem pagou é o responsável pela despesa. Não há reembolso."
+            : `${participants.find((p) => p.key === expenseOwner)?.label || "Responsável"} deve reembolsar ${participants.find((p) => p.key === payer)?.label || "o pagador"} pelo valor desta baixa.`}
+        </p>
+      )}
       <p>
         O valor, a data e a conta da baixa serão mantidos. O saldo de reembolso
         será recalculado.
       </p>
       {!payment.allocations && (
         <p>
-          Esta baixa ainda não tem responsável informado. A despesa será
-          atribuída à empresa.
+          Esta baixa ainda não tem responsável informado. Confira os dois campos
+          antes de salvar.
         </p>
       )}
       <button
@@ -313,18 +358,27 @@ function PaymentPayerEditor({
               w.allSelected ||
               w.state.tenant.id !== entry.tenant_id
             )
-              throw new Error("Somente donos podem corrigir o pagador.");
+              throw new Error(
+                "Somente donos podem corrigir os responsáveis da baixa.",
+              );
             if (!participants.some((p) => p.key === payer))
               throw new Error("Escolha um pagador desta empresa.");
-            const corrected = withPaymentPayer(payment, participantId(payer));
+            if (!participants.some((p) => p.key === expenseOwner))
+              throw new Error("Escolha de quem é a despesa nesta empresa.");
+            const corrected = withPaymentResponsibility(
+              payment,
+              participantId(payer),
+              participantId(expenseOwner),
+            );
             if (w.userId) {
               const { error } = await supabase().rpc(
-                "atraction_correct_payment_payer",
+                "atraction_correct_payment_responsibility",
                 {
                   entry_id: entry.id,
                   payment_id: payment.id,
                   expected: payment,
                   payer: participantId(payer),
+                  expense_owner: participantId(expenseOwner),
                 },
               );
               if (error) throw error;
@@ -358,18 +412,19 @@ function PaymentPayerEditor({
                   : s,
               );
             }
-            w.notify("Pagador corrigido. A baixa foi mantida.");
+            w.notify("Pagador e responsável corrigidos. A baixa foi mantida.");
             setEditing(false);
           } catch (err) {
             setError(
-              (err as Error).message || "Não foi possível corrigir o pagador.",
+              (err as Error).message ||
+                "Não foi possível corrigir os responsáveis da baixa.",
             );
           } finally {
             setSaving(false);
           }
         }}
       >
-        {saving ? "Salvando…" : "Salvar pagador"}
+        {saving ? "Salvando…" : "Salvar correção"}
       </button>
       <button
         type="button"

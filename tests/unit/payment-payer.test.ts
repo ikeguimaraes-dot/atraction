@@ -39,3 +39,36 @@ it("keeps existing allocations and supports correcting back to company", () => {
   });
   expect(split.payer_user_id).toBe("member");
 });
+
+it("corrects the expense owner independently and recalculates reimbursement", async () => {
+  const { withPaymentResponsibility } =
+    await import("../../src/lib/payment-payer");
+  const balances = (p: Payment) =>
+    Object.fromEntries(
+      sharedBalances({
+        finance: [{ direction: "expense", deleted_at: null, payments: [p] }],
+        settlements: [],
+      } as unknown as State),
+    );
+  expect(balances(withPaymentResponsibility(payment, "amanda", null))).toEqual({
+    amanda: 55000,
+    company: -55000,
+  });
+  expect(
+    balances(withPaymentResponsibility(payment, "amanda", "amanda")),
+  ).toEqual({ amanda: 0 });
+  expect(balances(withPaymentResponsibility(payment, null, "amanda"))).toEqual({
+    company: 55000,
+    amanda: -55000,
+  });
+  const changed = withPaymentResponsibility(
+    { ...payment, allocations: [{ user_id: null, amount_cents: 55000 }] },
+    "amanda",
+    "other",
+  );
+  expect(changed).toEqual({
+    ...payment,
+    payer_user_id: "amanda",
+    allocations: [{ user_id: "other", amount_cents: 55000 }],
+  });
+});
