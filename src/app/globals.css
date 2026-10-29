@@ -4564,3 +4564,427 @@ tbody tr:hover {
   display: block;
   margin-top: 12px;
 }
+
+/* Team finance: monthly result, reimbursements and payment details. */
+.team-settlements {
+  padding: 28px;
+}
+.finance-eyebrow {
+  display: block;
+  color: #746583;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  line-height: 1.6;
+}
+.profit-sharing {
+  padding: 0 0 28px;
+  margin: 24px 0 28px;
+}
+.profit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.profit-toolbar > div {
+  margin-right: auto;
+}
+.profit-toolbar h3,
+.reimbursement-heading h3 {
+  margin: 4px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.03em;
+}
+.profit-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: #746583;
+  font-size: 12px;
+}
+.profit-toolbar input {
+  min-height: 42px;
+  width: 190px;
+}
+.profit-toolbar button {
+  align-self: flex-end;
+}
+.profit-total {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 20px;
+  padding: 28px 32px;
+  background: linear-gradient(115deg, #32245d, #6549b9);
+  color: white;
+  box-shadow: 0 8px 24px #35245d14;
+}
+.profit-total.is-loss {
+  background: linear-gradient(115deg, #352840, #68536e);
+}
+.profit-total h3 {
+  color: #e7dff9;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.profit-total > strong {
+  display: block;
+  font-size: clamp(30px, 4vw, 44px);
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.profit-orbit {
+  position: absolute;
+  right: 36px;
+  top: 18px;
+  font-size: 90px;
+  line-height: 1;
+  color: #ffffff18;
+  pointer-events: none;
+}
+.profit-metrics {
+  display: flex;
+  gap: 32px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #ffffff26;
+}
+.profit-metrics > div {
+  display: grid;
+  gap: 6px;
+}
+.profit-metrics span {
+  font-size: 12px;
+  color: #e7dff9;
+}
+.profit-metrics b {
+  font-size: 18px;
+  font-weight: 600;
+}
+.profit-sharing .profit-explanation {
+  font-size: 12px;
+  color: #746583;
+  line-height: 1.6;
+  margin: 14px 0 20px;
+  max-width: 850px;
+}
+.profit-empty {
+  border: 1px dashed #d9d1e7;
+  border-radius: 12px;
+  padding: 18px;
+  color: #746583;
+  font-size: 13px;
+  background: #fcfbfe;
+}
+.profit-notice {
+  color: #79542c;
+  font-size: 12px;
+}
+.profit-participant {
+  border-radius: 14px;
+}
+.profit-participant > strong:last-child {
+  display: block;
+  font-size: 24px;
+  color: #5941a4;
+}
+.profit-participant p {
+  font-size: 12px;
+  color: #746583;
+}
+.reimbursement-heading {
+  margin-bottom: 10px;
+}
+.attribution-identification {
+  border: 1px solid #e4e0ec;
+  font-size: 13px;
+}
+.attribution-identification.all-identified {
+  background: #f1f8f5;
+  color: #306650;
+  border-color: #dcece4;
+  padding: 12px 16px;
+}
+.attribution-identification.needs-attention {
+  background: #fff8ee;
+  border-color: #f2dfbf;
+  color: #79542c;
+}
+.team-settlements .customer-grid {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+.team-settlements .settlement-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
+  text-align: left;
+  transition:
+    box-shadow 0.18s,
+    border-color 0.18s,
+    transform 0.18s;
+}
+.team-settlements .settlement-card:hover {
+  border-color: #a993e5;
+  box-shadow: 0 8px 24px #45316b12;
+  transform: translateY(-2px);
+}
+.settlement-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #f0ebfb;
+  color: #7150b5;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.settlement-name {
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 39px;
+}
+.settlement-card > p {
+  margin: 16px 0 4px;
+  font-size: 12px;
+  color: #746583;
+}
+.settlement-card .settlement-amount {
+  font-size: 27px;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.settlement-card.receivable .settlement-amount {
+  color: #26755b;
+}
+.settlement-card.payable .settlement-amount {
+  color: #a35238;
+}
+.settlement-card.settled .settlement-amount {
+  color: #82798f;
+}
+.settlement-card > small {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border-top: 1px solid #eee9f3;
+  padding-top: 14px;
+  margin-top: 18px;
+  color: #7150b5;
+  font-size: 11px;
+}
+.settlement-details {
+  padding: 24px;
+  background: #faf9fc;
+}
+.settlement-details > h3 {
+  margin: 26px 0 14px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.settlement-details > p:not(.settlement-detail-balance) {
+  padding: 14px 16px;
+  background: white;
+  border: 1px dashed #e4deee;
+  border-radius: 12px;
+  color: #746583;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.settlement-detail-balance {
+  padding: 22px;
+  border-radius: 14px;
+  background: #eee8f9;
+  color: #52378c;
+  font-size: 18px;
+  font-weight: 650;
+}
+.attribution-payment {
+  padding: 20px;
+  border: 1px solid #e8e2f0;
+  border-radius: 14px;
+  margin-bottom: 12px;
+  background: white;
+}
+.payment-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.payment-detail-heading > div {
+  min-width: 0;
+}
+.payment-detail-heading strong {
+  font-size: 15px;
+}
+.payment-detail-heading small {
+  display: block;
+  color: #82748f;
+  font-size: 11px;
+  margin-top: 6px;
+}
+.payment-detail-heading > b {
+  font-size: 20px;
+  white-space: nowrap;
+  letter-spacing: -0.03em;
+}
+.payment-detail-meta {
+  padding: 12px 0;
+  font-size: 12px;
+  color: #746583;
+  line-height: 1.65;
+}
+.attribution-payment > button {
+  font-size: 12px;
+  min-height: 36px;
+}
+.modal:has(.settlement-details) > header h2 {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  font-size: 17px;
+}
+.modal:has(.settlement-details) > header button {
+  flex-shrink: 0;
+}
+.payment-summary {
+  border: 1px solid #e6dff2;
+  background: #f7f4fc;
+  border-radius: 14px;
+  padding: 20px;
+}
+.payment-summary h3 {
+  margin: 7px 0 20px;
+  font-size: 18px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.payment-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #746583;
+  font-size: 12px;
+}
+.payment-summary strong {
+  font-size: 24px;
+  color: #563d93;
+  letter-spacing: -0.04em;
+}
+.payment-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+.payment-step > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: #ece5fa;
+  color: #7150b5;
+  font-size: 11px;
+}
+.payment-responsibility {
+  background: #faf9fc;
+  border: 1px solid #e8e2f0;
+  border-radius: 14px;
+  padding: 18px;
+}
+.payment-responsibility .form-grid {
+  margin-top: 16px;
+}
+.payment-responsibility .management-hint {
+  font-size: 11px;
+  margin: 14px 0;
+}
+.reimbursement-preview {
+  padding: 14px;
+  background: #eee8f9;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  color: #52378c;
+}
+.payment-form .payment-history {
+  flex-wrap: wrap;
+  padding: 18px;
+  border: 1px solid #e8e2f0;
+  border-radius: 12px;
+  gap: 12px;
+}
+.payment-history > span,
+.payment-history > .form {
+  flex-basis: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .team-settlements {
+    padding: 18px;
+  }
+  .profit-toolbar {
+    gap: 14px;
+  }
+  .profit-toolbar > div,
+  .profit-toolbar label,
+  .profit-toolbar input,
+  .profit-toolbar button {
+    width: 100%;
+  }
+  .profit-total {
+    padding: 24px 20px;
+  }
+  .profit-metrics {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .profit-metrics b {
+    font-size: 16px;
+  }
+  .profit-orbit {
+    right: 14px;
+    font-size: 70px;
+  }
+  .team-settlements .customer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settlement-name {
+    min-height: 0;
+  }
+  .settlement-details {
+    padding: 16px;
+  }
+  .attribution-payment {
+    padding: 16px;
+  }
+  .payment-detail-heading {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .payment-responsibility {
+    padding: 14px;
+  }
+  .payment-responsibility .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-settlements .settlement-card {
+    transition: none;
+  }
+}

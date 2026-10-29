@@ -46,7 +46,7 @@ export function PaymentModal({
       onClose={onClose}
     >
       <form
-        className="form"
+        className="form payment-form"
         onSubmit={async (e) => {
           e.preventDefault();
           setSaving(true);
@@ -83,15 +83,27 @@ export function PaymentModal({
           }
         }}
       >
-        <p>
-          {f.title} · Falta {money(remaining(f) / 100)}
-        </p>
+        <div className="payment-summary">
+          <span className="finance-eyebrow">
+            {f.direction === "income" ? "RECEBIMENTO" : "PAGAMENTO"}
+          </span>
+          <h3>{f.title}</h3>
+          <div>
+            <span>
+              {remaining(f) > 0 ? "Saldo restante" : "Pagamento concluído"}
+            </span>
+            <strong>{money(remaining(f) / 100)}</strong>
+          </div>
+        </div>
         <p>
           Registre valores já recebidos ou pagos, inclusive parciais. Nenhuma
           transferência bancária é executada.
         </p>
         {remaining(f) > 0 && canSettle && (
           <>
+            <h3 className="payment-step">
+              <span>1</span> Dados da baixa
+            </h3>
             <div className="form-grid">
               <label>
                 Valor da baixa (R$)
@@ -134,8 +146,10 @@ export function PaymentModal({
               </label>
             </div>
             {f.direction === "expense" && (
-              <section className="card" style={{ marginTop: 16 }}>
-                <h3>Divisão da despesa</h3>
+              <section className="payment-responsibility">
+                <h3 className="payment-step">
+                  <span>2</span> Divisão da despesa
+                </h3>
                 <div className="form-grid">
                   <label>
                     Quem pagou
@@ -173,7 +187,7 @@ export function PaymentModal({
                   Quem pagou informa de onde saiu o dinheiro. De quem é a
                   despesa define quem deve arcar com o valor.
                 </p>
-                <p role="status">
+                <p role="status" className="reimbursement-preview">
                   {payer === expenseOwner
                     ? "Quem pagou é o responsável pela despesa. Não há reembolso."
                     : `${participants.find((person) => person.key === expenseOwner)?.label || "Membro"} deve reembolsar ${participants.find((person) => person.key === payer)?.label || "o pagador"} pelo valor desta baixa.`}
@@ -186,7 +200,7 @@ export function PaymentModal({
           </>
         )}
         {payments(f).map((p) => (
-          <div className="document-row" key={p.id}>
+          <div className="document-row payment-history" key={p.id}>
             <span>
               {money(p.amount_cents / 100)} ·{" "}
               {p.date.split("-").reverse().join("/")}
@@ -328,7 +342,7 @@ function PaymentPayerEditor({
         </p>
       )}
       {expenseOwner && (
-        <p role="status">
+        <p role="status" className="reimbursement-preview">
           {payer === expenseOwner
             ? "Quem pagou é o responsável pela despesa. Não há reembolso."
             : `${participants.find((p) => p.key === expenseOwner)?.label || "Responsável"} deve reembolsar ${participants.find((p) => p.key === payer)?.label || "o pagador"} pelo valor desta baixa.`}

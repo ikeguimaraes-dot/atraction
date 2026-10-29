@@ -30,7 +30,11 @@ export function ProfitSharing({
     `Membro indisponível (${id.slice(-6)})`;
   return (
     <section className="profit-sharing" aria-label="Divisão dos lucros">
-      <div className="management-toolbar">
+      <div className="profit-toolbar">
+        <div>
+          <span className="finance-eyebrow">RESULTADO MENSAL</span>
+          <h3>Lucro e participação</h3>
+        </div>
         <label>
           Mês do lucro
           <input
@@ -55,18 +59,29 @@ export function ProfitSharing({
           Escolha um mês válido.
         </p>
       )}
-      <div className="card profit-total" aria-label="Lucro mensal para divisão">
+      <div
+        className={`card profit-total ${totals.profit < 0 ? "is-loss" : ""}`}
+        aria-label="Lucro mensal para divisão"
+      >
+        <span className="profit-orbit" aria-hidden="true">
+          {totals.profit < 0 ? "↘" : "↗"}
+        </span>
         <h3>{totals.profit < 0 ? "Prejuízo do mês" : "Lucro do mês"}</h3>
         <strong>{money(totals.profit / 100)}</strong>
-        <p>
-          Receitas cadastradas: {money(totals.revenue / 100)} · Despesas
-          cadastradas: {money(totals.expense / 100)}
-        </p>
+        <div className="profit-metrics">
+          <div>
+            <span>Receitas cadastradas</span>
+            <b>{money(totals.revenue / 100)}</b>
+          </div>
+          <div>
+            <span>Despesas cadastradas</span>
+            <b>{money(totals.expense / 100)}</b>
+          </div>
+        </div>
       </div>
-      <p>
-        Mesmo cálculo do Financeiro: receitas menos despesas do mês, incluindo
-        lançamentos ainda sem baixa. A divisão não representa um pagamento
-        realizado nem o saldo disponível em caixa.
+      <p className="profit-explanation">
+        Receitas menos despesas do mês, incluindo lançamentos sem baixa. O lucro
+        a dividir não representa saldo em caixa ou pagamento realizado.
       </p>
       {shares.length ? (
         <>
@@ -94,7 +109,7 @@ export function ProfitSharing({
           </small>
         </>
       ) : (
-        <p>
+        <p className="profit-empty">
           Nenhum participante escolhido para este mês.{" "}
           {s.role === "owner"
             ? "Escolha quem participa para calcular a divisão."
@@ -102,7 +117,9 @@ export function ProfitSharing({
         </p>
       )}
       {valid && totals.profit <= 0 && (
-        <p>Não há lucro positivo para distribuir neste mês.</p>
+        <p className="profit-notice">
+          Não há lucro positivo para distribuir neste mês.
+        </p>
       )}
       {editing && (
         <ProfitParticipants
