@@ -50,6 +50,40 @@ test("assinaturas repetem o valor mensal e podem ser encerradas", async ({
     ).toHaveCount(direction === "receita" ? 3 : 12);
   }
   await page
+    .getByRole("combobox", { name: "Filtro de datas", exact: true })
+    .selectOption("month");
+  await page.getByLabel("Mês de referência").fill("2028-02");
+  await page
+    .getByRole("combobox", { name: "Filtro de datas", exact: true })
+    .selectOption("period");
+  await expect(page.getByLabel("Data inicial", { exact: true })).toHaveValue(
+    "2028-02-01",
+  );
+  await expect(page.getByLabel("Data final", { exact: true })).toHaveValue(
+    "2028-02-29",
+  );
+  await expect(
+    page.locator(".ledger-row").filter({ hasText: "Assinatura despesa" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByLabel("Receita cadastrada", { exact: true }),
+  ).toContainText("99,9");
+  await expect(
+    page.getByLabel("Despesa cadastrada", { exact: true }),
+  ).toContainText("99,9");
+  await page.getByRole("tab", { name: "Receitas", exact: true }).click();
+  await expect(
+    page.locator(".ledger-row").filter({ hasText: "Assinatura receita" }),
+  ).toHaveCount(1);
+  await page.getByLabel("Data final", { exact: true }).fill("2028-02-28");
+  await expect(
+    page.locator(".ledger-row").filter({ hasText: "Assinatura receita" }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
+  await page.getByRole("tab", { name: "Despesas", exact: true }).click();
+  await page
     .getByText("Recorrências mensais (1 ativas)", { exact: true })
     .click();
   await page

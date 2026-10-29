@@ -408,7 +408,10 @@ export function Finance({
   const [periodFrom, setPeriodFrom] = useState(
     () => `${today().slice(0, 7)}-01`,
   );
-  const [periodTo, setPeriodTo] = useState(today);
+  const [periodTo, setPeriodTo] = useState(() => {
+    const now = today();
+    return `${now.slice(0, 7)}-${new Date(Number(now.slice(0, 4)), Number(now.slice(5, 7)), 0).getDate()}`;
+  });
   const from =
     dateMode === "period"
       ? periodFrom
@@ -502,9 +505,14 @@ export function Finance({
           Filtro de datas
           <select
             value={dateMode}
-            onChange={(event) =>
-              setDateMode(event.target.value as typeof dateMode)
-            }
+            onChange={(event) => {
+              const nextMode = event.target.value as typeof dateMode;
+              if (nextMode === "period" && dateMode === "month" && month) {
+                setPeriodFrom(from);
+                setPeriodTo(to);
+              }
+              setDateMode(nextMode);
+            }}
           >
             <option value="month">Por mês</option>
             <option value="period">Por período</option>
