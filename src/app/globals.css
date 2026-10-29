@@ -4540,3 +4540,27 @@ tbody tr:hover {
 .attribution-payment p {
   margin: 8px 0;
 }
+
+.profit-sharing {
+  padding: 20px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee9f3;
+}
+.profit-total,
+.profit-participant {
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.profit-total {
+  background: #f7f5fc;
+}
+.profit-total > strong {
+  font-size: 28px;
+}
+.profit-sharing p {
+  margin: 12px 0;
+}
+.profit-sharing small {
+  display: block;
+  margin-top: 12px;
+}

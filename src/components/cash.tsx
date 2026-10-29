@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
+import { ProfitSharing } from "./profit-sharing";
 import { PaymentModal } from "./payment-modal";
 import type { Account, FinanceEntry } from "@/lib/types";
 import { accountBalance, dre, dreLines, payments } from "@/lib/payments";
@@ -325,6 +326,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </button>
           }
         />
+        <ProfitSharing w={w} members={members} />
         <p className="management-hint">
           Acertos acumulados de todo o histórico. Despesas sem identificação
           completa não entram no saldo dos cards até serem identificadas.

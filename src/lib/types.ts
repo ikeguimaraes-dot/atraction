@@ -104,6 +104,7 @@ export type Tenant = {
     pipelines?: Pipeline[];
     fields?: FieldDefinition[];
     templates?: DocumentTemplate[];
+    profit_sharing?: Record<string, { participants: string[] }>;
   };
   onboarding?: Record<string, string>;
   pack_version?: number;
