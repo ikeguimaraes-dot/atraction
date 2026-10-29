@@ -7,7 +7,7 @@ async function go(page: Page, name: string) {
   if (await menu.isVisible()) await menu.click();
   await page.locator("nav").getByRole("button", { name, exact: true }).click();
 }
-test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos separados", async ({
+test("lucro acumulado só divide receitas recebidas após cobrir despesas anteriores", async ({
   page,
 }) => {
   await page.route("**/rest/v1/rpc/atraction_team", (route) =>
@@ -50,13 +50,25 @@ test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos sep
     category: "Serviços",
     due_date: "2026-10-15",
     settled_date: null,
-    payments: [],
+    payments: [] as {
+      id: string;
+      date: string;
+      amount_cents: number;
+      account_id: null;
+    }[],
     contact_id: null,
     supplier_id: null,
     notes: "",
   };
   const finance = [
     base,
+    {
+      ...base,
+      id: "prior-loss",
+      direction: "expense",
+      due_date: "2026-09-15",
+      amount_cents: 5000,
+    },
     {
       ...base,
       id: "expense",
@@ -133,9 +145,37 @@ test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos sep
   await go(page, "Contas e DRE");
   await page.getByLabel("Mês do lucro").fill("2026-10");
   const region = page.getByRole("region", { name: "Divisão dos lucros" });
-  await expect(region.getByLabel("Lucro mensal para divisão")).toContainText(
+  await expect(region.getByLabel("Resultado mensal da empresa")).toContainText(
     /R\$\s*70,01/,
   );
+  await expect(
+    region.getByRole("region", { name: "Conferência para divisão do lucro" }),
+  ).toContainText("Sem lucro disponível para divisão");
+  await page
+    .getByRole("button", { name: "Escolher participantes do lucro" })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(/Ainda faltam R\$\s*80/);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancelar", exact: true })
+    .click();
+  base.payments = [
+    {
+      id: "receipt",
+      date: "2026-10-20",
+      amount_cents: 10001,
+      account_id: null,
+    },
+  ];
+  await page.reload();
+  await expect(
+    page.locator('select[aria-label="Selecionar empresa"]'),
+  ).toBeAttached();
+  await go(page, "Contas e DRE");
+  await page.getByLabel("Mês do lucro").fill("2026-10");
+  await expect(
+    region.getByRole("region", { name: "Conferência para divisão do lucro" }),
+  ).toContainText(/R\$\s*20,01/);
   await page
     .getByRole("button", { name: "Escolher participantes do lucro" })
     .click();
@@ -145,10 +185,10 @@ test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos sep
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
     region.getByRole("article", { name: "Lucro de amanda@example.test" }),
-  ).toContainText(/R\$\s*35,01/);
+  ).toContainText(/R\$\s*10,01/);
   await expect(
     region.getByRole("article", { name: "Lucro de karine@example.test" }),
-  ).toContainText(/R\$\s*35/);
+  ).toContainText(/R\$\s*10/);
   await expect(
     region.getByRole("article", { name: "Lucro de dono@example.test" }),
   ).toHaveCount(0);
@@ -169,21 +209,19 @@ test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos sep
   await page.getByLabel("Mês do lucro").fill("2026-10");
   await expect(
     region.getByRole("article", { name: "Lucro de amanda@example.test" }),
-  ).toContainText(/R\$\s*35,01/);
+  ).toContainText(/R\$\s*10,01/);
   await expect(
     region.getByLabel("Resultado acumulado da empresa"),
-  ).toContainText(/R\$\s*70,01/);
+  ).toContainText(/R\$\s*20,01/);
   await page.getByLabel("Mês do lucro").fill("2026-11");
   await expect(
     region.getByLabel("Resultado acumulado da empresa"),
-  ).toContainText(/-R\$\s*29,99/);
-  await expect(region).toContainText(/Faltam R\$\s*29,99/);
+  ).toContainText(/-R\$\s*79,99/);
+  await expect(region).toContainText(/Faltam R\$\s*79,99/);
   await expect(region).toContainText(
     "Nenhum participante escolhido para este mês.",
   );
-  await expect(region).toContainText(
-    "Não há lucro positivo para distribuir neste mês.",
-  );
+  await expect(region).toContainText("Sem lucro disponível para divisão");
   await page
     .getByRole("button", { name: "Escolher participantes do lucro" })
     .click();

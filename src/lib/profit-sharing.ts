@@ -1,4 +1,5 @@
 import type { CustomerDocument, FinanceEntry } from "./types";
+import { payments } from "./payments";
 import { financeReferenceDate } from "./finance";
 
 function profitForMonth(
@@ -39,6 +40,40 @@ export function accumulatedProfit(
   month: string,
 ) {
   return profitForMonth(finance, documents, month, true);
+}
+
+// Only collected income belonging to this accumulated period can fund a split.
+// Every expense is reserved in full, including those paid by partners or still open.
+export function distributableProfit(
+  finance: FinanceEntry[],
+  documents: CustomerDocument[],
+  month: string,
+) {
+  const accumulated = accumulatedProfit(finance, documents, month);
+  let received = 0;
+  for (const entry of finance) {
+    if (
+      entry.deleted_at ||
+      entry.direction !== "income" ||
+      financeReferenceDate(entry, documents).slice(0, 7) > month
+    )
+      continue;
+    received += Math.min(
+      entry.amount_cents,
+      payments(entry)
+        .filter((p) => p.date.slice(0, 7) <= month)
+        .reduce((sum, p) => sum + p.amount_cents, 0),
+    );
+  }
+  const balance = received - accumulated.expense;
+  return {
+    ...accumulated,
+    received,
+    receivable: accumulated.revenue - received,
+    balance,
+    deficit: Math.max(0, -balance),
+    available: Math.max(0, balance),
+  };
 }
 
 export function splitProfit(profit: number, participants: string[]) {

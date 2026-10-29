@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   monthlyProfit,
   accumulatedProfit,
+  distributableProfit,
   splitProfit,
 } from "../../src/lib/profit-sharing";
 import type { FinanceEntry } from "../../src/lib/types";
@@ -113,5 +114,75 @@ it("uses invoice issue dates and installment due dates in accumulated profit", (
       [],
       "2026-10",
     ).expense,
+  ).toBe(0);
+});
+
+it("does not distribute uncollected revenue and reserves old losses and unpaid expenses", () => {
+  const income = {
+    ...entry,
+    direction: "income" as const,
+    amount_cents: 15000,
+    payments: [],
+  };
+  const expense = { ...entry, amount_cents: 2000 };
+  const priorLoss = { ...entry, due_date: "2026-09-01", amount_cents: 10000 };
+  const rows = [income, expense, priorLoss];
+  expect(distributableProfit(rows, [], "2026-10")).toMatchObject({
+    profit: 3000,
+    received: 0,
+    receivable: 15000,
+    deficit: 12000,
+    available: 0,
+  });
+  const partiallyReceived = {
+    ...income,
+    payments: [
+      { id: "p", date: "2026-10-20", account_id: null, amount_cents: 13000 },
+    ],
+  };
+  expect(
+    distributableProfit([partiallyReceived, expense, priorLoss], [], "2026-10"),
+  ).toMatchObject({
+    received: 13000,
+    expense: 12000,
+    receivable: 2000,
+    available: 1000,
+    deficit: 0,
+  });
+});
+it("uses accumulated collected profit even in a loss month and excludes future receipts and advances", () => {
+  const income = {
+    ...entry,
+    direction: "income" as const,
+    amount_cents: 10000,
+    due_date: "2026-09-01",
+    payments: [
+      { id: "p", date: "2026-09-01", amount_cents: 10000, account_id: null },
+    ],
+  };
+  const expense = { ...entry, amount_cents: 2000 };
+  expect(monthlyProfit([income, expense], [], "2026-10").profit).toBe(-2000);
+  expect(distributableProfit([income, expense], [], "2026-10").available).toBe(
+    8000,
+  );
+  expect(
+    distributableProfit(
+      [
+        {
+          ...income,
+          payments: [{ ...income.payments[0], date: "2026-11-01" }],
+        },
+        expense,
+      ],
+      [],
+      "2026-10",
+    ).available,
+  ).toBe(0);
+  expect(
+    distributableProfit(
+      [{ ...income, due_date: "2026-11-01" }, expense],
+      [],
+      "2026-10",
+    ).available,
   ).toBe(0);
 });

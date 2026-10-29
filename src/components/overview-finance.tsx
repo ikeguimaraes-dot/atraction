@@ -12,6 +12,7 @@ import {
 import type { State, FinanceEntry } from "@/lib/types";
 import { alive, money } from "@/lib/domain";
 import { financeReferenceDate, today } from "@/lib/finance";
+import { accumulatedProfit } from "@/lib/profit-sharing";
 import { remaining } from "@/lib/payments";
 import { Modal } from "./ui";
 
@@ -46,6 +47,10 @@ export function OverviewFinance({
   const sum = (rows: FinanceEntry[], pending = false) =>
     rows.reduce((n, f) => n + (pending ? remaining(f) : f.amount_cents), 0);
   const profit = sum(income) - sum(expense);
+  const accumulated = accumulatedProfit(state.finance, state.documents, month);
+  const accumulatedRows = entries.filter(
+    (f) => financeReferenceDate(f, state.documents).slice(0, 7) <= month,
+  );
   const cards = [
     {
       id: "income",
@@ -75,6 +80,16 @@ export function OverviewFinance({
       color: profit < 0 ? "negative featured" : "positive featured",
       icon: profit < 0 ? TrendingDown : TrendingUp,
       rows: monthly,
+      pending: false,
+    },
+    {
+      id: "accumulated",
+      title: accumulated.profit < 0 ? "Prejuízo acumulado" : "Lucro acumulado",
+      value: accumulated.profit,
+      hint: `Todo o histórico até ${month.split("-").reverse().join("/")}`,
+      color: accumulated.profit < 0 ? "negative featured" : "positive featured",
+      icon: accumulated.profit < 0 ? TrendingDown : TrendingUp,
+      rows: accumulatedRows,
       pending: false,
     },
     {
@@ -128,6 +143,12 @@ export function OverviewFinance({
         </span>
         <strong>{money(c.value / 100)}</strong>
         <span className="overview-money-hint">{c.hint}</span>
+        {c.id === "accumulated" && (
+          <span className="overview-accumulated-breakdown">
+            <span>Receitas: {money(accumulated.revenue / 100)}</span>
+            <span>Despesas: {money(accumulated.expense / 100)}</span>
+          </span>
+        )}
         <span className="overview-money-footer">
           Ver lançamentos <ArrowUpRight size={15} aria-hidden="true" />
         </span>
@@ -149,8 +170,8 @@ export function OverviewFinance({
           {monthLabel}
         </span>
       </header>
-      <div className="overview-money-grid">
-        {cards.slice(0, 3).map(renderCard)}
+      <div className="overview-money-grid with-accumulated">
+        {cards.slice(0, 4).map(renderCard)}
       </div>
       <p className="overview-finance-note">
         Resultado por vencimento ou emissão da nota, incluindo valores ainda sem
@@ -161,7 +182,7 @@ export function OverviewFinance({
         <span>Recebimentos e pagamentos pendentes</span>
       </div>
       <div className="overview-money-grid pending">
-        {cards.slice(3).map(renderCard)}
+        {cards.slice(4).map(renderCard)}
       </div>
       <p className="overview-finance-note">
         As contas a pagar no mês já fazem parte das contas em aberto. Não some

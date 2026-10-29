@@ -5396,3 +5396,86 @@ tbody tr:hover {
     transition: none;
   }
 }
+
+.overview-money-grid.with-accumulated {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.overview-money-grid.with-accumulated .overview-money-card {
+  padding: 22px;
+}
+.overview-money-grid.with-accumulated .overview-money-card > strong {
+  font-size: clamp(25px, 2.5vw, 36px);
+}
+.overview-accumulated-breakdown {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 1150px) {
+  .overview-money-grid.with-accumulated {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .overview-money-grid.with-accumulated {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.profit-distribution-check {
+  border: 1px solid #e5d7c2;
+  background: #fff8ee;
+  border-radius: 16px;
+  padding: 22px;
+  margin: 18px 0;
+  color: #76502d;
+}
+.profit-distribution-check.ready {
+  border-color: #cce8d8;
+  background: #eff9f3;
+  color: #176446;
+}
+.profit-distribution-check h3 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+.profit-distribution-value {
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+.profit-distribution-check dl {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+.profit-distribution-check dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.profit-distribution-check dd {
+  margin: 0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.profit-distribution-check p {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.profit-distribution-check small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .profit-distribution-check {
+    padding: 16px;
+  }
+  .profit-distribution-check dl > div {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

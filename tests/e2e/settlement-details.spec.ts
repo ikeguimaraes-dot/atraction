@@ -149,6 +149,22 @@ test("acertos mostra baixas sem identificação e detalha pessoa e empresa", asy
   await expect(
     overview.getByRole("button", { name: "Receitas do mês", exact: true }),
   ).toHaveClass(/positive/);
+  await expect(
+    overview
+      .getByRole("button", { name: "Prejuízo acumulado", exact: true })
+      .locator("strong"),
+  ).toContainText(/-R\$\s*70/);
+  await overview
+    .getByRole("button", { name: "Prejuízo acumulado", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).not.toContainText("Despesa futura");
+  await expect(page.getByRole("dialog")).toContainText(
+    "Compra paga pela pessoa",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
   await page.screenshot({
     path: test.info().outputPath("overview-redesign.png"),
     fullPage: true,

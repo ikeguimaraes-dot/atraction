@@ -5,6 +5,7 @@ import type { TeamMember } from "@/lib/use-team-members";
 import {
   monthlyProfit,
   accumulatedProfit,
+  distributableProfit,
   splitProfit,
 } from "@/lib/profit-sharing";
 import { today } from "@/lib/finance";
@@ -29,9 +30,21 @@ export function ProfitSharing({
   const accumulated = valid
     ? accumulatedProfit(s.finance, s.documents, month)
     : { revenue: 0, expense: 0, profit: 0 };
+  const distribution = valid
+    ? distributableProfit(s.finance, s.documents, month)
+    : {
+        revenue: 0,
+        expense: 0,
+        profit: 0,
+        received: 0,
+        receivable: 0,
+        balance: 0,
+        deficit: 0,
+        available: 0,
+      };
   const participants =
     s.tenant.settings?.profit_sharing?.[month]?.participants || [];
-  const shares = splitProfit(totals.profit, participants);
+  const shares = splitProfit(distribution.available, participants);
   const label = (id: string) =>
     members.find((m) => m.user_id === id)?.email ||
     `Membro indisponível (${id.slice(-6)})`;
@@ -69,7 +82,7 @@ export function ProfitSharing({
       <div className="profit-results-grid">
         <div
           className={`card profit-total ${totals.profit < 0 ? "is-loss" : ""}`}
-          aria-label="Lucro mensal para divisão"
+          aria-label="Resultado mensal da empresa"
         >
           <span className="profit-orbit" aria-hidden="true">
             {totals.profit < 0 ? "↘" : "↗"}
@@ -129,17 +142,19 @@ export function ProfitSharing({
       )}
       <p className="profit-explanation">
         Receitas menos despesas do mês, incluindo lançamentos sem baixa. O lucro
-        a dividir não representa saldo em caixa ou pagamento realizado. O
+        cadastrado não representa saldo em caixa ou pagamento realizado. O
         acumulado soma desde o primeiro lançamento até o mês selecionado, sem
-        incluir meses futuros. A divisão entre participantes continua usando o
-        lucro do mês.
+        incluir meses futuros. A divisão usa apenas o resultado acumulado
+        coberto por receitas já recebidas, depois de reservar todas as despesas
+        desse período.
       </p>
+      {valid && <DistributionCheck distribution={distribution} />}
       {shares.length ? (
         <>
           <p>
             Divisão igual entre {shares.length}{" "}
             {shares.length === 1 ? "participante" : "participantes"}. Os valores
-            são recalculados se os lançamentos do mês mudarem.
+            são recalculados se os recebimentos ou despesas acumulados mudarem.
           </p>
           <div className="customer-grid">
             {shares.map((share) => (
@@ -149,14 +164,16 @@ export function ProfitSharing({
                 aria-label={`Lucro de ${label(share.user_id)}`}
               >
                 <strong>{label(share.user_id)}</strong>
-                <p>Lucro a receber da empresa</p>
+                <p>Participação no lucro acumulado disponível</p>
                 <strong>{money(share.amount_cents / 100)}</strong>
               </article>
             ))}
           </div>
           <small>
             Eventuais centavos restantes são distribuídos entre os participantes
-            para fechar o total. Esta divisão é separada dos reembolsos abaixo.
+            para fechar o total. Esta é uma prévia acumulada, não um pagamento:
+            não some as divisões de meses diferentes. Reembolsos já estão
+            considerados pela despesa original e não são descontados duas vezes.
           </small>
         </>
       ) : (
@@ -167,18 +184,14 @@ export function ProfitSharing({
             : "Um dono da empresa pode configurar a divisão."}
         </p>
       )}
-      {valid && totals.profit <= 0 && (
-        <p className="profit-notice">
-          Não há lucro positivo para distribuir neste mês.
-        </p>
-      )}
+
       {editing && (
         <ProfitParticipants
           key={`${s.tenant.id}:${month}`}
           w={w}
           members={members}
           month={month}
-          profit={totals.profit}
+          distribution={distribution}
           initial={participants}
           onClose={() => setEditing(false)}
         />
@@ -191,21 +204,21 @@ function ProfitParticipants({
   w,
   members,
   month,
-  profit,
+  distribution,
   initial,
   onClose,
 }: {
   w: Work;
   members: TeamMember[];
   month: string;
-  profit: number;
+  distribution: ReturnType<typeof distributableProfit>;
   initial: string[];
   onClose: () => void;
 }) {
   const [selected, setSelected] = useState([...initial]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const shares = splitProfit(profit, selected);
+  const shares = splitProfit(distribution.available, selected);
   const unavailable = selected.filter(
     (id) => !members.some((m) => m.user_id === id),
   );
@@ -258,13 +271,13 @@ function ProfitParticipants({
           }
         }}
       >
-        <p>
-          Mês: {month.split("-").reverse().join("/")} · Lucro a dividir:{" "}
-          {money(Math.max(0, profit) / 100)}
-        </p>
+        <p>Posição acumulada até {month.split("-").reverse().join("/")}</p>
+        <DistributionCheck distribution={distribution} />
         <p>
           Escolha os membros que participarão igualmente. A escolha fica salva
-          apenas para esta empresa e este mês.
+          apenas para esta empresa e este mês de referência. Se não houver lucro
+          disponível, as participações ficam zeradas até as despesas serem
+          cobertas.
         </p>
         {!members.length && (
           <p>
@@ -316,5 +329,53 @@ function ProfitParticipants({
         </footer>
       </form>
     </Modal>
+  );
+}
+
+function DistributionCheck({
+  distribution: d,
+}: {
+  distribution: ReturnType<typeof distributableProfit>;
+}) {
+  return (
+    <section
+      className={`profit-distribution-check ${d.available > 0 ? "ready" : "blocked"}`}
+      aria-label="Conferência para divisão do lucro"
+    >
+      <h3>
+        {d.available > 0
+          ? "Lucro acumulado disponível para divisão"
+          : "Sem lucro disponível para divisão"}
+      </h3>
+      <strong className="profit-distribution-value">
+        {money(d.available / 100)}
+      </strong>
+      <dl>
+        <div>
+          <dt>Receitas acumuladas já recebidas</dt>
+          <dd>{money(d.received / 100)}</dd>
+        </div>
+        <div>
+          <dt>Despesas acumuladas, pagas ou em aberto</dt>
+          <dd>− {money(d.expense / 100)}</dd>
+        </div>
+        <div>
+          <dt>Receitas ainda não recebidas (fora da divisão)</dt>
+          <dd>{money(d.receivable / 100)}</dd>
+        </div>
+      </dl>
+      <p role="status">
+        {d.deficit > 0
+          ? `Ainda faltam ${money(d.deficit / 100)} para cobrir as despesas acumuladas. Nenhum valor será dividido enquanto esse déficit existir.`
+          : d.available === 0
+            ? "O resultado recebido está zerado. Aguarde um saldo positivo para dividir."
+            : "As despesas acumuladas estão cobertas pelos recebimentos. Apenas o excedente entra na divisão."}
+      </p>
+      <small>
+        Despesas pagas pelos sócios também são descontadas. Valores reservados
+        para contas em aberto e reembolsos não são lucro para distribuir. Esta
+        prévia não realiza pagamentos.
+      </small>
+    </section>
   );
 }
