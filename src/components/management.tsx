@@ -42,68 +42,36 @@ export function FinancialSummary({
   rows,
   from = "",
   to = "",
-  explainDates = false,
+  pendingOnly = false,
 }: {
   rows: FinanceEntry[];
   from?: string;
   to?: string;
-  explainDates?: boolean;
+  pendingOnly?: boolean;
 }) {
   const b = balance(rows, from, to);
-  if (explainDates)
+  if (pendingOnly)
     return (
-      <>
-        <section
-          className="finance-basis-section"
-          aria-label="Movimentações pela data da baixa"
-        >
-          <h3>Recebimentos e pagamentos</h3>
-          <p className="management-hint">
-            Pela data da baixa no período selecionado. Inclui recebimentos
-            antecipados ou atrasados de receitas com vencimento fora do período.
-          </p>
-          <div className="finance-summary monthly-totals">
-            <div className="card income">
-              <small>Recebimentos pela data da baixa</small>
-              <strong>{money(b.received / 100)}</strong>
-              <small>Valores registrados como recebidos</small>
-            </div>
-            <div className="card expense">
-              <small>Pagamentos pela data da baixa</small>
-              <strong>{money(b.paid / 100)}</strong>
-              <small>Valores registrados como pagos</small>
-            </div>
-            <div className="card">
-              <small>Resultado das baixas</small>
-              <strong>{money(b.net / 100)}</strong>
-              <small>
-                Recebimentos menos pagamentos; não é o lucro nem o saldo
-                bancário
-              </small>
-            </div>
+      <section
+        className="finance-basis-section"
+        aria-label="Pendências por vencimento"
+      >
+        <h3>Valores em aberto</h3>
+        <p className="management-hint">
+          Saldo ainda não baixado dos lançamentos com vencimento no período
+          selecionado.
+        </p>
+        <div className="finance-summary finance-pending">
+          <div className="card">
+            <small>A receber por vencimento</small>
+            <strong>{money(b.receivable / 100)}</strong>
           </div>
-        </section>
-        <section
-          className="finance-basis-section"
-          aria-label="Pendências por vencimento"
-        >
-          <h3>Valores em aberto</h3>
-          <p className="management-hint">
-            Saldo ainda não baixado dos lançamentos com vencimento no período
-            selecionado.
-          </p>
-          <div className="finance-summary finance-pending">
-            <div className="card">
-              <small>A receber por vencimento</small>
-              <strong>{money(b.receivable / 100)}</strong>
-            </div>
-            <div className="card">
-              <small>A pagar por vencimento</small>
-              <strong>{money(b.payable / 100)}</strong>
-            </div>
+          <div className="card">
+            <small>A pagar por vencimento</small>
+            <strong>{money(b.payable / 100)}</strong>
           </div>
-        </section>
-      </>
+        </div>
+      </section>
     );
   return (
     <div className="finance-summary">
@@ -643,7 +611,7 @@ export function Finance({
         rows={validPeriod ? s.finance : []}
         from={from}
         to={to}
-        explainDates
+        pendingOnly
       />
       <div
         className="management-actions hub-tabs"
