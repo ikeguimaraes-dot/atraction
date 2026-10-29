@@ -30,7 +30,7 @@ test("contas, baixa parcial, transferência e DRE", async ({ page }) => {
     .locator(".ledger-row")
     .filter({ hasText: "Receita parcial" });
   await row.getByRole("button", { name: "Receber", exact: true }).click();
-  await page.getByLabel("Valor da baixa (R$)").fill("30");
+  await page.getByLabel("Valor recebido agora (R$)").fill("30");
   await page
     .getByLabel("Conta da baixa")
     .selectOption({ label: "Banco teste" });
@@ -187,4 +187,59 @@ test("corrige pagador de despesa paga pelo editor sem estornar", async ({
     allocations: [{ user_id: null, amount_cents: 55000 }],
   });
   expect(saved.settled_date).toBe(saved.payments[0].date);
+});
+
+test("receita recebe valores aos poucos até quitar o saldo", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await go(page, "Financeiro");
+  await page.getByRole("button", { name: "Nova receita", exact: true }).click();
+  await page.getByLabel("Descrição", { exact: true }).fill("Receita em partes");
+  await page.getByLabel("Valor total (R$)", { exact: true }).fill("1.000,50");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Categoria", { exact: true })
+    .selectOption("Prestação de serviços");
+  await page.getByRole("button", { name: "Salvar lançamento" }).click();
+  const row = page
+    .locator(".ledger-row")
+    .filter({ hasText: "Receita em partes" });
+  await row.getByRole("button", { name: "Receber", exact: true }).click();
+  await page.getByLabel("Valor recebido agora (R$)").fill("250,25");
+  await expect(page.getByRole("dialog")).toContainText(
+    /faltará receber R\$\s*750,25/,
+  );
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(row).toContainText("Parcial");
+  await page.reload();
+  await go(page, "Financeiro");
+  await expect(row).toContainText(/Restante: R\$\s*750,25/);
+  await row.getByRole("button", { name: "Receber", exact: true }).click();
+  await expect(page.getByLabel("Valor recebido agora (R$)")).toHaveValue(
+    "750,25",
+  );
+  await page.getByLabel("Valor recebido agora (R$)").fill("751");
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "excede o saldo restante",
+  );
+  await page.getByLabel("Valor recebido agora (R$)").fill("0");
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "Valor fora do limite",
+  );
+  await page.getByLabel("Valor recebido agora (R$)").fill("300");
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(row).toContainText(/Restante: R\$\s*450,25/);
+  await row.getByRole("button", { name: "Receber", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("quitará todo o saldo");
+  await expect(page.locator(".payment-history")).toHaveCount(2);
+  await page.getByRole("button", { name: "Confirmar baixa" }).click();
+  await expect(row).toContainText(/Restante: R\$\s*0/);
+  await expect(
+    row.getByRole("button", { name: "Reabrir", exact: true }),
+  ).toBeVisible();
+  await row.getByRole("button", { name: "Ver baixas" }).click();
+  await expect(page.locator(".payment-history")).toHaveCount(3);
 });

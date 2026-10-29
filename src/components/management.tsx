@@ -781,8 +781,8 @@ export function Finance({
                   </small>
                 )}
                 <small>
-                  Baixado: {money(paid(r) / 100)} · Restante:{" "}
-                  {money(remaining(r) / 100)}
+                  {r.direction === "income" ? "Recebido" : "Baixado"}:{" "}
+                  {money(paid(r) / 100)} · Restante: {money(remaining(r) / 100)}
                 </small>
                 <small>
                   Vence {dateLabel(r.due_date)}

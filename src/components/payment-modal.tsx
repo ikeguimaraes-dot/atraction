@@ -4,7 +4,7 @@ import type { useWorkspace } from "@/lib/use-workspace";
 import { supabase } from "@/lib/supabase";
 import { withPaymentResponsibility } from "@/lib/payment-payer";
 import type { Payment, FinanceEntry } from "@/lib/types";
-import { remaining, payments } from "@/lib/payments";
+import { remaining, payments, paid } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
 import { cents, today } from "@/lib/finance";
 import { money, alive } from "@/lib/domain";
@@ -23,7 +23,16 @@ export function PaymentModal({
 }) {
   const canSettle = w.state!.role === "owner";
   const f = w.state!.finance.find((x) => x.id === entry.id) || entry;
-  const [amount, setAmount] = useState((remaining(f) / 100).toFixed(2));
+  const income = f.direction === "income";
+  const [amount, setAmount] = useState(
+    (remaining(f) / 100).toFixed(2).replace(".", ","),
+  );
+  let receiptAmount: number | null = null;
+  try {
+    receiptAmount = cents(amount);
+  } catch {
+    // An unfinished monetary input has no valid preview yet.
+  }
   const [date, setDate] = useState(today());
   const [account, setAccount] = useState("");
   const members = useTeamMembers(w.state!.tenant.id);
@@ -90,23 +99,35 @@ export function PaymentModal({
           <h3>{f.title}</h3>
           <div>
             <span>
-              {remaining(f) > 0 ? "Saldo restante" : "Pagamento concluído"}
+              {remaining(f) > 0
+                ? "Saldo restante"
+                : income
+                  ? "Recebimento concluído"
+                  : "Pagamento concluído"}
             </span>
             <strong>{money(remaining(f) / 100)}</strong>
           </div>
         </div>
+        {income && (
+          <p>
+            Total da receita: {money(f.amount_cents / 100)} · Já recebido:{" "}
+            {money(paid(f) / 100)}
+          </p>
+        )}
         <p>
-          Registre valores já recebidos ou pagos, inclusive parciais. Nenhuma
-          transferência bancária é executada.
+          {income
+            ? "O cliente pagou só uma parte? Digite apenas o valor que recebeu agora. O restante continuará em aberto para os próximos recebimentos."
+            : "Registre valores já recebidos ou pagos, inclusive parciais. Nenhuma transferência bancária é executada."}
         </p>
         {remaining(f) > 0 && canSettle && (
           <>
             <h3 className="payment-step">
-              <span>1</span> Dados da baixa
+              <span>1</span>{" "}
+              {income ? "Quanto você recebeu?" : "Dados da baixa"}
             </h3>
             <div className="form-grid">
               <label>
-                Valor da baixa (R$)
+                {income ? "Valor recebido agora (R$)" : "Valor da baixa (R$)"}
                 <input
                   required
                   inputMode="decimal"
@@ -145,6 +166,15 @@ export function PaymentModal({
                 </select>
               </label>
             </div>
+            {income &&
+              receiptAmount !== null &&
+              receiptAmount <= remaining(f) && (
+                <p role="status" className="reimbursement-preview">
+                  {receiptAmount < remaining(f)
+                    ? `Após este recebimento, ainda faltará receber ${money((remaining(f) - receiptAmount) / 100)}. A receita continuará em aberto.`
+                    : "Este recebimento quitará todo o saldo restante da receita."}
+                </p>
+              )}
             {f.direction === "expense" && (
               <section className="payment-responsibility">
                 <h3 className="payment-step">
@@ -199,6 +229,7 @@ export function PaymentModal({
             </button>
           </>
         )}
+        {income && payments(f).length > 0 && <h3>Histórico de recebimentos</h3>}
         {payments(f).map((p) => (
           <div className="document-row payment-history" key={p.id}>
             <span>
