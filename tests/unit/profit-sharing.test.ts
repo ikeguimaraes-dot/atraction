@@ -1,5 +1,9 @@
 import { expect, it } from "vitest";
-import { monthlyProfit, splitProfit } from "../../src/lib/profit-sharing";
+import {
+  monthlyProfit,
+  accumulatedProfit,
+  splitProfit,
+} from "../../src/lib/profit-sharing";
 import type { FinanceEntry } from "../../src/lib/types";
 const entry = {
   id: "expense",
@@ -70,4 +74,44 @@ it("does not allocate a loss or distribute without participants", () => {
   ]);
   expect(splitProfit(100, [])).toEqual([]);
   expect(() => monthlyProfit([], [], "invalid")).toThrow();
+});
+
+it("carries prior losses forward and excludes future months and deleted entries", () => {
+  const rows = [
+    { ...entry, due_date: "2026-09-01", amount_cents: 10000 },
+    { ...entry, direction: "income" as const, amount_cents: 7000 },
+    {
+      ...entry,
+      direction: "income" as const,
+      due_date: "2026-11-01",
+      amount_cents: 5000,
+    },
+    { ...entry, amount_cents: 90000, deleted_at: "2026-10-01" },
+  ];
+  expect(accumulatedProfit(rows, [], "2026-10")).toEqual({
+    revenue: 7000,
+    expense: 10000,
+    profit: -3000,
+  });
+  expect(accumulatedProfit(rows, [], "2026-11").profit).toBe(2000);
+  expect(accumulatedProfit(rows, [], "2026-08").profit).toBe(0);
+  expect(monthlyProfit(rows, [], "2026-10").profit).toBe(7000);
+  expect(() => accumulatedProfit(rows, [], "invalid")).toThrow();
+});
+it("uses invoice issue dates and installment due dates in accumulated profit", () => {
+  const purchase = {
+    ...entry,
+    purchase_id: "purchase",
+    purchase_date: "2026-09-01",
+    due_date: "2026-11-01",
+    purchase_installments: 1,
+  };
+  expect(accumulatedProfit([purchase], [], "2026-10").expense).toBe(3000);
+  expect(
+    accumulatedProfit(
+      [{ ...purchase, purchase_installments: 3 }],
+      [],
+      "2026-10",
+    ).expense,
+  ).toBe(0);
 });

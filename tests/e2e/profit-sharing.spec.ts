@@ -170,7 +170,14 @@ test("lucro mensal divide igualmente, persiste por mês e mantém reembolsos sep
   await expect(
     region.getByRole("article", { name: "Lucro de amanda@example.test" }),
   ).toContainText(/R\$\s*35,01/);
+  await expect(
+    region.getByLabel("Resultado acumulado da empresa"),
+  ).toContainText(/R\$\s*70,01/);
   await page.getByLabel("Mês do lucro").fill("2026-11");
+  await expect(
+    region.getByLabel("Resultado acumulado da empresa"),
+  ).toContainText(/-R\$\s*29,99/);
+  await expect(region).toContainText(/Faltam R\$\s*29,99/);
   await expect(region).toContainText(
     "Nenhum participante escolhido para este mês.",
   );

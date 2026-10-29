@@ -2,7 +2,11 @@
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
 import type { TeamMember } from "@/lib/use-team-members";
-import { monthlyProfit, splitProfit } from "@/lib/profit-sharing";
+import {
+  monthlyProfit,
+  accumulatedProfit,
+  splitProfit,
+} from "@/lib/profit-sharing";
 import { today } from "@/lib/finance";
 import { money } from "@/lib/domain";
 import { Modal } from "./ui";
@@ -22,6 +26,9 @@ export function ProfitSharing({
   const totals = valid
     ? monthlyProfit(s.finance, s.documents, month)
     : { revenue: 0, expense: 0, profit: 0 };
+  const accumulated = valid
+    ? accumulatedProfit(s.finance, s.documents, month)
+    : { revenue: 0, expense: 0, profit: 0 };
   const participants =
     s.tenant.settings?.profit_sharing?.[month]?.participants || [];
   const shares = splitProfit(totals.profit, participants);
@@ -32,7 +39,7 @@ export function ProfitSharing({
     <section className="profit-sharing" aria-label="Divisão dos lucros">
       <div className="profit-toolbar">
         <div>
-          <span className="finance-eyebrow">RESULTADO MENSAL</span>
+          <span className="finance-eyebrow">RESULTADO DA EMPRESA</span>
           <h3>Lucro e participação</h3>
         </div>
         <label>
@@ -59,29 +66,73 @@ export function ProfitSharing({
           Escolha um mês válido.
         </p>
       )}
-      <div
-        className={`card profit-total ${totals.profit < 0 ? "is-loss" : ""}`}
-        aria-label="Lucro mensal para divisão"
-      >
-        <span className="profit-orbit" aria-hidden="true">
-          {totals.profit < 0 ? "↘" : "↗"}
-        </span>
-        <h3>{totals.profit < 0 ? "Prejuízo do mês" : "Lucro do mês"}</h3>
-        <strong>{money(totals.profit / 100)}</strong>
-        <div className="profit-metrics">
-          <div>
-            <span>Receitas cadastradas</span>
-            <b>{money(totals.revenue / 100)}</b>
+      <div className="profit-results-grid">
+        <div
+          className={`card profit-total ${totals.profit < 0 ? "is-loss" : ""}`}
+          aria-label="Lucro mensal para divisão"
+        >
+          <span className="profit-orbit" aria-hidden="true">
+            {totals.profit < 0 ? "↘" : "↗"}
+          </span>
+          <h3>{totals.profit < 0 ? "Prejuízo do mês" : "Lucro do mês"}</h3>
+          <strong>{money(totals.profit / 100)}</strong>
+          <div className="profit-metrics">
+            <div>
+              <span>Receitas cadastradas</span>
+              <b>{money(totals.revenue / 100)}</b>
+            </div>
+            <div>
+              <span>Despesas cadastradas</span>
+              <b>{money(totals.expense / 100)}</b>
+            </div>
           </div>
-          <div>
-            <span>Despesas cadastradas</span>
-            <b>{money(totals.expense / 100)}</b>
+        </div>
+        <div
+          className={`card profit-total profit-accumulated ${accumulated.profit < 0 ? "is-loss" : ""}`}
+          aria-label="Resultado acumulado da empresa"
+        >
+          <span className="profit-orbit" aria-hidden="true">
+            {accumulated.profit < 0 ? "↘" : "↗"}
+          </span>
+          <h3>
+            {accumulated.profit < 0
+              ? "Prejuízo acumulado"
+              : accumulated.profit > 0
+                ? "Lucro acumulado"
+                : "Resultado acumulado zerado"}
+          </h3>
+          <strong>{money(accumulated.profit / 100)}</strong>
+          <p className="profit-accumulated-period">
+            Todo o histórico até{" "}
+            {valid ? month.split("-").reverse().join("/") : "o mês selecionado"}
+          </p>
+          <div className="profit-metrics">
+            <div>
+              <span>Receitas acumuladas</span>
+              <b>{money(accumulated.revenue / 100)}</b>
+            </div>
+            <div>
+              <span>Despesas acumuladas</span>
+              <b>{money(accumulated.expense / 100)}</b>
+            </div>
           </div>
         </div>
       </div>
+      {valid && (
+        <p className="profit-accumulated-status" role="status">
+          {accumulated.profit < 0
+            ? `Faltam ${money(Math.abs(accumulated.profit) / 100)} de resultado positivo para cobrir o prejuízo acumulado.`
+            : accumulated.profit > 0
+              ? `A empresa acumula ${money(accumulated.profit / 100)} de resultado positivo após compensar as despesas de todos os meses até o período selecionado.`
+              : "As receitas e despesas acumuladas estão equilibradas."}
+        </p>
+      )}
       <p className="profit-explanation">
         Receitas menos despesas do mês, incluindo lançamentos sem baixa. O lucro
-        a dividir não representa saldo em caixa ou pagamento realizado.
+        a dividir não representa saldo em caixa ou pagamento realizado. O
+        acumulado soma desde o primeiro lançamento até o mês selecionado, sem
+        incluir meses futuros. A divisão entre participantes continua usando o
+        lucro do mês.
       </p>
       {shares.length ? (
         <>
