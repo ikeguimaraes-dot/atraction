@@ -48,25 +48,28 @@ export function useJourney(w: ReturnType<typeof useWorkspace>) {
         w.setState((s) => {
           if (!s || s.contracts.some((x) => x.id === c.id)) return s;
           const person = s.contacts.find((p) => p.id === c.contact_id)!;
-          const onboarding = s.activities.some(
-            (a) =>
-              a.contact_id === person.id &&
-              a.purpose === "onboarding" &&
-              !a.done &&
-              !a.deleted_at,
-          )
-            ? []
-            : [
-                {
-                  ...base(s.tenant.id, person.owner_id),
-                  contact_id: person.id,
-                  purpose: "onboarding" as const,
-                  title: "Dar boas-vindas e combinar próximos passos",
-                  due_at: c.start_date + "T12:00:00Z",
-                  done: false,
-                  kind: "task" as const,
-                },
-              ];
+          const onboarding =
+            !person || c.supplier_id
+              ? []
+              : s.activities.some(
+                    (a) =>
+                      a.contact_id === person.id &&
+                      a.purpose === "onboarding" &&
+                      !a.done &&
+                      !a.deleted_at,
+                  )
+                ? []
+                : [
+                    {
+                      ...base(s.tenant.id, person.owner_id),
+                      contact_id: person.id,
+                      purpose: "onboarding" as const,
+                      title: "Dar boas-vindas e combinar próximos passos",
+                      due_at: c.start_date + "T12:00:00Z",
+                      done: false,
+                      kind: "task" as const,
+                    },
+                  ];
           return {
             ...s,
             contracts: [c, ...s.contracts],

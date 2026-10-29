@@ -421,16 +421,20 @@ function SupplierForm({
 export function Finance({
   w,
   initialContact = "",
+  initialSupplier = "",
 }: {
   w: Work;
   initialContact?: string;
+  initialSupplier?: string;
 }) {
   const s = w.state!;
   const [query, setQuery] = useState("");
-  const [direction, setDirection] = useState<"income" | "expense">("income");
+  const [direction, setDirection] = useState<"income" | "expense">(
+    initialSupplier ? "expense" : "income",
+  );
   const [status, setStatus] = useState("");
   const [contact, setContact] = useState(initialContact);
-  const [supplier, setSupplier] = useState("");
+  const [supplier, setSupplier] = useState(initialSupplier);
   const [month, setMonth] = useState(() => today().slice(0, 7));
   const [dateMode, setDateMode] = useState<"month" | "period" | "all">("month");
   const [periodFrom, setPeriodFrom] = useState(

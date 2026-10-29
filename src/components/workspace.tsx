@@ -65,6 +65,7 @@ export function Workspace() {
   const [navOpen, setNavOpen] = useState(false);
   const [createCompany, setCreateCompany] = useState(false);
   const [financeContact, setFinanceContact] = useState("");
+  const [financeSupplier, setFinanceSupplier] = useState("");
   const [modal, setModal] = useState<string | null>(null);
   const [selected, setSelected] = useState<Contact>();
   const go = (v: View) => {
@@ -75,6 +76,7 @@ export function Workspace() {
     setModal(null);
     setSelected(undefined);
     setFinanceContact("");
+    setFinanceSupplier("");
     setNavOpen(false);
     await w.selectCompany(id);
   };
@@ -204,6 +206,7 @@ export function Workspace() {
                 className={view === item.id ? "active" : ""}
                 onClick={() => {
                   setFinanceContact("");
+                  setFinanceSupplier("");
                   go(item.id);
                 }}
               >
@@ -366,8 +369,9 @@ export function Workspace() {
                 <Contracts
                   w={w}
                   onCustomer={openCustomer}
-                  onFinance={(id) => {
-                    setFinanceContact(id);
+                  onFinance={(id, supplier) => {
+                    setFinanceContact(supplier ? "" : id);
+                    setFinanceSupplier(supplier ? id : "");
                     go("finance");
                   }}
                 />
@@ -390,9 +394,10 @@ export function Workspace() {
               )}
               {view === "finance" && canManage && (
                 <Finance
-                  key={`${s.tenant.id}:${financeContact}`}
+                  key={`${s.tenant.id}:${financeContact}:${financeSupplier}`}
                   w={w}
                   initialContact={financeContact}
+                  initialSupplier={financeSupplier}
                 />
               )}
               {view === "expense-documents" && canManage && (
@@ -770,6 +775,7 @@ export function Workspace() {
           onReady={async (id, companyId) => {
             setSelected(undefined);
             setFinanceContact("");
+            setFinanceSupplier("");
             setModal(null);
             setView("today");
             return w.read(id, companyId);
@@ -836,6 +842,7 @@ export function Workspace() {
                   className="secondary"
                   onClick={() => {
                     setFinanceContact(selected.id);
+                    setFinanceSupplier("");
                     setModal(null);
                     go("finance");
                   }}

@@ -18,7 +18,7 @@ export function Contracts({
 }: {
   w: Work;
   onCustomer: (id: string) => void;
-  onFinance: (id: string) => void;
+  onFinance: (id: string, supplier?: boolean) => void;
   initialDeal?: Deal;
   onStarted?: () => void;
 }) {
@@ -35,15 +35,15 @@ export function Contracts({
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const rows = alive(s.contracts).filter((c) =>
-    `${c.title} ${c.plan} ${s.contacts.find((p) => p.id === c.contact_id)?.name}`
+    `${c.title} ${c.plan} ${c.supplier_id ? s.suppliers.find((p) => p.id === c.supplier_id)?.name : s.contacts.find((p) => p.id === c.contact_id)?.name}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
   return (
     <>
       <SectionTitle
-        title="Contratos que acompanham o cliente"
-        subtitle="Venda, plano, cobranças e pós-venda conectados. Sem redigitar."
+        title="Contratos de clientes e fornecedores"
+        subtitle="Organize seus contratos e acompanhe as contas a receber de clientes e a pagar a fornecedores."
         action={
           <button
             className="primary"
@@ -62,7 +62,7 @@ export function Contracts({
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cliente, plano ou descrição"
+            placeholder="Cliente, fornecedor, plano ou descrição"
           />
         </label>
       </div>
@@ -87,7 +87,18 @@ export function Contracts({
                   </small>
                 </div>
               </div>
-              <p>{s.contacts.find((p) => p.id === c.contact_id)?.name}</p>
+              <p>
+                <span className="badge">
+                  {c.supplier_id
+                    ? "Fornecedor · A pagar"
+                    : "Cliente · A receber"}
+                </span>
+              </p>
+              <p>
+                {c.supplier_id
+                  ? s.suppliers.find((p) => p.id === c.supplier_id)?.name
+                  : s.contacts.find((p) => p.id === c.contact_id)?.name}
+              </p>
               <p>
                 Vigência: {c.start_date.split("-").reverse().join("/")} a{" "}
                 {c.end_date.split("-").reverse().join("/")}
@@ -101,17 +112,21 @@ export function Contracts({
                     : "à vista"}
               </strong>
               <div className="management-actions journey-buttons">
+                {c.contact_id && (
+                  <button
+                    className="secondary"
+                    onClick={() => onCustomer(c.contact_id!)}
+                  >
+                    Ficha do cliente
+                  </button>
+                )}
                 <button
                   className="secondary"
-                  onClick={() => onCustomer(c.contact_id)}
+                  onClick={() =>
+                    onFinance(c.supplier_id || c.contact_id!, !!c.supplier_id)
+                  }
                 >
-                  Ficha do cliente
-                </button>
-                <button
-                  className="secondary"
-                  onClick={() => onFinance(c.contact_id)}
-                >
-                  Cobranças
+                  {c.supplier_id ? "Contas a pagar" : "Cobranças"}
                 </button>
                 {c.status === "active" && !renewed && (
                   <button
@@ -159,7 +174,7 @@ export function Contracts({
       {!rows.length && (
         <Empty
           title="Do combinado ao acompanhamento"
-          text="Crie um contrato avulso, parcelado ou mensal. As contas a receber e o primeiro pós-venda nascem juntos."
+          text="Escolha cliente ou fornecedor e crie um contrato à vista, parcelado ou mensal. Os lançamentos financeiros são gerados automaticamente."
         />
       )}
       {creating && (
@@ -241,7 +256,7 @@ export function Contracts({
                 </label>
                 <p>
                   Somente mensalidades em aberto a partir dessa data serão
-                  alteradas. Valores já recebidos são preservados.
+                  alteradas. Valores já recebidos ou pagos são preservados.
                 </p>
               </>
             ) : (
@@ -294,7 +309,10 @@ function ContractForm({
     const start = renew ? addDays(renew.end_date, 1) : today();
     return {
       ...w.base(),
-      contact_id: renew?.contact_id || deal?.contact_id || "",
+      contact_id: renew?.supplier_id
+        ? null
+        : renew?.contact_id || deal?.contact_id || "",
+      supplier_id: renew?.supplier_id || null,
       deal_id: deal?.id || null,
       renews_id: renew?.id || null,
       title: renew?.title || deal?.title || "",
@@ -316,6 +334,9 @@ function ContractForm({
         ? String(deal.value)
         : "",
   );
+  const [partyType, setPartyType] = useState<"customer" | "supplier">(
+    renew?.supplier_id ? "supplier" : "customer",
+  );
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState("");
   function validate() {
@@ -326,7 +347,7 @@ function ContractForm({
       title: data.title.trim(),
     };
     if (
-      !c.contact_id ||
+      !(partyType === "supplier" ? c.supplier_id : c.contact_id) ||
       !c.title ||
       !c.start_date ||
       !c.first_due_date ||
@@ -334,7 +355,9 @@ function ContractForm({
       c.periods < 1 ||
       c.periods > 60
     )
-      throw new Error("Confira cliente, datas e quantidade (1 a 60).");
+      throw new Error(
+        "Confira cliente ou fornecedor, datas e quantidade (1 a 60).",
+      );
     if (c.mode === "installments" && c.amount_cents < c.periods)
       throw new Error(
         "O valor precisa permitir parcelas de pelo menos um centavo.",
@@ -375,22 +398,64 @@ function ContractForm({
           <>
             <div className="form-grid">
               <label>
-                Cliente
+                Tipo de contrato
+                <select
+                  value={partyType}
+                  disabled={!!deal || !!renew}
+                  onChange={(e) => {
+                    const type = e.target.value as "customer" | "supplier";
+                    setPartyType(type);
+                    setData({
+                      ...data,
+                      contact_id: type === "customer" ? "" : null,
+                      supplier_id: null,
+                    });
+                  }}
+                >
+                  <option value="customer">Cliente — contas a receber</option>
+                  <option value="supplier">Fornecedor — contas a pagar</option>
+                </select>
+              </label>
+              <label>
+                {partyType === "supplier" ? "Fornecedor" : "Cliente"}
                 <select
                   required
                   disabled={!!deal || !!renew}
-                  value={data.contact_id}
+                  value={
+                    (partyType === "supplier"
+                      ? data.supplier_id
+                      : data.contact_id) || ""
+                  }
                   onChange={(e) =>
-                    setData({ ...data, contact_id: e.target.value })
+                    setData({
+                      ...data,
+                      ...(partyType === "supplier"
+                        ? { supplier_id: e.target.value, contact_id: null }
+                        : { contact_id: e.target.value, supplier_id: null }),
+                    })
                   }
                 >
-                  <option value="">Escolha uma pessoa</option>
-                  {alive(w.state!.contacts).map((c) => (
+                  <option value="">
+                    {partyType === "supplier"
+                      ? "Escolha um fornecedor"
+                      : "Escolha uma pessoa"}
+                  </option>
+                  {(partyType === "supplier"
+                    ? alive(w.state!.suppliers)
+                    : alive(w.state!.contacts)
+                  ).map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
                   ))}
                 </select>
+                {partyType === "supplier" &&
+                  !alive(w.state!.suppliers).length && (
+                    <small>
+                      Cadastre o fornecedor em Fornecedores antes de criar o
+                      contrato.
+                    </small>
+                  )}
               </label>
               <label>
                 Descrição do contrato
@@ -495,10 +560,10 @@ function ContractForm({
           <>
             <h3>Confira antes de confirmar</h3>
             <p>
-              O cliente ficará ativo, {planned.length} conta(s) a receber serão
-              criadas e uma tarefa de boas-vindas será agendada.
-              {deal ? " A venda ficará marcada como ganha." : ""} Nenhum valor
-              será marcado como recebido.
+              {partyType === "supplier"
+                ? `Serão criadas ${planned.length} conta(s) a pagar para o fornecedor. Nenhum valor será marcado como pago.`
+                : `O cliente ficará ativo, ${planned.length} conta(s) a receber serão criadas e uma tarefa de boas-vindas será agendada. Nenhum valor será marcado como recebido.`}
+              {deal ? " A venda ficará marcada como ganha." : ""}
             </p>
             <p>
               Vigência até {validate().end_date.split("-").reverse().join("/")}.

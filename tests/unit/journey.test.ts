@@ -102,3 +102,23 @@ describe("connected customer journey", () => {
     expect(pendingRetention(s)).toHaveLength(0);
   });
 });
+
+it("supplier contracts generate unpaid expenses with exact installments and no customer", () => {
+  const rows = schedule(
+    contract({ contact_id: null, supplier_id: "supplier-1" }),
+  );
+  expect(rows.map((r) => r.amount_cents)).toEqual([3334, 3333, 3333]);
+  expect(
+    rows.every(
+      (r) =>
+        r.direction === "expense" &&
+        r.supplier_id === "supplier-1" &&
+        r.contact_id === null &&
+        r.settled_date === null,
+    ),
+  ).toBe(true);
+  const monthly = schedule(
+    contract({ contact_id: null, supplier_id: "supplier-1", mode: "monthly" }),
+  );
+  expect(monthly.map((r) => r.amount_cents)).toEqual([10000, 10000, 10000]);
+});

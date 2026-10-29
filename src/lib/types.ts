@@ -184,7 +184,8 @@ export type FinanceEntry = Base & {
   notes: string;
 };
 export type Contract = Base & {
-  contact_id: string;
+  contact_id: string | null;
+  supplier_id?: string | null;
   deal_id: string | null;
   renews_id: string | null;
   title: string;

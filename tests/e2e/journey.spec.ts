@@ -133,3 +133,98 @@ test("ficha registra atendimento e documento privado na demonstração", async (
   await go(page, "Pós-venda");
   await expect(page.getByRole("button", { name: /indicação/i })).toHaveCount(0);
 });
+
+test("contrato de fornecedor gera despesas sem transformar fornecedor em cliente", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+    s.suppliers = [
+      {
+        id: "supplier-test",
+        tenant_id: "demo",
+        owner_id: null,
+        name: "Fornecedor de teste",
+        email: "",
+        phone: "",
+        document: "",
+        category: "Serviços",
+        notes: "",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
+        is_example: true,
+      },
+    ];
+    localStorage.setItem("atraction-demo-v1", JSON.stringify(s));
+  });
+  await page.reload();
+  const before = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+    return { contacts: s.contacts, activities: s.activities };
+  });
+  await go(page, "Contratos");
+  await page
+    .getByRole("button", { name: "Novo contrato", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Tipo de contrato", exact: true })
+    .selectOption("supplier");
+  await page
+    .getByRole("combobox", { name: "Fornecedor", exact: true })
+    .selectOption("supplier-test");
+  await page.getByLabel("Descrição do contrato").fill("Licença fornecedor");
+  await page
+    .getByRole("combobox", { name: "Cobrança", exact: true })
+    .selectOption("installments");
+  await page.getByLabel("Valor total (R$)").fill("100,01");
+  await page.getByLabel("Número de parcelas").fill("3");
+  await page.getByRole("button", { name: "Ver prévia" }).click();
+  await expect(page.getByRole("dialog")).toContainText("3 conta(s) a pagar");
+  await expect(page.getByRole("dialog")).not.toContainText("boas-vindas");
+  await page
+    .getByRole("button", { name: "Confirmar contrato e cobranças" })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const after = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("atraction-demo-v1")!),
+  );
+  expect(after.contacts).toEqual(before.contacts);
+  expect(after.activities).toEqual(before.activities);
+  const contract = after.contracts.find(
+    (c: { title: string }) => c.title === "Licença fornecedor",
+  );
+  const entries = after.finance.filter(
+    (f: { contract_id: string }) => f.contract_id === contract.id,
+  );
+  expect(entries).toHaveLength(3);
+  expect(
+    entries.reduce(
+      (n: number, f: { amount_cents: number }) => n + f.amount_cents,
+      0,
+    ),
+  ).toBe(10001);
+  expect(
+    entries.every(
+      (f: { direction: string; supplier_id: string; contact_id: null }) =>
+        f.direction === "expense" &&
+        f.supplier_id === "supplier-test" &&
+        f.contact_id === null,
+    ),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Contas a pagar", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Todos os meses", exact: true })
+    .click();
+  await expect(page.locator(".ledger-row")).toHaveCount(3);
+  await go(page, "Contratos");
+  await page.getByRole("button", { name: "Renovar", exact: true }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Tipo de contrato", exact: true }),
+  ).toHaveValue("supplier");
+  await expect(
+    page.getByRole("combobox", { name: "Fornecedor", exact: true }),
+  ).toHaveValue("supplier-test");
+});

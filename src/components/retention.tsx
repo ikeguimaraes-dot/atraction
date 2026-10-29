@@ -18,12 +18,14 @@ export function Retention({
   const s = w.state!;
   const canWrite = s.role !== "viewer";
   const care = pendingRetention(s);
-  const renewal = alive(s.contracts).filter(
-    (c) =>
-      c.status === "active" &&
-      c.end_date <= addDays(today(), 30) &&
-      !s.contracts.some((r) => r.renews_id === c.id),
-  );
+  const renewal = alive(s.contracts)
+    .filter((c) => !c.supplier_id)
+    .filter(
+      (c) =>
+        c.status === "active" &&
+        c.end_date <= addDays(today(), 30) &&
+        !s.contracts.some((r) => r.renews_id === c.id),
+    );
 
   const dissatisfied = alive(s.contacts).filter(
     (c) =>

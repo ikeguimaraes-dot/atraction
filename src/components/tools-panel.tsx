@@ -126,7 +126,7 @@ export function ToolsPanel({ w }: { w: Work }) {
                   defaultValue=""
                   onChange={(e) => {
                     const c = s.contracts.find((c) => c.id === e.target.value);
-                    if (c) {
+                    if (c?.contact_id) {
                       setPerson(c.contact_id);
                       setService(c.plan || c.title);
                       setValue(
@@ -140,11 +140,13 @@ export function ToolsPanel({ w }: { w: Work }) {
                   }}
                 >
                   <option value="">Preenchimento manual</option>
-                  {alive(s.contracts).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title}
-                    </option>
-                  ))}
+                  {alive(s.contracts)
+                    .filter((c) => c.contact_id)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.title}
+                      </option>
+                    ))}
                 </select>
               </label>
               <label>

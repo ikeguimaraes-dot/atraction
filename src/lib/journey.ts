@@ -21,7 +21,7 @@ export function schedule(c: Contract): FinanceEntry[] {
     contract_id: c.id,
     installment: i + 1,
     title: `${c.title} · ${i + 1}/${n}`,
-    direction: "income" as const,
+    direction: c.supplier_id ? ("expense" as const) : ("income" as const),
     amount_cents:
       c.mode === "installments"
         ? Math.floor(c.amount_cents / n) + (i < c.amount_cents % n ? 1 : 0)
@@ -30,7 +30,7 @@ export function schedule(c: Contract): FinanceEntry[] {
     due_date: addMonths(c.first_due_date, i),
     settled_date: null,
     contact_id: c.contact_id,
-    supplier_id: null,
+    supplier_id: c.supplier_id || null,
     notes: "",
   }));
 }
