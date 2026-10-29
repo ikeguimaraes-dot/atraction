@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
+import { companyCash } from "@/lib/company-cash";
 import { ProfitSharing } from "./profit-sharing";
 import { PaymentModal } from "./payment-modal";
 import type { Account, FinanceEntry } from "@/lib/types";
@@ -59,6 +60,7 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
     people.find((p) => p.key === participantKey(id))?.label ||
     "Membro removido";
   const balances = sharedBalances(s);
+  const cash = companyCash(s, today());
   const [editing, setEditing] = useState<Account>();
   const [from, setFrom] = useState(addDays(today(), -30));
   const [to, setTo] = useState(today());
@@ -332,6 +334,54 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </button>
           }
         />
+        <section className="company-cash-summary" aria-label="Caixa da empresa">
+          <div className="reimbursement-heading">
+            <span className="finance-eyebrow">DINHEIRO DA EMPRESA</span>
+            <h3>Entradas, saídas e caixa</h3>
+          </div>
+          <p className="management-hint">
+            Acumulado até {today().split("-").reverse().join("/")}, independente
+            do mês do lucro e do filtro da DRE.
+          </p>
+          <div className="company-cash-grid">
+            <article className="card">
+              <span>Total que entrou</span>
+              <strong>{money(cash.incoming / 100)}</strong>
+              <small>Recebimentos e outras entradas da empresa</small>
+            </article>
+            <article className="card">
+              <span>Total que saiu</span>
+              <strong>{money(cash.outgoing / 100)}</strong>
+              <small>Pagamentos da empresa, acertos e outras saídas</small>
+              <small>Acertos pagos: {money(cash.reimbursements / 100)}</small>
+            </article>
+            <article className="card company-cash-balance">
+              <span>
+                {cash.unidentified
+                  ? "Saldo em caixa a conferir"
+                  : "Saldo em caixa registrado"}
+              </span>
+              <strong>{money(cash.balance / 100)}</strong>
+              <small>Saldo inicial + entradas − saídas</small>
+              <small>Saldo inicial: {money(cash.opening / 100)}</small>
+            </article>
+          </div>
+          <p className="management-hint">
+            Inclui os saldos iniciais das contas da empresa e seus movimentos a
+            partir dessas datas. Movimentos sem conta vinculada usam todo o
+            histórico. Contas pessoais não compõem o caixa. Despesas pagas pela
+            equipe só reduzem o caixa quando a empresa registra o reembolso.
+            Transferências entre contas da empresa não são novas entradas ou
+            saídas.
+          </p>
+          {!!cash.unidentified && (
+            <p className="company-cash-warning" role="status">
+              Há {money(cash.unidentified / 100)} em pagamentos sem pagador
+              identificado, ainda não descontados deste saldo. Identifique quem
+              pagou para conferir o caixa.
+            </p>
+          )}
+        </section>
         <ProfitSharing w={w} members={members} />
         <div className="reimbursement-heading">
           <span className="finance-eyebrow">SALDOS DA EQUIPE</span>

@@ -96,6 +96,20 @@ test("acertos mostra baixas sem identificação e detalha pessoa e empresa", asy
   });
   await page.reload();
   await go(page, "Contas e DRE");
+  const cash = page.getByRole("region", {
+    name: "Caixa da empresa",
+    exact: true,
+  });
+  await expect(
+    cash.getByRole("article").filter({ hasText: "Total que entrou" }),
+  ).toContainText(/R\$\s*90/);
+  await expect(
+    cash.getByRole("article").filter({ hasText: "Total que saiu" }),
+  ).toContainText(/R\$\s*45/);
+  await expect(
+    cash.getByRole("article").filter({ hasText: "Saldo em caixa a conferir" }),
+  ).toContainText(/R\$\s*45/);
+  await expect(cash).toContainText("pagamentos sem pagador identificado");
   await expect(
     page.getByRole("status").filter({ hasText: "sem identificação completa" }),
   ).toContainText("1 despesa com 1 baixa");

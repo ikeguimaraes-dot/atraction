@@ -5013,3 +5013,66 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.company-cash-summary {
+  margin: 28px 0;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #e8e2f0;
+}
+.company-cash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+.company-cash-grid article {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  border-radius: 16px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.company-cash-grid article > span {
+  font-size: 13px;
+  color: #746583;
+}
+.company-cash-grid strong {
+  font-size: clamp(24px, 2.5vw, 32px);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.company-cash-grid article:first-child strong {
+  color: #26755b;
+}
+.company-cash-grid article:nth-child(2) strong {
+  color: #a35238;
+}
+.company-cash-grid small {
+  font-size: 11px;
+  color: #746583;
+  line-height: 1.5;
+}
+.company-cash-grid .company-cash-balance {
+  background: #35265e;
+  color: white;
+  border-color: #35265e;
+}
+.company-cash-grid .company-cash-balance > span,
+.company-cash-grid .company-cash-balance small {
+  color: #e7dff9;
+}
+.company-cash-warning {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff8ee;
+  color: #79542c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .company-cash-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
