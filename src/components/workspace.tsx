@@ -1,4 +1,5 @@
 "use client";
+import { today } from "@/lib/finance";
 import { demo } from "@/lib/demo";
 import { alive, csvSafe } from "@/lib/domain";
 import { pt } from "@/lib/pt";
@@ -343,7 +344,12 @@ export function Workspace() {
                     title="Seu negócio em dia"
                     subtitle="Clientes, contratos e finanças em um só lugar."
                   />
-                  {canManage && <FinancialSummary rows={s.finance} />}
+                  {canManage && (
+                    <FinancialSummary
+                      rows={s.finance}
+                      overviewMonth={today().slice(0, 7)}
+                    />
+                  )}
                   <div className="today-grid management-overview">
                     <section className="card today-card">
                       <h2>Clientes</h2>

@@ -91,10 +91,48 @@ test("acertos mostra baixas sem identificação e detalha pessoa e empresa", asy
         notes: "Reembolso parcial",
       },
     ];
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1, 15);
+    const future = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-15`;
+    s.finance.push(
+      {
+        ...base,
+        id: "future-income",
+        title: "Receita futura",
+        direction: "income",
+        due_date: future,
+        amount_cents: 30000,
+        settled_date: null,
+        payments: [],
+      },
+      {
+        ...base,
+        id: "future-expense",
+        title: "Despesa futura",
+        direction: "expense",
+        due_date: future,
+        amount_cents: 12000,
+        settled_date: null,
+        payments: [],
+      },
+    );
     s.recurrences = [];
     localStorage.setItem("atraction-demo-v1", JSON.stringify(s));
   });
   await page.reload();
+  const overview = page.locator(".finance-summary");
+  await expect(
+    overview
+      .locator(".card")
+      .filter({ hasText: "A receber no mês" })
+      .locator("strong"),
+  ).toContainText(/R\$\s*0/);
+  await expect(
+    overview
+      .locator(".card")
+      .filter({ hasText: "A pagar no mês" })
+      .locator("strong"),
+  ).toContainText(/R\$\s*70/);
   await go(page, "Contas e DRE");
   const cash = page.getByRole("region", {
     name: "Caixa da empresa",
@@ -104,8 +142,12 @@ test("acertos mostra baixas sem identificação e detalha pessoa e empresa", asy
     cash.getByRole("article").filter({ hasText: "Total que entrou" }),
   ).toContainText(/R\$\s*90/);
   await expect(
-    cash.getByRole("article").filter({ hasText: "Total que saiu" }),
-  ).toContainText(/R\$\s*45/);
+    cash
+      .getByRole("article")
+      .filter({ hasText: "Total que saiu" })
+      .locator("strong"),
+  ).toContainText(/R\$\s*90/);
+  await expect(cash).toContainText(/Pago por sócios e equipe: R\$\s*20/);
   await expect(
     cash.getByRole("article").filter({ hasText: "Saldo em caixa a conferir" }),
   ).toContainText(/R\$\s*45/);

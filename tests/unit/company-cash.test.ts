@@ -50,6 +50,10 @@ it("counts company cash and reimbursements without deducting team payments twice
     outgoing: 3000,
     reimbursements: 1000,
     unidentified: 500,
+    companyPaid: 2000,
+    peoplePaid: 3000,
+    unidentifiedPaid: 500,
+    totalPaid: 5500,
     balance: 7000,
   });
 });
@@ -141,4 +145,41 @@ it("includes repayments to company but ignores team-to-team and deleted settleme
     ],
   });
   expect(companyCash(s, date).balance).toBe(300);
+});
+
+it("shows expenses paid entirely by partners even with no company cash movements", () => {
+  const s = fixture({
+    finance: [
+      {
+        direction: "expense",
+        payments: [payment(18000, "partner-a"), payment(2000, "partner-b")],
+      },
+    ],
+  });
+  expect(companyCash(s, date)).toMatchObject({
+    totalPaid: 20000,
+    companyPaid: 0,
+    peoplePaid: 20000,
+    outgoing: 0,
+    balance: 0,
+  });
+});
+it("counts historical paid expenses without double counting opening snapshots in cash", () => {
+  const s = fixture({
+    accounts: [{ id: "bank", initial_date: "2026-10-01", initial_cents: 5000 }],
+    finance: [
+      {
+        direction: "expense",
+        payments: [
+          { ...payment(1000, null, "bank"), date: "2026-09-01" },
+          { ...payment(9000, "member"), date: "2026-11-01" },
+        ],
+      },
+    ],
+  });
+  expect(companyCash(s, date)).toMatchObject({
+    totalPaid: 1000,
+    outgoing: 0,
+    balance: 5000,
+  });
 });

@@ -17,7 +17,10 @@ export function companyCash(state: State, until: string) {
     incoming = 0,
     outgoing = 0,
     reimbursements = 0,
-    unidentified = 0;
+    unidentified = 0,
+    companyPaid = 0,
+    peoplePaid = 0,
+    unidentifiedPaid = 0;
   // Archived accounts retain their historical cash; archiving is not a withdrawal.
   for (const account of state.accounts)
     if (!account.holder_user_id && account.initial_date <= until)
@@ -25,6 +28,15 @@ export function companyCash(state: State, until: string) {
   for (const entry of state.finance) {
     if (entry.deleted_at) continue;
     for (const payment of payments(entry)) {
+      if (payment.date > until) continue;
+      // Expense totals cover all recorded history, independently of account snapshots.
+      // Reimbursements are movements of company cash, not a second expense payment.
+      if (entry.direction === "expense") {
+        if (payment.payer_user_id === null) companyPaid += payment.amount_cents;
+        else if (payment.payer_user_id === undefined)
+          unidentifiedPaid += payment.amount_cents;
+        else peoplePaid += payment.amount_cents;
+      }
       if (!eligible(payment.account_id, payment.date)) continue;
       if (entry.direction === "income") {
         if (!payment.account_id || companyAccount(payment.account_id))
@@ -70,6 +82,10 @@ export function companyCash(state: State, until: string) {
     outgoing,
     reimbursements,
     unidentified,
+    companyPaid,
+    peoplePaid,
+    unidentifiedPaid,
+    totalPaid: companyPaid + peoplePaid + unidentifiedPaid,
     balance: opening + incoming - outgoing,
   };
 }

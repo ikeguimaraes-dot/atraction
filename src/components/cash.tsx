@@ -351,9 +351,20 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </article>
             <article className="card">
               <span>Total que saiu</span>
-              <strong>{money(cash.outgoing / 100)}</strong>
-              <small>Pagamentos da empresa, acertos e outras saídas</small>
-              <small>Acertos pagos: {money(cash.reimbursements / 100)}</small>
+              <strong>{money(cash.totalPaid / 100)}</strong>
+              <small>
+                Despesas pagas pela empresa e pelas pessoas, em todo o histórico
+              </small>
+              <small>Pago pela empresa: {money(cash.companyPaid / 100)}</small>
+              <small>
+                Pago por sócios e equipe: {money(cash.peoplePaid / 100)}
+              </small>
+              {!!cash.unidentifiedPaid && (
+                <small>
+                  Pagador não identificado: {money(cash.unidentifiedPaid / 100)}
+                </small>
+              )}
+              <small>Reembolsos não são somados novamente neste total.</small>
             </article>
             <article className="card company-cash-balance">
               <span>
@@ -362,8 +373,16 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                   : "Saldo em caixa registrado"}
               </span>
               <strong>{money(cash.balance / 100)}</strong>
-              <small>Saldo inicial + entradas − saídas</small>
+              <small>
+                Saldo inicial + entradas − saídas do caixa da empresa
+              </small>
               <small>Saldo inicial: {money(cash.opening / 100)}</small>
+              <small>
+                Saídas do caixa da empresa: {money(cash.outgoing / 100)}
+              </small>
+              <small>
+                Incluem acertos pagos: {money(cash.reimbursements / 100)}
+              </small>
             </article>
           </div>
           <p className="management-hint">
