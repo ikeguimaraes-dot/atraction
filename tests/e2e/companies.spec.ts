@@ -295,4 +295,49 @@ test("empresas: cadastrar, alternar, consolidar e preservar seleção", async ({
     .getByRole("button", { name: "Salvar alterações", exact: true })
     .click();
   await expect.poll(() => companies[2].niche).toBe("fintech");
+  await menu(page);
+  await page
+    .getByRole("button", { name: "Editar empresa", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByLabel("Nome do negócio", { exact: true }),
+  ).toHaveValue("Empresa Gama");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Nome do negócio", { exact: true })
+    .fill("Empresa Gama Editada");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Salvar alterações", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(companies[2].name).toBe("Empresa Gama Editada");
+  expect(companies[0].name).toBe("Empresa Alfa");
+  await menu(page);
+  await page.getByLabel("Selecionar empresa").selectOption("all");
+  await go(page, "Clientes");
+  await page
+    .getByRole("button", { name: "Editar empresa Empresa Beta", exact: true })
+    .click();
+  await expect(
+    page.getByRole("dialog").getByLabel("Nome do negócio", { exact: true }),
+  ).toHaveValue("Empresa Beta");
+  await page
+    .getByRole("dialog")
+    .getByLabel("Nome do negócio", { exact: true })
+    .fill("Empresa Beta Editada");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Salvar alterações", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(companies[1].name).toBe("Empresa Beta Editada");
+  expect(companies[0].name).toBe("Empresa Alfa");
+  await page.reload();
+  await menu(page);
+  await expect(page.getByLabel("Selecionar empresa")).toHaveValue(b);
+  await expect(page.getByLabel("Selecionar empresa")).toContainText(
+    "Empresa Beta Editada",
+  );
 });

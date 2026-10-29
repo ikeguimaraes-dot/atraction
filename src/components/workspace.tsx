@@ -64,6 +64,7 @@ export function Workspace() {
   const [view, setView] = useState<View>("today");
   const [navOpen, setNavOpen] = useState(false);
   const [createCompany, setCreateCompany] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<string | null>(null);
   const [financeContact, setFinanceContact] = useState("");
   const [financeSupplier, setFinanceSupplier] = useState("");
   const [modal, setModal] = useState<string | null>(null);
@@ -72,7 +73,19 @@ export function Workspace() {
     setView(v);
     setNavOpen(false);
   };
+  const editCompany = async (id: string) => {
+    if (
+      w.busy ||
+      w.switching ||
+      !w.companies.some((c) => c.id === id && c.role === "owner")
+    )
+      return;
+    if (w.selection !== id && !(await w.selectCompany(id))) return;
+    setNavOpen(false);
+    setEditingCompany(id);
+  };
   const changeCompany = async (id: string) => {
+    setEditingCompany(null);
     setModal(null);
     setSelected(undefined);
     setFinanceContact("");
@@ -175,6 +188,7 @@ export function Workspace() {
         <CompanySelector
           w={w}
           onSelect={changeCompany}
+          onEdit={editCompany}
           onCreate={() => {
             setCreateCompany(true);
             w.setAuthOpen(true);
@@ -299,7 +313,12 @@ export function Workspace() {
               <p>Carregando empresa…</p>
             </div>
           ) : w.allSelected && w.allState ? (
-            <AllCompanies w={w} view={view} onSelect={changeCompany} />
+            <AllCompanies
+              w={w}
+              view={view}
+              onSelect={changeCompany}
+              onEdit={editCompany}
+            />
           ) : (
             <>
               {isDemo && (
@@ -802,6 +821,17 @@ export function Workspace() {
         />
       )}
 
+      {editingCompany === s.tenant.id &&
+        s.role === "owner" &&
+        !w.allSelected && (
+          <Modal title="Editar empresa" onClose={() => setEditingCompany(null)}>
+            <BusinessSettings
+              key={s.tenant.id}
+              w={w}
+              onSaved={() => setEditingCompany(null)}
+            />
+          </Modal>
+        )}
       {modal === "detail" && selected && (
         <Modal title="Cadastro do cliente" onClose={() => setModal(null)} wide>
           <div className="contact-detail">

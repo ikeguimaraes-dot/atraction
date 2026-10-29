@@ -17,10 +17,12 @@ export function CompanySelector({
   w,
   onCreate,
   onSelect,
+  onEdit,
 }: {
   w: Work;
   onCreate: () => void;
   onSelect: (id: string) => void;
+  onEdit: (id: string) => void;
 }) {
   if (!w.userId) return null;
   return (
@@ -41,6 +43,15 @@ export function CompanySelector({
           ))}
         </select>
       </label>
+      {!w.allSelected && w.state?.role === "owner" && (
+        <button
+          className="text-button"
+          disabled={w.busy || w.switching}
+          onClick={() => onEdit(w.state!.tenant.id)}
+        >
+          Editar empresa
+        </button>
+      )}
       <button
         className="text-button"
         disabled={w.busy || w.switching}
@@ -55,10 +66,12 @@ export function AllCompanies({
   w,
   view,
   onSelect,
+  onEdit,
 }: {
   w: Work;
   view: string;
   onSelect: (id: string) => void;
+  onEdit: (id: string) => void;
 }) {
   const s = w.allState!;
   const [query, setQuery] = useState("");
@@ -180,20 +193,39 @@ export function AllCompanies({
               to,
             );
             return (
-              <button key={c.id} onClick={() => onSelect(c.id)}>
-                <strong>{c.name}</strong>
-                <span>
-                  {alive(s.contacts).filter((p) => p.tenant_id === c.id).length}{" "}
-                  cadastros
-                </span>
-                {["owner", "manager"].includes(c.role) && (
-                  <small>
-                    Recebido: {money(b.received / 100)} · Pago:{" "}
-                    {money(b.paid / 100)}
-                  </small>
+              <article className="company-list-card" key={c.id}>
+                <button
+                  className="company-open"
+                  disabled={w.busy || w.switching}
+                  onClick={() => onSelect(c.id)}
+                >
+                  <strong>{c.name}</strong>
+                  <span>
+                    {
+                      alive(s.contacts).filter((p) => p.tenant_id === c.id)
+                        .length
+                    }{" "}
+                    cadastros
+                  </span>
+                  {["owner", "manager"].includes(c.role) && (
+                    <small>
+                      Recebido: {money(b.received / 100)} · Pago:{" "}
+                      {money(b.paid / 100)}
+                    </small>
+                  )}
+                  <span>Abrir empresa →</span>
+                </button>
+                {c.role === "owner" && (
+                  <button
+                    className="secondary"
+                    aria-label={`Editar empresa ${c.name}`}
+                    disabled={w.busy || w.switching}
+                    onClick={() => onEdit(c.id)}
+                  >
+                    Editar empresa
+                  </button>
                 )}
-                <span>Abrir empresa →</span>
-              </button>
+              </article>
             );
           })}
         </div>

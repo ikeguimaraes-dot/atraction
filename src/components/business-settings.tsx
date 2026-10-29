@@ -5,8 +5,10 @@ import type { Niche } from "@/lib/types";
 import type { useWorkspace } from "@/lib/use-workspace";
 export function BusinessSettings({
   w,
+  onSaved,
 }: {
   w: ReturnType<typeof useWorkspace>;
+  onSaved?: () => void;
 }) {
   const s = w.state!;
   const [name, setName] = useState(s.tenant.name);
@@ -25,13 +27,13 @@ export function BusinessSettings({
       className="form"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (s.role !== "owner") return;
+        if (s.role !== "owner" || saving || w.switching || !name.trim()) return;
         setSaving(true);
         try {
           const changed =
             niche !== s.tenant.niche ||
             (niche === "outro" && label.trim() !== accountPack(s.tenant).name);
-          await w.updateTenant({
+          const saved = await w.updateTenant({
             name: name.trim(),
             ...(changed
               ? {
@@ -46,6 +48,7 @@ export function BusinessSettings({
                 }
               : {}),
           });
+          if (saved) onSaved?.();
         } finally {
           setSaving(false);
         }

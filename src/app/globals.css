@@ -5113,3 +5113,33 @@ tbody tr:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.company-list-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 1px solid #e8e1ef;
+  border-radius: 14px;
+  padding: 18px;
+  gap: 16px;
+  min-width: 0;
+}
+.company-list-card .company-open {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  flex: 1;
+}
+.company-list-card .company-open:hover {
+  color: #7150b5;
+}
+.company-list-card .secondary {
+  align-self: flex-start;
+}
