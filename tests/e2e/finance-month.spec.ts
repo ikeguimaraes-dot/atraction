@@ -102,8 +102,8 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
   await expect(expense).toContainText("R$ 60");
   const profit = page.getByLabel("Lucro calculado", { exact: true });
   await expect(profit).toContainText("R$ 140");
-  await expect(income).toContainText("Receita do mês");
-  await expect(expense).toContainText("Despesa do mês");
+  await expect(income).toContainText("Receitas por vencimento");
+  await expect(expense).toContainText("Despesas por emissão ou vencimento");
   await expect(profit).toContainText("Lucro do mês");
   await expect(page.locator(".ledger-row")).toHaveCount(2);
   await page.getByRole("tab", { name: "Despesas", exact: true }).click();
@@ -129,7 +129,7 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
     .selectOption("period");
   await page.getByLabel("Data inicial", { exact: true }).fill("2028-01-20");
   await page.getByLabel("Data final", { exact: true }).fill("2028-02-29");
-  await expect(income).toContainText("Receita do período");
+  await expect(income).toContainText("Receitas por vencimento");
   await expect(income).toContainText("R$ 100");
   await expect(expense).toContainText("R$ 260");
   await expect(profit).toContainText(/-R\$\s*160/);

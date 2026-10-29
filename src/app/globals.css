@@ -4988,3 +4988,28 @@ tbody tr:hover {
     transition: none;
   }
 }
+
+.finance-basis-heading h3,
+.finance-basis-section h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.finance-basis-heading {
+  margin: 22px 0 16px;
+}
+.finance-basis-section {
+  padding-top: 24px;
+  margin: 24px 0;
+  border-top: 1px solid #e8e2f0;
+}
+.finance-basis-section .management-hint {
+  margin-bottom: 16px;
+}
+.finance-summary.finance-pending {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 600px) {
+  .finance-summary.finance-pending {
+    grid-template-columns: 1fr;
+  }
+}

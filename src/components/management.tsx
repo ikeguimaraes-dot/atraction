@@ -42,12 +42,69 @@ export function FinancialSummary({
   rows,
   from = "",
   to = "",
+  explainDates = false,
 }: {
   rows: FinanceEntry[];
   from?: string;
   to?: string;
+  explainDates?: boolean;
 }) {
   const b = balance(rows, from, to);
+  if (explainDates)
+    return (
+      <>
+        <section
+          className="finance-basis-section"
+          aria-label="Movimentações pela data da baixa"
+        >
+          <h3>Recebimentos e pagamentos</h3>
+          <p className="management-hint">
+            Pela data da baixa no período selecionado. Inclui recebimentos
+            antecipados ou atrasados de receitas com vencimento fora do período.
+          </p>
+          <div className="finance-summary monthly-totals">
+            <div className="card income">
+              <small>Recebimentos pela data da baixa</small>
+              <strong>{money(b.received / 100)}</strong>
+              <small>Valores registrados como recebidos</small>
+            </div>
+            <div className="card expense">
+              <small>Pagamentos pela data da baixa</small>
+              <strong>{money(b.paid / 100)}</strong>
+              <small>Valores registrados como pagos</small>
+            </div>
+            <div className="card">
+              <small>Resultado das baixas</small>
+              <strong>{money(b.net / 100)}</strong>
+              <small>
+                Recebimentos menos pagamentos; não é o lucro nem o saldo
+                bancário
+              </small>
+            </div>
+          </div>
+        </section>
+        <section
+          className="finance-basis-section"
+          aria-label="Pendências por vencimento"
+        >
+          <h3>Valores em aberto</h3>
+          <p className="management-hint">
+            Saldo ainda não baixado dos lançamentos com vencimento no período
+            selecionado.
+          </p>
+          <div className="finance-summary finance-pending">
+            <div className="card">
+              <small>A receber por vencimento</small>
+              <strong>{money(b.receivable / 100)}</strong>
+            </div>
+            <div className="card">
+              <small>A pagar por vencimento</small>
+              <strong>{money(b.payable / 100)}</strong>
+            </div>
+          </div>
+        </section>
+      </>
+    );
   return (
     <div className="finance-summary">
       {[
@@ -539,19 +596,25 @@ export function Finance({
           A data final deve ser igual ou posterior à data inicial.
         </p>
       )}
+      <div className="finance-basis-heading">
+        <h3>Receitas, despesas e lucro {periodLabel}</h3>
+        <p className="management-hint">
+          Valores integrais dos lançamentos, recebidos/pagos ou ainda em aberto.
+        </p>
+      </div>
       <div
         className="finance-summary monthly-totals"
         aria-label="Receita, despesa e lucro"
       >
         <div className="card income" aria-label="Receita cadastrada">
-          <small>Receita {periodLabel}</small>
+          <small>Receitas por vencimento</small>
           <strong>{money(revenue / 100)}</strong>
-          <small>Total de receitas cadastradas</small>
+          <small>Vencimento dentro do período selecionado</small>
         </div>
         <div className="card expense" aria-label="Despesa cadastrada">
-          <small>Despesa {periodLabel}</small>
+          <small>Despesas por emissão ou vencimento</small>
           <strong>{money(expense / 100)}</strong>
-          <small>Total de despesas cadastradas</small>
+          <small>Conforme a data de referência de cada despesa</small>
         </div>
         <div
           className={`card ${profit < 0 ? "expense" : "income"}`}
@@ -576,11 +639,8 @@ export function Finance({
         rows={validPeriod ? s.finance : []}
         from={from}
         to={to}
+        explainDates
       />
-      <p className="management-hint">
-        Resumo geral da empresa no período selecionado, incluindo receitas e
-        despesas.
-      </p>
       <div
         className="management-actions hub-tabs"
         role="tablist"
