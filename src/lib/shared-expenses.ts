@@ -1,4 +1,4 @@
-import type { State } from "./types";
+import type { FinanceEntry, State } from "./types";
 import { payments } from "./payments";
 
 export const companyKey = "company";
@@ -26,7 +26,8 @@ export function sharedBalances(state: State) {
     (entry) => !entry.deleted_at && entry.direction === "expense",
   )) {
     for (const payment of payments(entry)) {
-      if (!payment.allocations?.length) continue;
+      if (payment.payer_user_id === undefined || !payment.allocations?.length)
+        continue;
       add(payment.payer_user_id ?? null, payment.amount_cents);
       payment.allocations.forEach((allocation) =>
         add(allocation.user_id, -allocation.amount_cents),
@@ -40,4 +41,22 @@ export function sharedBalances(state: State) {
     add(settlement.to_user_id, -settlement.amount_cents);
   }
   return balances;
+}
+
+export function expensePaymentDetails(finance: FinanceEntry[]) {
+  return finance
+    .filter((entry) => !entry.deleted_at && entry.direction === "expense")
+    .flatMap((entry) =>
+      payments(entry).map((payment) => ({
+        entry,
+        payment,
+        missingPayer: payment.payer_user_id === undefined,
+        missingOwner: !payment.allocations?.length,
+      })),
+    )
+    .sort(
+      (a, b) =>
+        b.payment.date.localeCompare(a.payment.date) ||
+        a.entry.title.localeCompare(b.entry.title),
+    );
 }

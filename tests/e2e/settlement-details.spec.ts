@@ -1,0 +1,164 @@
+import { test, expect, type Page } from "@playwright/test";
+async function go(page: Page, name: string) {
+  const menu = page.getByRole("button", {
+    name: "Abrir navegação",
+    exact: true,
+  });
+  if (await menu.isVisible()) await menu.click();
+  await page.locator("nav").getByRole("button", { name, exact: true }).click();
+}
+test("acertos mostra baixas sem identificação e detalha pessoa e empresa", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+    const date = new Date().toISOString().slice(0, 10);
+    const base = {
+      tenant_id: "demo",
+      owner_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      deleted_at: null,
+      is_example: true,
+      direction: "expense",
+      category: "Materiais",
+      due_date: date,
+      contact_id: null,
+      supplier_id: null,
+      notes: "",
+    };
+    const payment = { date, account_id: null };
+    s.finance = [
+      {
+        ...base,
+        id: "unknown",
+        title: "Compra sem identificação",
+        amount_cents: 10000,
+        settled_date: null,
+        payments: [{ ...payment, id: "p1", amount_cents: 3000 }],
+      },
+      {
+        ...base,
+        id: "member",
+        title: "Compra paga pela pessoa",
+        amount_cents: 2000,
+        settled_date: date,
+        payments: [
+          {
+            ...payment,
+            id: "p2",
+            amount_cents: 2000,
+            payer_user_id: "member-112233",
+            allocations: [{ user_id: null, amount_cents: 2000 }],
+          },
+        ],
+      },
+      {
+        ...base,
+        id: "company",
+        title: "Compra paga pela empresa",
+        amount_cents: 4000,
+        settled_date: date,
+        payments: [
+          {
+            ...payment,
+            id: "p3",
+            amount_cents: 4000,
+            payer_user_id: null,
+            allocations: [{ user_id: null, amount_cents: 4000 }],
+          },
+        ],
+      },
+      {
+        ...base,
+        id: "income",
+        title: "Receita não identificada",
+        direction: "income",
+        amount_cents: 9000,
+        settled_date: date,
+        payments: [{ ...payment, id: "p4", amount_cents: 9000 }],
+      },
+    ];
+    s.settlements = [
+      {
+        ...base,
+        id: "settlement",
+        from_user_id: null,
+        to_user_id: "member-112233",
+        amount_cents: 500,
+        date,
+        notes: "Reembolso parcial",
+      },
+    ];
+    s.recurrences = [];
+    localStorage.setItem("atraction-demo-v1", JSON.stringify(s));
+  });
+  await page.reload();
+  await go(page, "Contas e DRE");
+  await expect(
+    page.getByRole("status").filter({ hasText: "sem identificação completa" }),
+  ).toContainText("1 despesa com 1 baixa");
+  await expect(
+    page.getByRole("status").filter({ hasText: "sem identificação completa" }),
+  ).toContainText(/R\$\s*30/);
+  await page
+    .getByRole("button", {
+      name: "Ver acertos de Membro indisponível (112233)",
+      exact: true,
+    })
+    .click();
+  let dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Compra paga pela pessoa");
+  await expect(dialog).toContainText(/Saldo atual: R\$\s*15/);
+  await expect(dialog).toContainText("Reembolso parcial");
+  await expect(dialog).not.toContainText("Compra paga pela empresa");
+  await dialog.getByRole("button", { name: "Fechar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Ver acertos de Empresa", exact: true })
+    .click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Compra paga pela empresa");
+  await expect(dialog).toContainText("Compra paga pela pessoa");
+  await expect(dialog).not.toContainText("Compra sem identificação");
+  await dialog.getByRole("button", { name: "Fechar", exact: true }).click();
+  await page
+    .getByRole("button", {
+      name: "Ver pagamentos sem identificação",
+      exact: true,
+    })
+    .click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Compra sem identificação");
+  await expect(dialog).not.toContainText("Receita não identificada");
+  await dialog
+    .getByRole("button", { name: "Identificar / corrigir baixa", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Corrigir quem pagou", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Salvar correção", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "Todos os pagamentos já foram identificados.",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Todas as despesas pagas estão identificadas." }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    )
+    .toBe(true);
+});

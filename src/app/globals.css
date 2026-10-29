@@ -4517,3 +4517,26 @@ tbody tr:hover {
 .management-overview .today-card p {
   margin: 12px 0 24px;
 }
+
+.settlement-card {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.settlement-card small {
+  display: block;
+  margin-top: 12px;
+}
+.attribution-identification {
+  margin: 16px 0;
+  padding: 16px;
+  background: #f7f5fc;
+  border-radius: 12px;
+}
+.attribution-payment {
+  border-top: 1px solid #eee9f3;
+  padding: 16px 0;
+  overflow-wrap: anywhere;
+}
+.attribution-payment p {
+  margin: 8px 0;
+}

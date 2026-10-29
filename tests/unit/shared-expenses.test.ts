@@ -121,3 +121,80 @@ describe("company reimbursements", () => {
     expect(Object.fromEntries(sharedBalances(s))).toEqual({});
   });
 });
+
+describe("payment identification details", () => {
+  it("distinguishes explicit company ownership from missing identification and includes partial payments", async () => {
+    const { expensePaymentDetails } =
+      await import("../../src/lib/shared-expenses");
+    const p = {
+      id: "p",
+      date: "2026-10-29",
+      amount_cents: 2000,
+      account_id: null,
+    };
+    const row = {
+      id: "expense",
+      title: "Expense",
+      direction: "expense",
+      deleted_at: null,
+      amount_cents: 10000,
+      payments: [p],
+    };
+    const rows = [
+      row,
+      {
+        ...row,
+        id: "company",
+        payments: [
+          {
+            ...p,
+            payer_user_id: null,
+            allocations: [{ user_id: null, amount_cents: 2000 }],
+          },
+        ],
+      },
+      {
+        ...row,
+        id: "missing-owner",
+        payments: [{ ...p, payer_user_id: "member" }],
+      },
+      { ...row, id: "income", direction: "income" },
+      { ...row, id: "deleted", deleted_at: "2026-10-29" },
+    ] as unknown as Parameters<typeof expensePaymentDetails>[0];
+    const details = expensePaymentDetails(rows);
+    expect(details).toHaveLength(3);
+    expect(details.find((d) => d.entry.id === "expense")).toMatchObject({
+      missingPayer: true,
+      missingOwner: true,
+    });
+    expect(details.find((d) => d.entry.id === "company")).toMatchObject({
+      missingPayer: false,
+      missingOwner: false,
+    });
+    expect(details.find((d) => d.entry.id === "missing-owner")).toMatchObject({
+      missingPayer: false,
+      missingOwner: true,
+    });
+  });
+  it("does not silently assign an unidentified payer to the company", () => {
+    const state = {
+      finance: [
+        {
+          direction: "expense",
+          deleted_at: null,
+          payments: [
+            {
+              id: "p",
+              date: "2026-10-29",
+              amount_cents: 2000,
+              account_id: null,
+              allocations: [{ user_id: "member", amount_cents: 2000 }],
+            },
+          ],
+        },
+      ],
+      settlements: [],
+    } as unknown as Parameters<typeof sharedBalances>[0];
+    expect(Object.fromEntries(sharedBalances(state))).toEqual({});
+  });
+});

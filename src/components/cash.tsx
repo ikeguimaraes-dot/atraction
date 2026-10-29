@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
-import type { Account } from "@/lib/types";
+import { PaymentModal } from "./payment-modal";
+import type { Account, FinanceEntry } from "@/lib/types";
 import { accountBalance, dre, dreLines, payments } from "@/lib/payments";
 import { categoryGroup, dreLabels } from "@/lib/finance-categories";
 import { cents, today } from "@/lib/finance";
@@ -14,6 +15,7 @@ import {
   participantId,
   participantKey,
   sharedBalances,
+  expensePaymentDetails,
 } from "@/lib/shared-expenses";
 import { useTeamMembers } from "@/lib/use-team-members";
 export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
@@ -22,9 +24,35 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
     "account" | "transfer" | "settlement" | null
   >(null);
   const members = useTeamMembers(s.tenant.id);
+  const details = expensePaymentDetails(s.finance);
+  const unidentified = details.filter((d) => d.missingPayer || d.missingOwner);
+  const unidentifiedExpenses = new Set(unidentified.map((d) => d.entry.id))
+    .size;
+  const [selectedPerson, setSelectedPerson] = useState<string | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<FinanceEntry | null>(
+    null,
+  );
+  const historicalIds = new Set(
+    [
+      ...details.flatMap((d) => [
+        d.payment.payer_user_id,
+        ...(d.payment.allocations || []).map((a) => a.user_id),
+      ]),
+      ...alive(s.settlements).flatMap((item) => [
+        item.from_user_id,
+        item.to_user_id,
+      ]),
+    ].filter((id): id is string => !!id),
+  );
   const people = [
     { key: companyKey, label: "Empresa" },
     ...members.map((m) => ({ key: m.user_id, label: m.email })),
+    ...[...historicalIds]
+      .filter((id) => !members.some((m) => m.user_id === id))
+      .map((id) => ({
+        key: id,
+        label: `Membro indisponível (${id.slice(-6)})`,
+      })),
   ];
   const personLabel = (id: string | null) =>
     people.find((p) => p.key === participantKey(id))?.label ||
@@ -36,6 +64,64 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const result = dre(s, from, to);
+  const paidBy = details.filter(
+    (d) =>
+      !d.missingPayer &&
+      participantKey(d.payment.payer_user_id!) === selectedPerson,
+  );
+  const ownedBy = details.filter((d) =>
+    d.payment.allocations?.some(
+      (a) => participantKey(a.user_id) === selectedPerson,
+    ),
+  );
+  const personSettlements = alive(s.settlements).filter(
+    (item) =>
+      participantKey(item.from_user_id) === selectedPerson ||
+      participantKey(item.to_user_id) === selectedPerson,
+  );
+  const renderPayments = (items: typeof details) =>
+    items.map(({ entry, payment, missingPayer, missingOwner }) => (
+      <article
+        className="attribution-payment"
+        key={`${entry.id}:${payment.id}`}
+      >
+        <strong>{entry.title}</strong>
+        <p>
+          {money(payment.amount_cents / 100)} · Baixa em{" "}
+          {payment.date.split("-").reverse().join("/")}
+        </p>
+        <p>
+          Quem pagou:{" "}
+          {missingPayer
+            ? "Não identificado"
+            : personLabel(payment.payer_user_id ?? null)}
+        </p>
+        <p>
+          De quem é a despesa:{" "}
+          {missingOwner
+            ? "Não identificado"
+            : payment
+                .allocations!.map(
+                  (a) =>
+                    `${personLabel(a.user_id)} (${money(a.amount_cents / 100)})`,
+                )
+                .join("; ")}
+        </p>
+        <p>
+          Conta da baixa:{" "}
+          {s.accounts.find((a) => a.id === payment.account_id)?.name ||
+            "Sem conta vinculada"}
+        </p>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setSelectedPayment(entry)}
+        >
+          {s.role === "owner" ? "Identificar / corrigir baixa" : "Ver baixa"}
+        </button>
+      </article>
+    ));
+
   return (
     <>
       <SectionTitle
@@ -239,11 +325,53 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </button>
           }
         />
+        <p className="management-hint">
+          Acertos acumulados de todo o histórico. Despesas sem identificação
+          completa não entram no saldo dos cards até serem identificadas.
+        </p>
+        <div className="attribution-identification" role="status">
+          {unidentified.length ? (
+            <>
+              <p>
+                <strong>
+                  {unidentifiedExpenses}{" "}
+                  {unidentifiedExpenses === 1 ? "despesa" : "despesas"} com{" "}
+                  {unidentified.length}{" "}
+                  {unidentified.length === 1 ? "baixa" : "baixas"} sem
+                  identificação completa
+                </strong>{" "}
+                ·{" "}
+                {money(
+                  unidentified.reduce(
+                    (sum, d) => sum + d.payment.amount_cents,
+                    0,
+                  ) / 100,
+                )}
+              </p>
+              <p>Falta informar quem pagou ou de quem é a despesa.</p>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setSelectedPerson("unidentified")}
+              >
+                Ver pagamentos sem identificação
+              </button>
+            </>
+          ) : (
+            <p>Todas as despesas pagas estão identificadas.</p>
+          )}
+        </div>
         <div className="customer-grid">
           {people.map((person) => {
             const balance = balances.get(person.key) || 0;
             return (
-              <div className="card" key={person.key}>
+              <button
+                type="button"
+                className="card customer-card settlement-card"
+                key={person.key}
+                aria-label={`Ver acertos de ${person.label}`}
+                onClick={() => setSelectedPerson(person.key)}
+              >
                 <strong>{person.label}</strong>
                 <p>
                   {balance > 0
@@ -253,7 +381,8 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
                       : "Está acertado"}
                 </p>
                 <strong>{money(Math.abs(balance) / 100)}</strong>
-              </div>
+                <small>Ver despesas e acertos</small>
+              </button>
             );
           })}
         </div>
@@ -580,6 +709,69 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
             </footer>
           </form>
         </Modal>
+      )}
+      {selectedPerson !== null && !selectedPayment && (
+        <Modal
+          title={
+            selectedPerson === "unidentified"
+              ? "Pagamentos sem identificação"
+              : `Acertos de ${people.find((p) => p.key === selectedPerson)?.label || "membro"}`
+          }
+          onClose={() => setSelectedPerson(null)}
+          wide
+        >
+          {selectedPerson === "unidentified" ? (
+            <>
+              {renderPayments(unidentified)}
+              {!unidentified.length && (
+                <p>Todos os pagamentos já foram identificados.</p>
+              )}
+            </>
+          ) : (
+            <>
+              <p>
+                Saldo atual:{" "}
+                {money(Math.abs(balances.get(selectedPerson) || 0) / 100)} ·{" "}
+                {(balances.get(selectedPerson) || 0) > 0
+                  ? "A receber"
+                  : (balances.get(selectedPerson) || 0) < 0
+                    ? "A pagar"
+                    : "Acertado"}
+              </p>
+              <h3>
+                Despesas pagas por{" "}
+                {people.find((p) => p.key === selectedPerson)?.label}
+              </h3>
+              {renderPayments(paidBy)}
+              {!paidBy.length && (
+                <p>Nenhuma despesa paga por este participante.</p>
+              )}
+              <h3>Despesas de responsabilidade deste participante</h3>
+              {renderPayments(ownedBy)}
+              {!ownedBy.length && (
+                <p>Nenhuma despesa atribuída a este participante.</p>
+              )}
+              <h3>Acertos registrados</h3>
+              {personSettlements.map((item) => (
+                <p key={item.id}>
+                  {item.date.split("-").reverse().join("/")} ·{" "}
+                  {personLabel(item.from_user_id)} →{" "}
+                  {personLabel(item.to_user_id)} ·{" "}
+                  {money(item.amount_cents / 100)}
+                  {item.notes ? ` · ${item.notes}` : ""}
+                </p>
+              ))}
+              {!personSettlements.length && <p>Nenhum acerto registrado.</p>}
+            </>
+          )}
+        </Modal>
+      )}
+      {selectedPayment && (
+        <PaymentModal
+          w={w}
+          entry={selectedPayment}
+          onClose={() => setSelectedPayment(null)}
+        />
       )}
     </>
   );
