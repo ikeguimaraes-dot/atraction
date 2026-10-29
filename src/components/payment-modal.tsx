@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import type { useWorkspace } from "@/lib/use-workspace";
-import type { FinanceEntry } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
+import { withPaymentPayer } from "@/lib/payment-payer";
+import type { Payment, FinanceEntry } from "@/lib/types";
 import { remaining, payments } from "@/lib/payments";
 import { recordPayment } from "@/lib/operations";
 import { cents, today } from "@/lib/finance";
@@ -207,6 +209,15 @@ export function PaymentModal({
                 ))}
               </small>
             </span>
+            {f.direction === "expense" && canSettle && (
+              <PaymentPayerEditor
+                key={JSON.stringify(p)}
+                w={w}
+                entry={f}
+                payment={p}
+                participants={participants}
+              />
+            )}
             <button
               type="button"
               className="secondary"
@@ -228,5 +239,151 @@ export function PaymentModal({
         )}
       </form>
     </Modal>
+  );
+}
+
+function PaymentPayerEditor({
+  w,
+  entry,
+  payment,
+  participants,
+}: {
+  w: ReturnType<typeof useWorkspace>;
+  entry: FinanceEntry;
+  payment: Payment;
+  participants: { key: string; label: string }[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [payer, setPayer] = useState(payment.payer_user_id || companyKey);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  if (!editing)
+    return (
+      <button
+        type="button"
+        className="secondary"
+        disabled={w.busy}
+        onClick={() => setEditing(true)}
+      >
+        Corrigir quem pagou
+      </button>
+    );
+  return (
+    <div className="form">
+      <label>
+        Quem pagou esta baixa
+        <select
+          value={payer}
+          onChange={(e) => setPayer(e.target.value)}
+          disabled={saving}
+        >
+          {!participants.some((p) => p.key === payer) && (
+            <option value={payer} disabled>
+              Membro indisponível — escolha outro pagador
+            </option>
+          )}
+          {participants.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p>
+        O valor, a data e a conta da baixa serão mantidos. O saldo de reembolso
+        será recalculado.
+      </p>
+      {!payment.allocations && (
+        <p>
+          Esta baixa ainda não tem responsável informado. A despesa será
+          atribuída à empresa.
+        </p>
+      )}
+      <button
+        type="button"
+        className="primary"
+        disabled={saving || w.busy}
+        onClick={async () => {
+          setSaving(true);
+          setError("");
+          try {
+            if (
+              w.state?.role !== "owner" ||
+              w.switching ||
+              w.allSelected ||
+              w.state.tenant.id !== entry.tenant_id
+            )
+              throw new Error("Somente donos podem corrigir o pagador.");
+            if (!participants.some((p) => p.key === payer))
+              throw new Error("Escolha um pagador desta empresa.");
+            const corrected = withPaymentPayer(payment, participantId(payer));
+            if (w.userId) {
+              const { error } = await supabase().rpc(
+                "atraction_correct_payment_payer",
+                {
+                  entry_id: entry.id,
+                  payment_id: payment.id,
+                  expected: payment,
+                  payer: participantId(payer),
+                },
+              );
+              if (error) throw error;
+              await w.read(w.userId);
+            } else {
+              const current = w.state.finance.find((f) => f.id === entry.id);
+              if (
+                !current ||
+                JSON.stringify(
+                  payments(current).find((p) => p.id === payment.id),
+                ) !== JSON.stringify(payment)
+              )
+                throw new Error(
+                  "Esta baixa foi alterada. Feche e abra novamente.",
+                );
+              w.setState((s) =>
+                s
+                  ? {
+                      ...s,
+                      finance: s.finance.map((f) =>
+                        f.id === entry.id
+                          ? {
+                              ...f,
+                              payments: payments(f).map((p) =>
+                                p.id === payment.id ? corrected : p,
+                              ),
+                            }
+                          : f,
+                      ),
+                    }
+                  : s,
+              );
+            }
+            w.notify("Pagador corrigido. A baixa foi mantida.");
+            setEditing(false);
+          } catch (err) {
+            setError(
+              (err as Error).message || "Não foi possível corrigir o pagador.",
+            );
+          } finally {
+            setSaving(false);
+          }
+        }}
+      >
+        {saving ? "Salvando…" : "Salvar pagador"}
+      </button>
+      <button
+        type="button"
+        className="secondary"
+        disabled={saving}
+        onClick={() => setEditing(false)}
+      >
+        Cancelar correção
+      </button>
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

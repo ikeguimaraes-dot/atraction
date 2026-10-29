@@ -844,6 +844,14 @@ export function Finance({
           direction={typeof editing === "string" ? editing : editing.direction}
           contact={contact}
           onClose={() => setEditing(null)}
+          onPayments={
+            typeof editing === "object"
+              ? () => {
+                  setSettling(editing);
+                  setEditing(null);
+                }
+              : undefined
+          }
         />
       )}
       {settling && (
@@ -862,12 +870,14 @@ export function EntryForm({
   direction,
   contact,
   onClose,
+  onPayments,
 }: {
   w: Work;
   value?: FinanceEntry;
   direction: "income" | "expense";
   contact: string;
   onClose: () => void;
+  onPayments?: () => void;
 }) {
   const s = w.state!;
   const [data, setData] = useState<FinanceEntry>(
@@ -1241,6 +1251,14 @@ export function EntryForm({
             )}
           </section>
         )}
+        {value &&
+          direction === "expense" &&
+          payments(value).length > 0 &&
+          onPayments && (
+            <button type="button" className="secondary" onClick={onPayments}>
+              {s.role === "owner" ? "Corrigir quem pagou" : "Consultar baixas"}
+            </button>
+          )}
         {value && (
           <p className="management-hint">
             As alterações e baixas afetam somente este lançamento.

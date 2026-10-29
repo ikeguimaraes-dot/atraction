@@ -63,6 +63,15 @@ export type Database = {
     };
     Views: Record<never, never>;
     Functions: {
+      atraction_correct_payment_payer: {
+        Args: {
+          entry_id: string;
+          payment_id: string;
+          expected: import("./types").Payment;
+          payer: string | null;
+        };
+        Returns: undefined;
+      };
       atraction_edit_expense_purchase: {
         Args: {
           entry_id: string;

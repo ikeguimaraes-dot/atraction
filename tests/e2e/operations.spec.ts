@@ -108,3 +108,77 @@ test("baixa identifica pagador e responsável pela despesa", async ({
     page.getByRole("button", { name: "Estornar baixa" }),
   ).toHaveCount(0);
 });
+
+test("corrige pagador de despesa paga pelo editor sem estornar", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("atraction-demo-v1")!);
+    const date = new Date().toISOString().slice(0, 10);
+    s.finance = [
+      {
+        id: "paid-expense",
+        tenant_id: "demo",
+        owner_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        deleted_at: null,
+        is_example: true,
+        title: "Despesa paga teste",
+        direction: "expense",
+        amount_cents: 55000,
+        category: "Materiais",
+        due_date: date,
+        settled_date: date,
+        payments: [
+          {
+            id: "existing-payment",
+            date,
+            amount_cents: 55000,
+            account_id: null,
+          },
+        ],
+        contact_id: null,
+        supplier_id: null,
+        notes: "",
+      },
+    ];
+    s.recurrences = [];
+    localStorage.setItem("atraction-demo-v1", JSON.stringify(s));
+  });
+  await page.reload();
+  await go(page, "Financeiro");
+  await page.getByRole("tab", { name: "Despesas", exact: true }).click();
+  const row = page
+    .locator(".ledger-row")
+    .filter({ hasText: "Despesa paga teste" });
+  await row
+    .getByRole("button", { name: "Editar Despesa paga teste", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Corrigir quem pagou", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Corrigir quem pagou", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Quem pagou esta baixa", exact: true })
+    .selectOption("company");
+  await page
+    .getByRole("button", { name: "Salvar pagador", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Pago por Empresa");
+  const saved = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("atraction-demo-v1")!).finance[0],
+  );
+  expect(saved.payments).toHaveLength(1);
+  expect(saved.payments[0]).toMatchObject({
+    id: "existing-payment",
+    amount_cents: 55000,
+    account_id: null,
+    payer_user_id: null,
+    allocations: [{ user_id: null, amount_cents: 55000 }],
+  });
+  expect(saved.settled_date).toBe(saved.payments[0].date);
+});
