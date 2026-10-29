@@ -120,19 +120,58 @@ test("acertos mostra baixas sem identificação e detalha pessoa e empresa", asy
     localStorage.setItem("atraction-demo-v1", JSON.stringify(s));
   });
   await page.reload();
-  const overview = page.locator(".finance-summary");
+  const overview = page.getByRole("region", {
+    name: "Resumo financeiro da visão geral",
+  });
   await expect(
     overview
-      .locator(".card")
-      .filter({ hasText: "A receber no mês" })
+      .getByRole("button", { name: "A receber no mês", exact: true })
       .locator("strong"),
   ).toContainText(/R\$\s*0/);
   await expect(
     overview
-      .locator(".card")
-      .filter({ hasText: "A pagar no mês" })
+      .getByRole("button", { name: "Contas a pagar no mês", exact: true })
       .locator("strong"),
   ).toContainText(/R\$\s*70/);
+  await expect(
+    overview
+      .getByRole("button", { name: "Contas em aberto", exact: true })
+      .locator("strong"),
+  ).toContainText(/R\$\s*190/);
+  await expect(
+    overview
+      .getByRole("button", { name: "Despesas do mês", exact: true })
+      .locator("strong"),
+  ).toContainText(/R\$\s*160/);
+  await expect(
+    overview.getByRole("button", { name: "Prejuízo do mês", exact: true }),
+  ).toHaveClass(/negative/);
+  await expect(
+    overview.getByRole("button", { name: "Receitas do mês", exact: true }),
+  ).toHaveClass(/positive/);
+  await page.screenshot({
+    path: test.info().outputPath("overview-redesign.png"),
+    fullPage: true,
+  });
+  await overview
+    .getByRole("button", { name: "Contas em aberto", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("Despesa futura");
+  await expect(page.getByRole("dialog")).toContainText(
+    "Compra sem identificação",
+  );
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
+  await overview
+    .getByRole("button", { name: "Contas a pagar no mês", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).not.toContainText("Despesa futura");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Fechar", exact: true })
+    .click();
   await go(page, "Contas e DRE");
   const cash = page.getByRole("region", {
     name: "Caixa da empresa",

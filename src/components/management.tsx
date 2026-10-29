@@ -43,22 +43,13 @@ export function FinancialSummary({
   from = "",
   to = "",
   pendingOnly = false,
-  overviewMonth,
 }: {
   rows: FinanceEntry[];
   from?: string;
   to?: string;
   pendingOnly?: boolean;
-  overviewMonth?: string;
 }) {
   const b = balance(rows, from, to);
-  const pending = overviewMonth
-    ? balance(
-        rows,
-        `${overviewMonth}-01`,
-        `${overviewMonth}-${new Date(Number(overviewMonth.slice(0, 4)), Number(overviewMonth.slice(5)), 0).getDate()}`,
-      )
-    : b;
   if (pendingOnly)
     return (
       <section
@@ -85,34 +76,15 @@ export function FinancialSummary({
   return (
     <div className="finance-summary">
       {[
-        [
-          overviewMonth ? "Recebido (acumulado)" : "Recebido",
-          b.received,
-          "income",
-        ],
-        [overviewMonth ? "Pago (acumulado)" : "Pago", b.paid, "expense"],
-        [
-          overviewMonth
-            ? "Saldo dos lançamentos (acumulado)"
-            : "Saldo dos lançamentos",
-          b.net,
-          "",
-        ],
-        [
-          overviewMonth ? "A receber no mês" : "A receber",
-          pending.receivable,
-          "",
-        ],
-        [overviewMonth ? "A pagar no mês" : "A pagar", pending.payable, ""],
+        ["Recebido", b.received, "income"],
+        ["Pago", b.paid, "expense"],
+        ["Saldo dos lançamentos", b.net, ""],
+        ["A receber", b.receivable, ""],
+        ["A pagar", b.payable, ""],
       ].map(([title, value, color]) => (
         <div className={`card ${color}`} key={title}>
           <small>{title}</small>
           <strong>{money(Number(value) / 100)}</strong>
-          {overviewMonth && String(title).endsWith("no mês") && (
-            <small>
-              Vencimentos de {overviewMonth.split("-").reverse().join("/")}
-            </small>
-          )}
         </div>
       ))}
     </div>

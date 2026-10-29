@@ -1,5 +1,5 @@
 "use client";
-import { today } from "@/lib/finance";
+import { OverviewFinance } from "./overview-finance";
 import { demo } from "@/lib/demo";
 import { alive, csvSafe } from "@/lib/domain";
 import { pt } from "@/lib/pt";
@@ -345,13 +345,20 @@ export function Workspace() {
                     subtitle="Clientes, contratos e finanças em um só lugar."
                   />
                   {canManage && (
-                    <FinancialSummary
-                      rows={s.finance}
-                      overviewMonth={today().slice(0, 7)}
+                    <OverviewFinance
+                      state={s}
+                      onFinance={() => {
+                        setFinanceContact("");
+                        setFinanceSupplier("");
+                        go("finance");
+                      }}
                     />
                   )}
                   <div className="today-grid management-overview">
                     <section className="card today-card">
+                      <span className="overview-shortcut-icon">
+                        <Heart size={22} aria-hidden="true" />
+                      </span>
                       <h2>Clientes</h2>
                       <p>
                         {
@@ -365,6 +372,9 @@ export function Workspace() {
                       </CardLink>
                     </section>
                     <section className="card today-card">
+                      <span className="overview-shortcut-icon">
+                        <CalendarDays size={22} aria-hidden="true" />
+                      </span>
                       <h2>Agenda</h2>
                       <p>{pending.length} tarefas pendentes</p>
                       <CardLink onClick={() => go("calendar")}>
@@ -373,6 +383,9 @@ export function Workspace() {
                     </section>
                     {canManage && (
                       <section className="card today-card">
+                        <span className="overview-shortcut-icon">
+                          <FileText size={22} aria-hidden="true" />
+                        </span>
                         <h2>Contratos</h2>
                         <p>
                           {
