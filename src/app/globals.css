@@ -5014,44 +5014,35 @@ tbody tr:hover {
   }
 }
 
-.finance-cash-card {
+.finance-accumulated-card {
   padding: 24px;
   margin: 20px 0;
 }
-.finance-cash-card h3 {
+.finance-accumulated-card h3 {
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 0;
 }
-.finance-cash-values {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+.finance-accumulated-values {
   margin: 20px 0;
 }
-.finance-cash-values > div,
-.finance-cash-breakdown {
+.finance-accumulated-values > div,
+.finance-accumulated-breakdown {
   display: grid;
   gap: 8px;
   min-width: 0;
 }
-.finance-cash-values strong {
+.finance-accumulated-values strong {
   font-size: clamp(24px, 3vw, 32px);
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.finance-cash-values small {
+.finance-accumulated-values small {
   color: #746583;
   line-height: 1.6;
 }
-@media (max-width: 700px) {
-  .finance-cash-values {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .company-cash-summary {
   margin: 28px 0;
   padding-bottom: 28px;

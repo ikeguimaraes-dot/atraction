@@ -178,7 +178,7 @@ test("cards mensais somam valores cadastrados por vencimento, inclusive baixados
     .toBe(true);
 });
 
-test("caixa compensa prejuízos anteriores e separa lucro de dinheiro recebido", async ({
+test("lucro acumulado compensa prejuízos anteriores sem exibir saldo em caixa", async ({
   page,
 }) => {
   await page.goto("/");
@@ -289,15 +289,16 @@ test("caixa compensa prejuízos anteriores e separa lucro de dinheiro recebido",
     .click();
   const month = page.getByLabel("Mês de referência");
   const card = page.getByRole("region", {
-    name: "Caixa da empresa",
+    name: "Lucro acumulado da empresa",
     exact: true,
   });
   const result = card.getByLabel("Resultado acumulado", { exact: true });
-  const cash = card.getByLabel("Saldo em caixa", { exact: true });
+  await expect(page.getByLabel("Saldo em caixa", { exact: true })).toHaveCount(
+    0,
+  );
   await month.fill("2028-09");
   await expect(result).toContainText("Prejuízo acumulado");
   await expect(result.locator("strong")).toContainText(/-R\$\s*100(?:,00)?/);
-  await expect(cash.locator("strong")).toContainText(/R\$\s*0(?:,00)?/);
   await month.fill("2028-10");
   await expect(
     page.getByLabel("Lucro calculado", { exact: true }),
@@ -306,13 +307,11 @@ test("caixa compensa prejuízos anteriores e separa lucro de dinheiro recebido",
   await expect(result.locator("strong")).toContainText(/R\$\s*50(?:,00)?/);
   await expect(result).toContainText(/Resultado anterior: -R\$\s*100(?:,00)?/);
   await expect(result).toContainText(/Resultado no período: R\$\s*150(?:,00)?/);
-  await expect(cash.locator("strong")).toContainText(/R\$\s*100(?:,00)?/);
   await page.getByRole("tab", { name: "Despesas", exact: true }).click();
   await page.getByLabel("Buscar lançamento").fill("Sem resultados");
   await expect(result.locator("strong")).toContainText(/R\$\s*50(?:,00)?/);
   await month.fill("2028-11");
   await expect(result.locator("strong")).toContainText(/R\$\s*130(?:,00)?/);
-  await expect(cash.locator("strong")).toContainText(/R\$\s*100(?:,00)?/);
   await page
     .getByRole("combobox", { name: "Filtro de datas", exact: true })
     .selectOption("period");
