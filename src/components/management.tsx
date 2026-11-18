@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { FinanceCategory } from "./finance-category";
+import { FinanceCashSummary } from "./finance-cash-summary";
 import { ContactForm } from "./forms";
 import { PaymentModal } from "./payment-modal";
 import { Recurrences } from "./recurrences";
@@ -615,6 +616,9 @@ export function Finance({
         parcela. Os totais incluem o valor integral, inclusive dos lançamentos
         já baixados.
       </p>
+      {validPeriod && (
+        <FinanceCashSummary state={s} from={from} until={to || today()} />
+      )}
       <FinancialSummary
         rows={validPeriod ? s.finance : []}
         from={from}
