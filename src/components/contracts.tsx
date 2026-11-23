@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Plus, FileText } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, FileText, Upload } from "lucide-react";
 import { ContractDocuments } from "./contract-documents";
 import type { Contract, Deal } from "@/lib/types";
 import type { useWorkspace } from "@/lib/use-workspace";
@@ -9,6 +9,10 @@ import { addDays, addMonths, schedule } from "@/lib/journey";
 import { today, cents } from "@/lib/finance";
 import { alive, money } from "@/lib/domain";
 import { Modal, SectionTitle, Empty } from "./ui";
+import {
+  attachContractPdf,
+  validateContractPdf,
+} from "@/lib/contract-documents";
 type Work = ReturnType<typeof useWorkspace>;
 export function Contracts({
   w,
@@ -27,6 +31,8 @@ export function Contracts({
   const j = useJourney(w);
   const [creating, setCreating] = useState(!!initialDeal);
   const [renew, setRenew] = useState<Contract>();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadContractId, setUploadContractId] = useState("");
   const [change, setChange] = useState<{
     contract: Contract;
     action: "adjust" | "cancel";
@@ -35,7 +41,11 @@ export function Contracts({
   const [effective, setEffective] = useState(today());
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const rows = alive(s.contracts).filter((c) =>
+  const availableContracts = alive(s.contracts);
+  const selectedUpload = availableContracts.find(
+    (contract) => contract.id === uploadContractId,
+  );
+  const rows = availableContracts.filter((c) =>
     `${c.title} ${c.plan} ${c.supplier_id ? s.suppliers.find((p) => p.id === c.supplier_id)?.name : s.contacts.find((p) => p.id === c.contact_id)?.name}`
       .toLowerCase()
       .includes(query.toLowerCase()),
@@ -46,15 +56,26 @@ export function Contracts({
         title="Contratos de clientes e fornecedores"
         subtitle="Organize seus contratos e acompanhe as contas a receber de clientes e a pagar a fornecedores."
         action={
-          <button
-            className="primary"
-            onClick={() => {
-              setRenew(undefined);
-              setCreating(true);
-            }}
-          >
-            <Plus size={18} /> Novo contrato
-          </button>
+          <div className="management-actions">
+            <button
+              className="secondary"
+              onClick={() => {
+                setUploadContractId("");
+                setUploadOpen(true);
+              }}
+            >
+              <Upload size={18} /> Enviar contrato PDF
+            </button>
+            <button
+              className="primary"
+              onClick={() => {
+                setRenew(undefined);
+                setCreating(true);
+              }}
+            >
+              <Plus size={18} /> Novo contrato
+            </button>
+          </div>
         }
       />
       <div className="management-toolbar">
@@ -179,13 +200,77 @@ export function Contracts({
           text="Escolha cliente ou fornecedor e crie um contrato à vista, parcelado ou mensal. Os lançamentos financeiros são gerados automaticamente."
         />
       )}
+      {uploadOpen && (
+        <Modal title="Enviar contrato PDF" onClose={() => setUploadOpen(false)}>
+          <div className="form">
+            {availableContracts.length ? (
+              <>
+                <label>
+                  Contrato
+                  <select
+                    value={uploadContractId}
+                    onChange={(event) =>
+                      setUploadContractId(event.target.value)
+                    }
+                  >
+                    <option value="">
+                      Escolha o contrato que receberá o PDF
+                    </option>
+                    {availableContracts.map((contract) => (
+                      <option key={contract.id} value={contract.id}>
+                        {contract.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedUpload && (
+                  <ContractDocuments
+                    key={uploadContractId}
+                    w={w}
+                    contract={selectedUpload}
+                  />
+                )}
+              </>
+            ) : (
+              <p>
+                Cadastre os dados do contrato e selecione o PDF no mesmo
+                formulário.
+              </p>
+            )}
+            <button
+              className="secondary"
+              onClick={() => {
+                setUploadOpen(false);
+                setRenew(undefined);
+                setCreating(true);
+              }}
+            >
+              Cadastrar contrato e enviar PDF
+            </button>
+          </div>
+        </Modal>
+      )}
       {creating && (
         <ContractForm
           w={w}
           deal={renew ? undefined : initialDeal}
           renew={renew}
           busy={j.busy}
-          onSave={j.create}
+          onSave={async (contract, file) => {
+            if (!(await j.create(contract))) return false;
+            if (file) {
+              try {
+                await attachContractPdf(w, contract, file);
+              } catch (err) {
+                w.notify(
+                  `Contrato cadastrado, mas o PDF não foi anexado: ${(err as Error).message}`,
+                );
+                setUploadContractId(contract.id);
+                setUploadOpen(true);
+              }
+            }
+            return true;
+          }}
           onClose={() => {
             setCreating(false);
             setRenew(undefined);
@@ -304,7 +389,7 @@ function ContractForm({
   deal?: Deal;
   renew?: Contract;
   busy: boolean;
-  onSave: (c: Contract) => Promise<boolean>;
+  onSave: (c: Contract, file?: File) => Promise<boolean>;
   onClose: () => void;
 }) {
   const [data, setData] = useState<Contract>(() => {
@@ -340,6 +425,9 @@ function ContractForm({
     renew?.supplier_id ? "supplier" : "customer",
   );
   const [preview, setPreview] = useState(false);
+  const [file, setFile] = useState<File>();
+  const [saving, setSaving] = useState(false);
+  const submitLock = useRef(false);
   const [error, setError] = useState("");
   function validate() {
     const c = {
@@ -379,20 +467,30 @@ function ContractForm({
             ? "Continuar a jornada da venda"
             : "Novo contrato"
       }
-      onClose={onClose}
+      onClose={() => {
+        if (!busy && !saving) onClose();
+      }}
       wide
     >
       <form
         className="form"
         onSubmit={async (e) => {
           e.preventDefault();
+          if (submitLock.current) return;
+          submitLock.current = true;
+          setSaving(true);
           setError("");
           try {
             const c = validate();
+            if (file)
+              await validateContractPdf(file, w.state!.tenant.id === "demo");
             if (!preview) setPreview(true);
-            else if (await onSave(c)) onClose();
+            else if (await onSave(c, file)) onClose();
           } catch (err) {
             setError((err as Error).message);
+          } finally {
+            submitLock.current = false;
+            setSaving(false);
           }
         }}
       >
@@ -550,9 +648,18 @@ function ContractForm({
                 />
               </label>
             </div>
-            <p>
-              Após confirmar, você poderá anexar o PDF no cartão do contrato.
-            </p>
+            <label>
+              Arquivo do contrato (PDF)
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(event) => setFile(event.target.files?.[0])}
+              />
+            </label>
+            <small>
+              {file ? `Selecionado: ${file.name}. ` : ""}
+              Opcional. PDF de até 5 MB, salvo junto ao cadastro do contrato.
+            </small>
             <label>
               Condições e anotações
               <textarea
@@ -564,6 +671,11 @@ function ContractForm({
         ) : (
           <>
             <h3>Confira antes de confirmar</h3>
+            {file && (
+              <p>
+                PDF selecionado: <strong>{file.name}</strong>
+              </p>
+            )}
             <p>
               {partyType === "supplier"
                 ? `Serão criadas ${planned.length} conta(s) a pagar para o fornecedor. Nenhum valor será marcado como pago.`
@@ -602,12 +714,17 @@ function ContractForm({
           <button
             type="button"
             className="secondary"
+            disabled={busy || saving}
             onClick={() => (preview ? setPreview(false) : onClose())}
           >
             {preview ? "Revisar" : "Cancelar"}
           </button>
-          <button className="primary" disabled={busy}>
-            {preview ? "Confirmar contrato e cobranças" : "Ver prévia"}
+          <button className="primary" disabled={busy || saving}>
+            {saving
+              ? "Salvando…"
+              : preview
+                ? "Confirmar contrato e cobranças"
+                : "Ver prévia"}
           </button>
         </footer>
       </form>

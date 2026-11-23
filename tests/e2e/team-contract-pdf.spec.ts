@@ -63,6 +63,64 @@ test("contrato aceita PDF, preserva após recarregar e permite baixar", async ({
   });
 });
 
+test("envio de PDF aparece no topo e no cadastro de novo contrato", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Seu negócio em dia" }),
+  ).toBeVisible();
+  await go(page, "Contratos");
+  await page
+    .getByRole("button", { name: "Enviar contrato PDF", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Cadastrar contrato e enviar PDF" })
+    .click();
+  const modal = page.getByRole("dialog");
+  await modal
+    .getByRole("combobox", { name: "Cliente", exact: true })
+    .selectOption({ label: "Mariana Costa" });
+  await modal
+    .getByLabel("Descrição do contrato")
+    .fill("Contrato enviado no cadastro");
+  await modal.getByLabel("Valor total (R$)").fill("200");
+  const input = modal.getByLabel("Arquivo do contrato (PDF)");
+  await input.setInputFiles({
+    name: "invalido.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("invalid"),
+  });
+  await modal.getByRole("button", { name: "Ver prévia" }).click();
+  await expect(modal.locator(".error[role=alert]")).toContainText("PDF válido");
+  await input.setInputFiles({
+    name: "cadastro.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n%%EOF"),
+  });
+  await modal.getByRole("button", { name: "Ver prévia" }).click();
+  await expect(modal).toContainText("PDF selecionado: cadastro.pdf");
+  await modal
+    .getByRole("button", { name: "Confirmar contrato e cobranças" })
+    .click();
+  await expect(modal).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Baixar PDF: cadastro.pdf" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Enviar contrato PDF", exact: true })
+    .click();
+  await page
+    .getByRole("dialog")
+    .getByRole("combobox", { name: "Contrato", exact: true })
+    .selectOption({ label: "Contrato enviado no cadastro" });
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByLabel("Anexar PDF ao contrato Contrato enviado no cadastro"),
+  ).toBeVisible();
+});
+
 test("dono cria usuário na empresa com senha, preservando sua sessão", async ({
   page,
 }) => {
