@@ -27,6 +27,13 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
   >(null);
   const members = useTeamMembers(s.tenant.id);
   const details = expensePaymentDetails(s.finance);
+  const companyPayments = details.filter(
+    (d) => d.payment.payer_user_id === null,
+  );
+  const companyPaymentsTotal = companyPayments.reduce(
+    (sum, d) => sum + d.payment.amount_cents,
+    0,
+  );
   const unidentified = details.filter((d) => d.missingPayer || d.missingOwner);
   const unidentifiedExpenses = new Set(unidentified.map((d) => d.entry.id))
     .size;
@@ -446,6 +453,30 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
           )}
         </div>
         <div className="customer-grid">
+          <button
+            type="button"
+            className="card customer-card settlement-card"
+            aria-label="Ver despesas pagas pela empresa"
+            onClick={() => setSelectedPerson("company-payments")}
+          >
+            <span className="settlement-avatar" aria-hidden="true">
+              E
+            </span>
+            <strong className="settlement-name">Empresa · Pagamentos</strong>
+            <p>Total de despesas pagas</p>
+            <strong className="settlement-amount">
+              {money(companyPaymentsTotal / 100)}
+            </strong>
+            {companyPayments[0] && (
+              <small>
+                Último pagamento em{" "}
+                {companyPayments[0].payment.date.split("-").reverse().join("/")}
+              </small>
+            )}
+            <small>
+              Ver despesas pagas <span aria-hidden="true">↗</span>
+            </small>
+          </button>
           {people.map((person) => {
             const balance = balances.get(person.key) || 0;
             return (
@@ -806,15 +837,32 @@ export function Cash({ w }: { w: ReturnType<typeof useWorkspace> }) {
       {selectedPerson !== null && !selectedPayment && (
         <Modal
           title={
-            selectedPerson === "unidentified"
-              ? "Pagamentos sem identificação"
-              : `Acertos de ${people.find((p) => p.key === selectedPerson)?.label || "membro"}`
+            selectedPerson === "company-payments"
+              ? "Despesas pagas pela empresa"
+              : selectedPerson === "unidentified"
+                ? "Pagamentos sem identificação"
+                : `Acertos de ${people.find((p) => p.key === selectedPerson)?.label || "membro"}`
           }
           onClose={() => setSelectedPerson(null)}
           wide
         >
           <div className="settlement-details">
-            {selectedPerson === "unidentified" ? (
+            {selectedPerson === "company-payments" ? (
+              <>
+                <p className="settlement-detail-balance">
+                  Total pago: {money(companyPaymentsTotal / 100)}
+                </p>
+                <p>
+                  Despesas pagas pela empresa em todo o histórico, incluindo
+                  baixas parciais. Reembolsos e acertos ficam no card de acertos
+                  da empresa.
+                </p>
+                {renderPayments(companyPayments)}
+                {!companyPayments.length && (
+                  <p>Nenhuma despesa paga pela empresa registrada.</p>
+                )}
+              </>
+            ) : selectedPerson === "unidentified" ? (
               <>
                 {renderPayments(unidentified)}
                 {!unidentified.length && (
