@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Plus, FileText } from "lucide-react";
+import { ContractDocuments } from "./contract-documents";
 import type { Contract, Deal } from "@/lib/types";
 import type { useWorkspace } from "@/lib/use-workspace";
 import { useJourney } from "@/lib/use-journey";
@@ -111,6 +112,7 @@ export function Contracts({
                     ? `em ${c.periods} parcelas`
                     : "à vista"}
               </strong>
+              <ContractDocuments w={w} contract={c} />
               <div className="management-actions journey-buttons">
                 {c.contact_id && (
                   <button
@@ -548,6 +550,9 @@ function ContractForm({
                 />
               </label>
             </div>
+            <p>
+              Após confirmar, você poderá anexar o PDF no cartão do contrato.
+            </p>
             <label>
               Condições e anotações
               <textarea

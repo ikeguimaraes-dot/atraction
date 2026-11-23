@@ -57,7 +57,9 @@ test("contrato mensal gera cliente, cobranças e pós-venda; reajusta e renova",
     .getByRole("button", { name: "Todos os meses", exact: true })
     .click();
   await expect(
-    page.locator(".ledger-row").filter({ hasText: "Recebido" }),
+    page
+      .locator(".ledger-row")
+      .filter({ has: page.getByText("Recebido", { exact: true }) }),
   ).toContainText("100,01");
   await expect(
     page.locator(".ledger-row").filter({ hasText: "120,01" }),

@@ -1,0 +1,6 @@
+project_id = "atraction"
+
+[functions.atraction-create-member]
+# The handler verifies the caller with Auth.getUser before checking company ownership.
+# This supports the project's current signing keys and publishable API keys.
+verify_jwt = false

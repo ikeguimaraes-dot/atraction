@@ -1,6 +1,6 @@
 "use client";
 import { ui } from "@/lib/pt-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Users, Plus, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { State } from "@/lib/types";
@@ -35,6 +35,10 @@ export function Team({
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [newAccount, setNewAccount] = useState(true);
+  const [error, setError] = useState("");
+  const adding = useRef(false);
+  const passwordHelp = useId();
   const isDemo = state.tenant.id === "demo";
   useEffect(() => {
     if (isDemo) return;
@@ -86,6 +90,8 @@ export function Team({
             <button
               className="secondary"
               onClick={() => {
+                setError("");
+                setNewAccount(true);
                 setOpen(true);
               }}
             >
@@ -154,47 +160,129 @@ export function Team({
             className="form"
             onSubmit={async (e) => {
               e.preventDefault();
+              if (adding.current) return;
+              adding.current = true;
               setBusy(true);
+              setError("");
               const f = new FormData(e.currentTarget);
               const email = String(f.get("email")).trim().toLowerCase();
               const role = String(f.get("role"));
-              const { data: userId, error } = await supabase().rpc(
-                "atraction_add_member",
-                {
-                  tenant: state.tenant.id,
-                  member_email: email,
-                  member_role: role,
-                },
-              );
-              setBusy(false);
-              if (error || !userId) {
-                const message = error?.message || "";
-                notify(
-                  message.includes("account not found")
-                    ? "Esse e-mail ainda não possui cadastro. Peça à pessoa para criar a conta primeiro."
-                    : message.includes("already a member")
-                      ? "Essa pessoa já faz parte da empresa."
-                      : message.includes("team limit")
-                        ? "A equipe já atingiu o limite de 10 pessoas."
-                        : "Não foi possível adicionar a pessoa. Tente novamente.",
-                );
-                return;
+              try {
+                let userId: string;
+                if (newAccount) {
+                  if (
+                    new TextEncoder().encode(String(f.get("password"))).length >
+                    72
+                  )
+                    throw new Error(
+                      "Use uma senha de até 72 bytes (acentos e símbolos podem ocupar mais de um byte).",
+                    );
+                  const result = await supabase().functions.invoke(
+                    "atraction-create-member",
+                    {
+                      body: {
+                        tenant: state.tenant.id,
+                        email,
+                        role,
+                        password: String(f.get("password")),
+                      },
+                    },
+                  );
+                  if (result.error) {
+                    let message =
+                      "Não foi possível criar a pessoa. Confira sua conexão.";
+                    const response = result.error.context;
+                    if (response instanceof Response) {
+                      const body = await response.json().catch(() => null);
+                      if (typeof body?.error === "string") message = body.error;
+                    }
+                    throw new Error(message);
+                  }
+                  if (!result.data?.user_id)
+                    throw new Error("Não foi possível confirmar o cadastro.");
+                  userId = result.data.user_id;
+                } else {
+                  const result = await supabase().rpc("atraction_add_member", {
+                    tenant: state.tenant.id,
+                    member_email: email,
+                    member_role: role,
+                  });
+                  if (result.error || !result.data) {
+                    const message = result.error?.message || "";
+                    throw new Error(
+                      message.includes("account not found")
+                        ? "Esse e-mail ainda não possui conta. Selecione Criar novo usuário."
+                        : message.includes("already a member")
+                          ? "Essa pessoa já faz parte da empresa."
+                          : message.includes("team limit")
+                            ? "A equipe já atingiu o limite de 10 pessoas."
+                            : "Não foi possível adicionar a pessoa. Tente novamente.",
+                    );
+                  }
+                  userId = result.data;
+                }
+                setMembers((current) => [
+                  ...current,
+                  { user_id: userId, email, role },
+                ]);
+                setOpen(false);
+                notify("Pessoa cadastrada na empresa.");
+              } catch (err) {
+                setError((err as Error).message);
+              } finally {
+                adding.current = false;
+                setBusy(false);
               }
-              setMembers((current) => [
-                ...current,
-                { user_id: userId, email, role },
-              ]);
-              setOpen(false);
-              notify("Pessoa adicionada à empresa.");
             }}
           >
             <label>
-              {ui.e_mail_da_pessoa}
-              <input name="email" type="email" required />
+              Cadastro
+              <select
+                value={newAccount ? "new" : "existing"}
+                disabled={busy}
+                onChange={(e) => {
+                  setNewAccount(e.target.value === "new");
+                  setError("");
+                }}
+              >
+                <option value="new">Criar novo usuário</option>
+                <option value="existing">Adicionar usuário existente</option>
+              </select>
             </label>
             <label>
+              {ui.e_mail_da_pessoa}
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                disabled={busy}
+              />
+            </label>
+            {newAccount && (
+              <>
+                <label>
+                  Senha
+                  <input
+                    name="password"
+                    type="password"
+                    aria-describedby={passwordHelp}
+                    required
+                    minLength={8}
+                    maxLength={72}
+                    autoComplete="new-password"
+                    disabled={busy}
+                  />
+                </label>
+                <small id={passwordHelp}>
+                  Use pelo menos 8 caracteres. A pessoa entrará com este e-mail
+                  e senha.
+                </small>
+              </>
+            )}
+            <label>
               Cargo e acesso
-              <select name="role" defaultValue="agent">
+              <select name="role" defaultValue="agent" disabled={busy}>
                 <option value="owner">
                   Dono — acesso total e gestão da equipe
                 </option>
@@ -207,8 +295,15 @@ export function Team({
               </select>
             </label>
             <p>
-              A pessoa precisa já ter criado uma conta com esse mesmo e-mail.
+              {newAccount
+                ? "O usuário será criado e receberá acesso à empresa selecionada."
+                : "A pessoa usará a senha que já possui. A senha existente não será alterada."}
             </p>
+            {error && (
+              <p role="alert" className="error">
+                {error}
+              </p>
+            )}
             <button className="primary" disabled={busy}>
               {busy ? "Adicionando…" : "Adicionar pessoa"}
               <Users size={16} />

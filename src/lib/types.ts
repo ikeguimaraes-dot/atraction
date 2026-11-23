@@ -201,8 +201,9 @@ export type Contract = Base & {
 };
 export type CustomerDocument = Base & {
   contact_id: string | null;
+  contract_id?: string | null;
   finance_id?: string | null;
-  document_kind?: "customer" | "nfe" | "receipt";
+  document_kind?: "customer" | "nfe" | "receipt" | "contract";
   document_number?: string;
   issue_date?: string | null;
   name: string;
